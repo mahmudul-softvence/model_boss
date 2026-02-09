@@ -54,7 +54,7 @@ class AuthController extends Controller
         $credentials = request(['email', 'password']);
 
         if (! $token = auth()->attempt($credentials)) {
-            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised']);
+            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised'], 401);
         }
 
         $user = auth()->user();
@@ -66,7 +66,9 @@ class AuthController extends Controller
         //     return $this->sendError('Please verify your email.', ['verified' => false], 403);
         // }
 
-        return $this->sendResponse($this->respondWithToken($token), 'User login successfully.');
+        $data = $this->respondWithToken($token);
+
+        return $this->sendResponse($data, 'User login successfully.');
     }
 
     /**
@@ -81,6 +83,7 @@ class AuthController extends Controller
         $success = [
             'name' => $user->name,
             'email' => $user->email,
+            'image' => $user->image,
             'email_verified' => !is_null($user->email_verified_at),
             'role' => $user->getRoleNames()->first(),
         ];;
@@ -184,10 +187,10 @@ class AuthController extends Controller
             'user' => [
                 'name' => $user->name,
                 'email' => $user->email,
+                'image' => $user->image,
                 'email_verified' => !is_null($user->email_verified_at),
                 'role' => $user->getRoleNames()->first(),
             ]
-
         ];
     }
 }

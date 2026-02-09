@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Enums\UserRole;
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Socialite\Facades\Socialite;
+
+class SocialController extends Controller
+{
+
+    /**
+     * Get the social authentication redirect URL.
+     *
+     * @param  string  $provider
+     * @return \Illuminate\Http\JsonResponse
+     */
+
+    public function redirect(string $provider)
+    {
+        $data = [
+            'url' => Socialite::driver($provider)->stateless()->redirect()->getTargetUrl(),
+        ];
+
+        return $this->sendResponse($data);
+    }
+
+
+    /**
+     * Handle the social authentication callback.
+     *
+     * @param  string  $provider
+     * @return \Illuminate\Http\JsonResponse
+     */
+
+    public function callback(string $provider)
+    {
+        $socialUser = Socialite::driver($provider)->stateless()->user();
+
+        $user = User::where('email', $socialUser->getEmail())->first();
+
+        if (! $user) {
+            $user = User::create([
+                'name'              => $socialUser->getName() ?? $socialUser->getNickname(),
+                'email'             => $socialUser->getEmail(),
+                'image'             => $socialUser->getAvatar(),
+                'provider'          => $provider,
+                'provider_id'       => $socialUser->getId()
+            ]);
+
+            $user->markEmailAsVerified();
+            $user->assignRole(UserRole::USER);
+        }
+
+        $token = auth()->login($user);
+
+        $data = $this->respondWithToken($token);
+
+        return $this->sendResponse($data, 'User login successfully.');
+    }
+
+
+
+    /**
+     * Get the token array structure.
+     *
+     * @param  string $token
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function respondWithToken($token)
+    {
+        $user = auth()->user();
+        return [
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'expires_in' => auth()->factory()->getTTL() * 60,
+
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'image' => $user->image,
+                'email_verified' => !is_null($user->email_verified_at),
+                'role' => $user->getRoleNames()->first(),
+            ]
+
+        ];
+    }
+}
