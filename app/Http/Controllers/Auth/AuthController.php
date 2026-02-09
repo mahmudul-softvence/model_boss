@@ -18,7 +18,6 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'name' => 'required',
             'email' => 'required|email|unique:users',
@@ -59,12 +58,52 @@ class AuthController extends Controller
 
         $user = auth()->user();
 
+        if ($user->hasRole(UserRole::SUPER_ADMIN)) {
+            auth()->logout();
+
+            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised'], 401);
+        }
+
         // if (! $user->hasVerifiedEmail()) {
         //     $user->sendEmailVerificationNotification();
         //     auth()->logout();
 
         //     return $this->sendError('Please verify your email.', ['verified' => false], 403);
         // }
+
+        $data = $this->respondWithToken($token);
+
+        return $this->sendResponse($data, 'User login successfully.');
+    }
+
+
+    /**
+     * Get a JWT via given credentials.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function admin_login()
+    {
+        $credentials = request(['email', 'password']);
+
+        if (! $token = auth()->attempt($credentials)) {
+            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised'], 401);
+        }
+
+        $user = auth()->user();
+
+        if (! $user->hasRole(UserRole::SUPER_ADMIN)) {
+            auth()->logout();
+
+            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised'], 401);
+        }
+
+        if (! $user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+            auth()->logout();
+
+            return $this->sendError('Please verify your email.', ['verified' => false], 403);
+        }
 
         $data = $this->respondWithToken($token);
 
@@ -80,7 +119,7 @@ class AuthController extends Controller
     {
         $user = auth()->user();
 
-        $success = [
+        $data = [
             'name' => $user->name,
             'email' => $user->email,
             'image' => $user->image,
@@ -88,7 +127,7 @@ class AuthController extends Controller
             'role' => $user->getRoleNames()->first(),
         ];;
 
-        return $this->sendResponse($success, 'User informations.');
+        return $this->sendResponse($data, 'User informations.');
     }
 
     /**

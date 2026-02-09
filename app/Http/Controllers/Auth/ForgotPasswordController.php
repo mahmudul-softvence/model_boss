@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 class ForgotPasswordController extends Controller
 {
-    public function submitForgotPasswordByOtp(Request $request)
+    public function forgot_password(Request $request)
     {
         $validated = $request->validate([
             'email' => ['required', 'email', 'exists:users,email'],
@@ -53,7 +53,7 @@ class ForgotPasswordController extends Controller
         }
     }
 
-    public function verifyForgotPasswordOtp(Request $request)
+    public function verify_forgot_password(Request $request)
     {
         $validated = $request->validate([
             'email' => ['required', 'email', 'exists:users,email'],
@@ -77,7 +77,7 @@ class ForgotPasswordController extends Controller
     }
 
 
-    public function resetPasswordByOtp(Request $request)
+    public function reset_password(Request $request)
     {
         $validated = $request->validate([
             'email'                 => ['required', 'email'],
