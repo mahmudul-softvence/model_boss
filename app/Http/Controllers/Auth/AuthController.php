@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -20,8 +21,8 @@ class AuthController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required',
-            'email' => 'required|email',
-            'password' => 'required',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:8',
             'c_password' => 'required|same:password',
         ]);
 
@@ -32,9 +33,14 @@ class AuthController extends Controller
         $input = $request->all();
         $input['password'] = bcrypt($input['password']);
         $user = User::create($input);
+        $user->assignRole(UserRole::USER);
+
+        $user->sendEmailVerificationNotification();
+
+
         $success['user'] =  $user;
 
-        return $this->sendResponse($success, 'User register successfully.');
+        return $this->sendResponse($success, 'A varification email has been sent to you email.');
     }
 
 
@@ -51,9 +57,16 @@ class AuthController extends Controller
             return $this->sendError('Unauthorised.', ['error' => 'Unauthorised']);
         }
 
-        $success = $this->respondWithToken($token);
+        $user = auth()->user();
 
-        return $this->sendResponse($success, 'User login successfully.');
+        // if (! $user->hasVerifiedEmail()) {
+        //     $user->sendEmailVerificationNotification();
+        //     auth()->logout();
+
+        //     return $this->sendError('Please verify your email.', ['verified' => false], 403);
+        // }
+
+        return $this->sendResponse($this->respondWithToken($token), 'User login successfully.');
     }
 
     /**
@@ -61,11 +74,18 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function profile()
+    public function me()
     {
-        $success = auth()->user();
+        $user = auth()->user();
 
-        return $this->sendResponse($success, 'Refresh token return successfully.');
+        $success = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'email_verified' => !is_null($user->email_verified_at),
+            'role' => $user->getRoleNames()->first(),
+        ];;
+
+        return $this->sendResponse($success, 'User informations.');
     }
 
     /**
@@ -92,6 +112,60 @@ class AuthController extends Controller
         return $this->sendResponse($success, 'Refresh token return successfully.');
     }
 
+
+    /**
+     * Verify user's email.
+     *
+     * @param  int  $id, $hash
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+
+    public function verify_email($id, $hash, Request $request)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return $this->sendError('User not found.');
+        }
+
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            return $this->sendError('Invalid verification link.', [], 403);
+        }
+
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
+        return $this->sendResponse([], 'Email verified successfully!');
+    }
+
+
+
+    /**
+     * Resend email verification link.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+
+    public function resend_verification(Request $request)
+    {
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return $this->sendError('User not found.');
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->sendError('Email already verified.', [], 400);
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return $this->sendResponse([], 'Verification link resent!');
+    }
+
+
     /**
      * Get the token array structure.
      *
@@ -101,10 +175,19 @@ class AuthController extends Controller
      */
     protected function respondWithToken($token)
     {
+        $user = auth()->user();
         return [
             'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60
+            'token_type' => 'Bearer',
+            'expires_in' => auth()->factory()->getTTL() * 60,
+
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'email_verified' => !is_null($user->email_verified_at),
+                'role' => $user->getRoleNames()->first(),
+            ]
+
         ];
     }
 }

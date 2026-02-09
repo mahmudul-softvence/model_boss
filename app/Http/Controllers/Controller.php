@@ -6,16 +6,16 @@ use Illuminate\Http\JsonResponse;
 
 abstract class Controller
 {
-    protected function sendResponse($result, $message = 'Success'): JsonResponse
+    protected function sendResponse($data = [], $message = 'Success', $code = 200): JsonResponse
     {
         return response()->json([
             'success' => true,
-            'data'    => $result,
             'message' => $message,
-        ], 200);
+            'data'    => $data,
+        ], $code);
     }
 
-    protected function sendError($message, $errors = [], $code = 404): JsonResponse
+    protected function sendError($message = 'Error', $errors = [], $code = 404): JsonResponse
     {
         $response = [
             'success' => false,
