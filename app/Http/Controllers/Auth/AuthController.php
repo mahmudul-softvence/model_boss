@@ -5,17 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-
-    /**
-     * Register a User.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -34,6 +29,8 @@ class AuthController extends Controller
         $user = User::create($input);
         $user->assignRole(UserRole::USER);
 
+        $user->userBalance()->create();
+
         $user->sendEmailVerificationNotification();
 
 
@@ -42,12 +39,6 @@ class AuthController extends Controller
         return $this->sendResponse($success, 'A varification email has been sent to you email.');
     }
 
-
-    /**
-     * Get a JWT via given credentials.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function login()
     {
         $credentials = request(['email', 'password']);
@@ -76,12 +67,6 @@ class AuthController extends Controller
         return $this->sendResponse($data, 'User login successfully.');
     }
 
-
-    /**
-     * Get a JWT via given credentials.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function admin_login()
     {
         $credentials = request(['email', 'password']);
@@ -110,11 +95,6 @@ class AuthController extends Controller
         return $this->sendResponse($data, 'User login successfully.');
     }
 
-    /**
-     * Get the authenticated User.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function me()
     {
         $user = auth()->user();
@@ -130,11 +110,6 @@ class AuthController extends Controller
         return $this->sendResponse($data, 'User informations.');
     }
 
-    /**
-     * Log the user out (Invalidate the token).
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function logout()
     {
         auth()->logout();
@@ -142,26 +117,12 @@ class AuthController extends Controller
         return $this->sendResponse([], 'Successfully logged out.');
     }
 
-    /**
-     * Refresh a token.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function refresh()
     {
         $success = $this->respondWithToken(auth()->refresh());
 
         return $this->sendResponse($success, 'Refresh token return successfully.');
     }
-
-
-    /**
-     * Verify user's email.
-     *
-     * @param  int  $id, $hash
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
 
     public function verify_email($id, $hash, Request $request)
     {
@@ -182,14 +143,6 @@ class AuthController extends Controller
         return $this->sendResponse([], 'Email verified successfully!');
     }
 
-
-
-    /**
-     * Resend email verification link.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-
     public function resend_verification(Request $request)
     {
         $user = User::where('email', $request->email)->first();
@@ -207,14 +160,6 @@ class AuthController extends Controller
         return $this->sendResponse([], 'Verification link resent!');
     }
 
-
-    /**
-     * Get the token array structure.
-     *
-     * @param  string $token
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     protected function respondWithToken($token)
     {
         $user = auth()->user();
