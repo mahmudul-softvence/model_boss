@@ -55,6 +55,21 @@ class SocialController extends Controller
             $user->assignRole(UserRole::USER);
         }
 
+        if ($user->isSuspended()) {
+            auth()->logout();
+
+            $data = [
+                'suspended' => true,
+                'permanent' => $user->is_permanent_suspended,
+                'until'     => $user->suspended_until,
+                'reason'    => $user->suspension_reason,
+                'note'      => $user->suspension_note
+            ];
+
+            return $this->sendError('Your account is suspended.', $data, 403);
+        }
+
+
         $token = auth()->login($user);
 
         $data = $this->respondWithToken($token);

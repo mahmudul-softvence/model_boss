@@ -55,12 +55,27 @@ class AuthController extends Controller
             return $this->sendError('Unauthorised.', ['error' => 'Unauthorised'], 401);
         }
 
-        // if (! $user->hasVerifiedEmail()) {
-        //     $user->sendEmailVerificationNotification();
-        //     auth()->logout();
+        if ($user->isSuspended()) {
+            auth()->logout();
 
-        //     return $this->sendError('Please verify your email.', ['verified' => false], 403);
-        // }
+            $data = [
+                'suspended' => true,
+                'permanent' => $user->is_permanent_suspended,
+                'until'     => $user->suspended_until,
+                'reason'    => $user->suspension_reason,
+                'note'      => $user->suspension_note
+            ];
+
+            return $this->sendError('Your account is suspended.', $data, 403);
+        }
+
+
+        if (! $user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+            auth()->logout();
+
+            return $this->sendError('Please verify your email.', ['verified' => false], 403);
+        }
 
         $data = $this->respondWithToken($token);
 
