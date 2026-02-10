@@ -11,7 +11,8 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('admin_login', [AuthController::class, 'admin_login']);
     Route::post('resend_verification', [AuthController::class, 'resend_verification']);
-    Route::get('verify_email/{id}/{hash}', [AuthController::class, 'verify_email'])->middleware('signed')->name('verification.verify');
+    Route::get('verify_email/{id}/{hash}', [AuthController::class, 'verify_email'])
+        ->middleware('signed')->name('verification.verify');
 
     Route::get('{provider}/redirect', [SocialController::class, 'redirect']);
     Route::get('{provider}/callback', [SocialController::class, 'callback']);
@@ -24,3 +25,6 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('refresh', [AuthController::class, 'refresh'])->middleware('auth:api');
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
 });
+
+
+require __DIR__ . '/backend.php';

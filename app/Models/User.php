@@ -9,6 +9,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -29,6 +30,10 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'provider',
         'provider_id',
         'password',
+        'suspended_until',
+        'is_permanent_suspended',
+        'suspension_reason',
+        'suspension_note'
     ];
 
     /**
@@ -77,5 +82,19 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+
+    public function isSuspended(): bool
+    {
+        if ($this->is_permanent_suspended) {
+            return true;
+        }
+
+        if ($this->suspended_until && Carbon::parse($this->suspended_until)->isFuture()) {
+            return true;
+        }
+
+        return false;
     }
 }
