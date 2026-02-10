@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Models\User;
+
 enum UserRole: string
 {
     case SUPER_ADMIN = 'super_admin';
