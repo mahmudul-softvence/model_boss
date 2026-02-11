@@ -49,6 +49,36 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         return $this->hasOne(UserBalance::class, 'user_id');
     }
 
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class, 'user_id');
+    }
+
+    public function stripePayments()
+    {
+        return $this->hasMany(StripePayment::class, 'user_id');
+    }
+
+    public function coinTransactions()
+    {
+        return $this->hasMany(CoinTransaction::class, 'user_id');
+    }
+
+    public function asPlayerOne()
+    {
+        return $this->hasMany(GameMatch::class, 'player_one_id');
+    }
+
+    public function asPlayerTwo()
+    {
+        return $this->hasMany(GameMatch::class, 'player_two_id');
+    }
+
+    public function MatchWon()
+    {
+        return $this->hasMany(GameMatch::class, 'winner_id');
+    }
+
 
     public function sendEmailVerificationNotification()
     {

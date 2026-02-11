@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\SocialController;
@@ -26,5 +27,12 @@ Route::group(['middleware' => 'api'], function () {
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
 });
 
+Route::group(['middleware' => ['auth:api', 'role:super_admin']], function () {
+    Route::get('categories', [CategoryController::class, 'index']);
+    Route::post('categories', [CategoryController::class, 'store']);
+    Route::get('categories/{id}', [CategoryController::class, 'edit']);
+    Route::put('categories/{id}', [CategoryController::class, 'update']);
+    Route::delete('categories/{id}', [CategoryController::class, 'destroy']);
+});
 
 require __DIR__ . '/backend.php';
