@@ -20,6 +20,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'image' => $this->provider ? $this->image : asset($this->image),
             'provider' => $this->provider,
+            'verified_at' => !is_null($this->email_verified_at),
             'suspended_until'        => $this->suspended_until,
             'is_permanent_suspended' => $this->is_permanent_suspended,
             'suspension_reason' => $this->suspension_reason,
