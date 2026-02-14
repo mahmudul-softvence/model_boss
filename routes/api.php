@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Backend\CategoryController;
+use App\Http\Controllers\Backend\GameController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\SocialController;
@@ -28,11 +29,19 @@ Route::group(['middleware' => 'api'], function () {
 });
 
 Route::group(['middleware' => ['auth:api', 'role:super_admin']], function () {
+    //Category
     Route::get('categories', [CategoryController::class, 'index']);
     Route::post('categories', [CategoryController::class, 'store']);
     Route::get('categories/{id}', [CategoryController::class, 'edit']);
     Route::put('categories/{id}', [CategoryController::class, 'update']);
     Route::delete('categories/{id}', [CategoryController::class, 'destroy']);
+
+    //Game
+    Route::get('games', [GameController::class, 'index']);
+    Route::post('games', [GameController::class, 'store']);
+    Route::get('games/{id}', [GameController::class, 'edit']);
+    Route::put('games/{id}', [GameController::class, 'update']);
+    Route::delete('games/{id}', [GameController::class, 'destroy']);
 });
 
 require __DIR__ . '/backend.php';

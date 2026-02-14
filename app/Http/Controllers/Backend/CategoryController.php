@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
@@ -16,6 +16,7 @@ class CategoryController extends Controller
 
         return response()->json([
             'status' => true,
+            'message' => 'Categories retrieved successfully',
             'data' => $categories,
         ]);
     }
@@ -30,6 +31,7 @@ class CategoryController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
+                'message' => 'Validation failed',
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -54,7 +56,7 @@ class CategoryController extends Controller
 
     public function edit($id)
     {
-        $category = Category::find($id);
+        $category = Category::select('name', 'image')->find($id);
 
         if (! $category) {
             return response()->json([
@@ -65,6 +67,7 @@ class CategoryController extends Controller
 
         return response()->json([
             'status' => true,
+            'message' => 'Category retrieved successfully',
             'data' => $category,
         ]);
     }
@@ -88,6 +91,7 @@ class CategoryController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
+                'message' => 'Validation failed',
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -120,6 +124,10 @@ class CategoryController extends Controller
                 'status' => false,
                 'message' => 'Category not found',
             ], 404);
+        }
+
+        if ($category->image && Storage::disk('public')->exists($category->image)) {
+            Storage::disk('public')->delete($category->image);
         }
 
         $category->delete();
