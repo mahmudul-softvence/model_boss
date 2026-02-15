@@ -2,12 +2,16 @@
 
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\UserController;
+use App\Http\Controllers\Backend\WithdrawController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['api'])->group(function () {
+Route::middleware(['api'])->prefix('admin')->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index']);
 
     // User Manage
     Route::apiResource('users', UserController::class);
     Route::post('users/unsuspend/{user}', [UserController::class, 'unsuspend']);
+
+    // Withdraw Manage
+    Route::get('withdraws', [WithdrawController::class, 'index']);
 });

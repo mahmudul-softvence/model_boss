@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Http\Controllers\Stripe;
+
+use App\Enums\WithdrawalStatus;
+use App\Http\Controllers\Controller;
+use App\Models\Withdrawal;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class StripeWithdrawController extends Controller
+{
+    public function request(Request $request)
+    {
+        $request->validate([
+            'coin_amount' => 'required|numeric|min:1'
+        ]);
+
+        $user = $request->user();
+
+        if (!$user->stripe_onboarding_complete) {
+            return $this->sendError('Stripe not connected.', [], 400);
+        }
+
+        if ($request->coin_amount < 5) {
+            return $this->sendError('Minimum 5 points required.', [], 400);
+        }
+
+        try {
+
+            DB::transaction(function () use ($request, $user, &$withdraw) {
+
+                $balance = $user->userBalance()
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$balance || $balance->total_balance < $request->coin_amount) {
+                    throw new \Exception('Insufficient balance.');
+                }
+
+                $balance->decrement('total_balance', $request->coin_amount);
+
+                $usd = $request->coin_amount;
+
+                $withdraw = Withdrawal::create([
+                    'user_id' => $user->id,
+                    'withdraw_no' => 'WD' . now()->timestamp . rand(100, 999),
+                    'coin_amount' => $request->coin_amount,
+                    'usd_amount' => $usd,
+                    'status' => WithdrawalStatus::PENDING,
+                ]);
+            });
+
+            return $this->sendResponse($withdraw);
+        } catch (\Exception $e) {
+
+            return $this->sendError($e->getMessage(), [], 400);
+        }
+    }
+}
