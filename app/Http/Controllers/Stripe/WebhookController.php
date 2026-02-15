@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Stripe;
 
 use App\Enums\PaymentStatus;
 use App\Enums\TransactionType;
-use App\Http\Controllers\Controller;
 use App\Models\CoinTransaction;
 use App\Models\StripePayment;
 use App\Models\User;

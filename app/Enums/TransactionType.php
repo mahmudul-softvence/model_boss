@@ -9,4 +9,5 @@ enum TransactionType: string
     case WIN      = 'win';
     case LOSS     = 'loss';
     case WITHDRAW = 'withdraw';
+    case REFERRAL = 'referral';
 }

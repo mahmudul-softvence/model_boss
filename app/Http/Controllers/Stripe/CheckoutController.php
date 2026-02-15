@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Stripe;
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\StripePayment;
+use App\Services\StripeConnectService;
 use Illuminate\Http\Request;
+use Stripe\Account;
 
 class CheckoutController extends Controller
 {
@@ -43,12 +45,41 @@ class CheckoutController extends Controller
             'status' => PaymentStatus::PENDING,
         ]);
 
-        return response()->json([
+        $data = [
             'url' => $checkout->url,
-        ]);
+        ];
+
+        return $this->sendResponse($data);
     }
 
 
-    // Route::middleware('auth:sanctum')->post('/checkout', function (Request $request) {});
+    public function connect_account()
+    {
+        $user = auth()->user();
 
+        $service = app(StripeConnectService::class);
+
+        $service->createOrGetAccount($user);
+
+        return redirect(
+            $service->generateOnboardingLink($user)
+        );
+    }
+
+
+
+    public function stripe_return()
+    {
+        $user = auth()->user();
+
+        $account = Account::retrieve($user->stripe_account_id);
+
+        if ($account->payouts_enabled) {
+            $user->update([
+                'stripe_onboarding_complete' => true
+            ]);
+        }
+
+        return redirect()->route('dashboard');
+    }
 }
