@@ -53,4 +53,8 @@ return [
         'redirect'      => env('GOOGLE_URL'),
     ],
 
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET')
+    ]
+
 ];
