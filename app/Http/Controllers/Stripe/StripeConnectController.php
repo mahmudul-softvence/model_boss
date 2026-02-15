@@ -17,14 +17,14 @@ class StripeConnectController extends Controller
         Stripe::setApiKey(config('services.stripe.secret'));
 
         if (!$user->stripe_account_id) {
+
             $account = Account::create([
                 'type' => 'express',
                 'email' => $user->email,
             ]);
 
-            $user->update([
-                'stripe_account_id' => $account->id
-            ]);
+            $user->stripe_account_id = $account->id;
+            $user->save();
         }
 
         $link = AccountLink::create([
@@ -49,9 +49,9 @@ class StripeConnectController extends Controller
         $account = Account::retrieve($user->stripe_account_id);
 
         if ($account->payouts_enabled) {
-            $user->update([
-                'stripe_onboarding_complete' => true
-            ]);
+
+            $user->stripe_onboarding_complete = true;
+            $user->save();
         }
 
         return response()->json([

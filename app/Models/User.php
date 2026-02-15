@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
@@ -111,5 +112,17 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         }
 
         return false;
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+
+            if (empty($user->referral_no)) {
+                $user->referral_no = strtoupper(Str::uuid()->toString());
+            }
+        });
     }
 }

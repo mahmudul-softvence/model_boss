@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->boolean('reference_status')->default(0);
             $table->unsignedBigInteger('referral_user_id')->nullable();
-            $table->string('referral_no', 30)->unique();
+            $table->string('referral_no', 50)->unique();
         });
     }
 

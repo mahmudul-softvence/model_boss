@@ -14,4 +14,6 @@ Route::middleware(['api'])->prefix('admin')->group(function () {
 
     // Withdraw Manage
     Route::get('withdraws', [WithdrawController::class, 'index']);
+    Route::post('withdraws/accept', [WithdrawController::class, 'accept']);
+    Route::post('withdraws/declined', [WithdrawController::class, 'declined']);
 });
