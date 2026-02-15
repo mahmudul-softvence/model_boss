@@ -113,6 +113,7 @@ class AuthController extends Controller
     public function me()
     {
         $user = auth()->user();
+        $userBalance = UserBalance::where('user_id', $user->id)->first();
 
         $data = [
             'name' => $user->name,
@@ -120,6 +121,12 @@ class AuthController extends Controller
             'image' => $user->image,
             'email_verified' => !is_null($user->email_verified_at),
             'role' => $user->getRoleNames()->first(),
+            'total_earning' => $userBalance->total_earning,
+            'total_referral_earning' => $userBalance->total_referral_earning,
+            'total_tip_received' => $userBalance->total_tip_received,
+            'total_withdraw' => $userBalance->total_withdraw,
+            'total_balance' => $userBalance->total_balance,
+            'total_bet' => $userBalance->total_bet,
         ];;
 
         return $this->sendResponse($data, 'User informations.');

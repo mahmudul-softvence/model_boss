@@ -15,6 +15,7 @@ class UserBalance extends Model
         'total_tip_received',
         'total_withdraw',
         'total_balance',
+        'total_bet',
     ];
 
     public function user()

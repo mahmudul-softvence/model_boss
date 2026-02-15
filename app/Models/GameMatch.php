@@ -11,11 +11,16 @@ class GameMatch extends Model
     protected $fillable = [
         'match_no',
         'player_one_id',
+        'player_one_bet',
         'player_two_id',
+        'player_two_bet',
         'game_id',
         'winner_id',
         'type',
+        'winner_percentage',
+        'loser_percentage',
     ];
+
 
     public function playerOne()
     {

@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Models\UserBalance;
 use Illuminate\Support\Facades\Hash;
 
 class RoleSeeder extends Seeder
@@ -34,5 +35,10 @@ class RoleSeeder extends Seeder
         if (! $admin->hasRole(UserRole::SUPER_ADMIN)) {
             $admin->assignRole(UserRole::SUPER_ADMIN);
         }
+        UserBalance::firstOrCreate([
+            'user_id' => $admin->id,
+        ], [
+            'total_balance' => 0,
+        ]);
     }
 }

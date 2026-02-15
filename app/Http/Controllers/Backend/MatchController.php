@@ -9,14 +9,55 @@ use Illuminate\Support\Facades\Validator;
 
 class MatchController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $matches = GameMatch::with([
+        $perPage = $request->per_page ?? 10;
+
+        $query = GameMatch::with([
             'game:id,name',
             'playerOne:id,name',
             'playerTwo:id,name',
             'winner:id,name'
-        ])->latest()->get();
+        ]);
+
+        if ($request->filled('game_id')) {
+            $query->where('game_id', $request->game_id);
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('player_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('player_one_id', $request->player_id)
+                ->orWhere('player_two_id', $request->player_id);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+
+                $q->where('match_no', 'like', "%{$search}%")
+                ->orWhere('type', 'like', "%{$search}%")
+
+                ->orWhereHas('game', function ($gameQuery) use ($search) {
+                    $gameQuery->where('name', 'like', "%{$search}%");
+                })
+
+                ->orWhereHas('playerOne', function ($playerQuery) use ($search) {
+                    $playerQuery->where('name', 'like', "%{$search}%");
+                })
+
+                ->orWhereHas('playerTwo', function ($playerQuery) use ($search) {
+                    $playerQuery->where('name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        $matches = $query->latest()->paginate($perPage);
 
         return response()->json([
             'status'  => true,
@@ -28,14 +69,15 @@ class MatchController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'match_no'       => 'required|string|max:50|unique:game_matches,match_no',
-            'game_id'        => 'required|exists:games,id',
-            'player_one_id'  => 'required|exists:users,id',
-            'player_one_bet' => 'required|numeric|min:0',
-            'player_two_id'  => 'required|exists:users,id|different:player_one_id',
-            'player_two_bet' => 'required|numeric|min:0',
-            'type'           => 'required|string|max:50',
-            'winner_id'      => 'nullable|exists:users,id',
+            'match_no'          => 'required|string|max:50|unique:game_matches,match_no',
+            'game_id'           => 'required|exists:games,id',
+            'player_one_id'     => 'required|exists:users,id',
+            'player_one_bet'    => 'required|numeric|min:0',
+            'player_two_id'     => 'required|exists:users,id|different:player_one_id',
+            'player_two_bet'    => 'required|numeric|min:0',
+            'type'              => 'required|string|max:50',
+            'winner_percentage' => 'nullable|in:0,1',
+            'loser_percentage'  => 'nullable|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -43,15 +85,6 @@ class MatchController extends Controller
                 'status'  => false,
                 'message' => 'Validation failed',
                 'errors'  => $validator->errors(),
-            ], 422);
-        }
-
-        // Optional: Validate winner belongs to match
-        if ($request->winner_id &&
-            ! in_array($request->winner_id, [$request->player_one_id, $request->player_two_id])) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Winner must be one of the match players.',
             ], 422);
         }
 
@@ -74,7 +107,6 @@ class MatchController extends Controller
             'game:id,name',
             'playerOne:id,name',
             'playerTwo:id,name',
-            'winner:id,name'
         ])->find($id);
 
         if (! $match) {
@@ -103,14 +135,15 @@ class MatchController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'match_no'       => 'required|string|max:50|unique:game_matches,match_no,' . $match->id,
-            'game_id'        => 'required|exists:games,id',
-            'player_one_id'  => 'required|exists:users,id',
-            'player_one_bet' => 'required|numeric|min:0',
-            'player_two_id'  => 'required|exists:users,id|different:player_one_id',
-            'player_two_bet' => 'required|numeric|min:0',
-            'type'           => 'required|string|max:50',
-            'winner_id'      => 'nullable|exists:users,id',
+            'match_no'          => 'required|string|max:50|unique:game_matches,match_no,' . $match->id,
+            'game_id'           => 'required|exists:games,id',
+            'player_one_id'     => 'required|exists:users,id',
+            'player_one_bet'    => 'required|numeric|min:0',
+            'player_two_id'     => 'required|exists:users,id|different:player_one_id',
+            'player_two_bet'    => 'required|numeric|min:0',
+            'type'              => 'required|string|max:50',
+            'winner_percentage' => 'nullable|in:0,1',
+            'loser_percentage'  => 'nullable|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -118,14 +151,6 @@ class MatchController extends Controller
                 'status'  => false,
                 'message' => 'Validation failed',
                 'errors'  => $validator->errors(),
-            ], 422);
-        }
-
-        if ($request->winner_id &&
-            ! in_array($request->winner_id, [$request->player_one_id, $request->player_two_id])) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Winner must be one of the match players.',
             ], 422);
         }
 
@@ -138,7 +163,6 @@ class MatchController extends Controller
                 'game:id,name',
                 'playerOne:id,name',
                 'playerTwo:id,name',
-                'winner:id,name'
             ]),
         ]);
     }
@@ -161,4 +185,29 @@ class MatchController extends Controller
             'message' => 'Match deleted successfully',
         ]);
     }
+
+    public function players($id)
+    {
+        $match = GameMatch::with([
+            'playerOne:id,name',
+            'playerTwo:id,name',
+        ])->find($id);
+
+        if (! $match) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Match not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Players retrieved successfully',
+            'data'    => [
+                'player_one' => $match->playerOne,
+                'player_two' => $match->playerTwo,
+            ],
+        ]);
+    }
+
 }
