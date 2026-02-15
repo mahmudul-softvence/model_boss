@@ -19,9 +19,10 @@ class Game extends Model
         return $this->belongsTo(Category::class, 'category_id');
     }
 
-    public function matches()
+    public function match()
     {
         return $this->hasMany(GameMatch::class, 'game_id');
     }
+    
 }
 
