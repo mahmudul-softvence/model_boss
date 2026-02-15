@@ -28,12 +28,14 @@ class MatchController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'match_no'      => 'required|string|max:50|unique:game_matches,match_no',
-            'game_id'       => 'required|exists:games,id',
-            'player_one_id' => 'required|exists:users,id',
-            'player_two_id' => 'required|exists:users,id|different:player_one_id',
-            'type'          => 'required|string|max:50',
-            'winner_id'     => 'nullable|exists:users,id',
+            'match_no'       => 'required|string|max:50|unique:game_matches,match_no',
+            'game_id'        => 'required|exists:games,id',
+            'player_one_id'  => 'required|exists:users,id',
+            'player_one_bet' => 'required|numeric|min:0',
+            'player_two_id'  => 'required|exists:users,id|different:player_one_id',
+            'player_two_bet' => 'required|numeric|min:0',
+            'type'           => 'required|string|max:50',
+            'winner_id'      => 'nullable|exists:users,id',
         ]);
 
         if ($validator->fails()) {
@@ -101,12 +103,14 @@ class MatchController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'match_no'      => 'required|string|max:50|unique:game_matches,match_no,' . $match->id,
-            'game_id'       => 'required|exists:games,id',
-            'player_one_id' => 'required|exists:users,id',
-            'player_two_id' => 'required|exists:users,id|different:player_one_id',
-            'type'          => 'required|string|max:50',
-            'winner_id'     => 'nullable|exists:users,id',
+            'match_no'       => 'required|string|max:50|unique:game_matches,match_no,' . $match->id,
+            'game_id'        => 'required|exists:games,id',
+            'player_one_id'  => 'required|exists:users,id',
+            'player_one_bet' => 'required|numeric|min:0',
+            'player_two_id'  => 'required|exists:users,id|different:player_one_id',
+            'player_two_bet' => 'required|numeric|min:0',
+            'type'           => 'required|string|max:50',
+            'winner_id'      => 'nullable|exists:users,id',
         ]);
 
         if ($validator->fails()) {
