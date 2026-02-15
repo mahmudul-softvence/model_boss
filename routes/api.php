@@ -53,6 +53,8 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin']], function () {
     Route::put('matches/{id}', [MatchController::class, 'update']);
     Route::delete('matches/{id}', [MatchController::class, 'destroy']);
 
+    Route::get('match-players/{id}', [MatchController::class, 'players']);
+
 
 });
 

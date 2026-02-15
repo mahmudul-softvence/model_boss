@@ -26,6 +26,7 @@ class UserResource extends JsonResource
             'suspension_reason' => $this->suspension_reason,
             'note'            => $this->suspension_note,
             'role'  => $this->getRoleNames()->first(),
+            'referral_no' => $this->referral_no,
             'created_at' => $this->created_at
         ];
     }

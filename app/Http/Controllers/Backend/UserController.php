@@ -13,6 +13,7 @@ use App\Notifications\UserSuspendedNotification;
 use App\Notifications\UserUnsuspendedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -41,11 +42,13 @@ class UserController extends Controller
             'email'    => $validated['email'],
             'password' => bcrypt($validated['password']),
             'image'    => $imagePath,
+            'referral_no' => Str::random(10),
         ]);
 
         $user->assignRole($validated['role']);
 
         $user->load('roles');
+        $user->userBalance()->create();
 
         return $this->sendResponse(UserResource::make($user), 'User created successfully.');
     }
