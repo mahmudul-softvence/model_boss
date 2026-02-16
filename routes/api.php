@@ -13,6 +13,8 @@ use App\Http\Controllers\Backend\MatchController;
 Route::group(['middleware' => 'api'], function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
+    Route::post('refresh', [AuthController::class, 'refresh'])->middleware('jwt.refresh');
+
     Route::post('admin_login', [AuthController::class, 'admin_login']);
     Route::post('resend_verification', [AuthController::class, 'resend_verification']);
     Route::get('verify_email/{id}/{hash}', [AuthController::class, 'verify_email'])
@@ -26,9 +28,9 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('reset_password', [ForgotPasswordController::class, 'reset_password']);
 
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
-    Route::post('refresh', [AuthController::class, 'refresh'])->middleware('auth:api');
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
 });
+
 
 Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
     //Category
@@ -54,8 +56,6 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::delete('matches/{id}', [MatchController::class, 'destroy']);
 
     Route::get('match-players/{id}', [MatchController::class, 'players']);
-
-
 });
 
 require __DIR__ . '/backend.php';
