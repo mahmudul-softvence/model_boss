@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
+use App\Models\Referral;
 use App\Models\User;
 use App\Models\UserBalance;
 use Illuminate\Http\Request;
@@ -18,25 +20,35 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8',
             'c_password' => 'required|same:password',
+            'referral_id' => 'nullable|string'
         ]);
+
 
         if ($validator->fails()) {
             return $this->sendError('Validation Error.', $validator->errors());
         }
 
+        if ($request->filled('referral_id')) {
+            $referral_user_id = User::where('referral_no', $request->referral_id)
+                ->value('id');
+        }
+
         $input = $request->all();
+        $input['referral_user_id'] = $referral_user_id;
         $input['password'] = bcrypt($input['password']);
+
         $user = User::create($input);
         $user->assignRole(UserRole::USER);
-
         $user->userBalance()->create();
+
+        Referral::create([
+            'user_id' => $referral_user_id,
+            'referral_user_id' => $user->id
+        ]);
 
         $user->sendEmailVerificationNotification();
 
-
-        $success['user'] =  $user;
-
-        return $this->sendResponse($success, 'A varification email has been sent to you email.');
+        return $this->sendResponse(UserResource::make($user), 'A varification email has been sent to you email.');
     }
 
     public function login()
@@ -190,13 +202,7 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'expires_in' => auth()->factory()->getTTL() * 60,
 
-            'user' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'image' => $user->image,
-                'email_verified' => !is_null($user->email_verified_at),
-                'role' => $user->getRoleNames()->first(),
-            ]
+            'user' => UserResource::make($user)
         ];
     }
 }
