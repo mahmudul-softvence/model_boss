@@ -30,7 +30,7 @@ Route::group(['middleware' => 'api'], function () {
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
 });
 
-Route::group(['middleware' => ['auth:api', 'role:super_admin']], function () {
+Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
     //Category
     Route::get('categories', [CategoryController::class, 'index']);
     Route::post('categories', [CategoryController::class, 'store']);

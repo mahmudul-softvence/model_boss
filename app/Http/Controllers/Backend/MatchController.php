@@ -88,7 +88,12 @@ class MatchController extends Controller
             ], 422);
         }
 
-        $match = GameMatch::create($request->all());
+        $data = $request->all();
+
+        $data['player_one_total'] = $data['player_one_bet'];
+        $data['player_two_total'] = $data['player_two_bet'];
+
+        $match = GameMatch::create($data);
 
         return response()->json([
             'status'  => true,
@@ -154,7 +159,31 @@ class MatchController extends Controller
             ], 422);
         }
 
-        $match->update($request->all());
+        $data = $request->all();
+
+        if ($data['player_one_bet'] != $match->player_one_bet) {
+
+            if ($match->player_one_total == $match->player_one_bet) {
+                $data['player_one_total'] = $data['player_one_bet'];
+            } else {
+                $data['player_one_total'] =
+                    ($match->player_one_total - $match->player_one_bet)
+                    + $data['player_one_bet'];
+            }
+        }
+
+        if ($data['player_two_bet'] != $match->player_two_bet) {
+
+            if ($match->player_two_total == $match->player_two_bet) {
+                $data['player_two_total'] = $data['player_two_bet'];
+            } else {
+                $data['player_two_total'] =
+                    ($match->player_two_total - $match->player_two_bet)
+                    + $data['player_two_bet'];
+            }
+        }
+
+        $match->update($data);
 
         return response()->json([
             'status'  => true,
