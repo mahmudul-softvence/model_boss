@@ -17,6 +17,7 @@ return new class extends Migration
 
             $table->decimal('coin_amount', 12, 2);
             $table->decimal('usd_amount', 12, 2);
+            $table->string('stripe_transfer_id')->nullable();
 
             $table->enum('status', ['pending', 'accepted', 'declined', 'paid'])->default('pending');
 

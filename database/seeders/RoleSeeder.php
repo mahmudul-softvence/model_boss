@@ -29,6 +29,8 @@ class RoleSeeder extends Seeder
             ]
         );
 
+        $admin->userBalance()->create();
+
         $admin->markEmailAsVerified();
 
         if (! $admin->hasRole(UserRole::SUPER_ADMIN)) {

@@ -13,9 +13,10 @@ class Withdrawal extends Model
         'withdraw_no',
         'coin_amount',
         'usd_amount',
+        'stripe_transfer_id',
         'status',
     ];
-    
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
