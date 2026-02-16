@@ -18,7 +18,9 @@ class UserResource extends JsonResource
             'id'    => $this->id,
             'name'  => $this->name,
             'email' => $this->email,
-            'image' => $this->provider ? $this->image : asset($this->image),
+            'image' => $this->image
+                ? ($this->provider ? $this->image : asset($this->image))
+                : null,
             'provider' => $this->provider,
             'verified_at' => !is_null($this->email_verified_at),
             'suspended_until'        => $this->suspended_until,
