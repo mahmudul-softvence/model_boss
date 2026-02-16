@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Stripe;
 
 use App\Enums\PaymentStatus;
 use App\Enums\TransactionType;
+use App\Enums\WithdrawalStatus;
 use App\Models\CoinTransaction;
 use App\Models\StripePayment;
 use App\Models\User;
+use App\Models\Withdrawal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierController;
@@ -30,7 +32,7 @@ class WebhookController extends CashierController
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if ($payment->status === PaymentStatus::COMPLETED) {
+                if ($payment->status === PaymentStatus::COMPLETED->value) {
                     return;
                 }
 
@@ -111,6 +113,75 @@ class WebhookController extends CashierController
 
 
 
+
+    public function handleTransferCreated($payload)
+    {
+        $transfer = $payload['data']['object'];
+
+        DB::transaction(function () use ($transfer) {
+
+            $withdraw = Withdrawal::where('stripe_transfer_id', $transfer['id'])
+                ->lockForUpdate()
+                ->first();
+
+            if (!$withdraw) {
+                return;
+            }
+
+            if ($withdraw->status !== WithdrawalStatus::ACCEPTED->value) {
+                return;
+            }
+
+            $withdraw->update([
+                'status' => WithdrawalStatus::PAID,
+            ]);
+        });
+
+        return response()->noContent();
+    }
+
+
+
+    public function handleTransferFailed($payload)
+    {
+        $transfer = $payload['data']['object'];
+
+        DB::transaction(function () use ($transfer) {
+
+            $withdraw = Withdrawal::where('stripe_transfer_id', $transfer['id'])
+                ->lockForUpdate()
+                ->first();
+
+            if (!$withdraw) {
+                return;
+            }
+
+            if ($withdraw->status !== WithdrawalStatus::ACCEPTED->value) {
+                return;
+            }
+
+            $balance = $withdraw->user->userBalance()->lockForUpdate()->first();
+
+            $balance->increment('total_balance', $withdraw->coin_amount);
+
+            $withdraw->update([
+                'status' => WithdrawalStatus::DECLINED,
+            ]);
+        });
+
+        return response()->noContent();
+    }
+
+
+
+    public function handleTransferReversed($payload)
+    {
+        return $this->handleTransferFailed($payload);
+    }
+
+
+
+
     protected function markPaymentFailed(string $stripeId)
     {
         $payment = StripePayment::where('stripe_payment_id', $stripeId)->first();
@@ -119,7 +190,7 @@ class WebhookController extends CashierController
             return;
         }
 
-        if ($payment->status === PaymentStatus::COMPLETED) {
+        if ($payment->status === PaymentStatus::COMPLETED->value) {
             return;
         }
 

@@ -6,6 +6,7 @@ use App\Enums\TransactionType;
 use App\Enums\WithdrawalStatus;
 use App\Http\Controllers\Controller;
 use App\Models\CoinTransaction;
+use App\Models\User;
 use App\Models\Withdrawal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,10 +31,12 @@ class WithdrawController extends Controller
 
             DB::transaction(function () use ($id) {
 
-                $withdraw = Withdrawal::lockForUpdate()
+                $withdraw = Withdrawal::with('user')
+                    ->lockForUpdate()
                     ->findOrFail($id);
 
-                if ($withdraw->status !== WithdrawalStatus::PENDING) {
+
+                if ($withdraw->status !== WithdrawalStatus::PENDING->value) {
                     throw new \Exception('Already processed.');
                 }
 
@@ -43,35 +46,59 @@ class WithdrawController extends Controller
                     throw new \Exception('User Stripe not connected.');
                 }
 
-                $account = Account::retrieve(
-                    $user->stripe_account_id
-                );
+                $userBalance = $user->userBalance()
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$userBalance) {
+                    throw new \Exception('User balance not found.');
+                }
+
+                // $superAdmin = User::role('super_admin')->first();
+
+                // if (!$superAdmin) {
+                //     throw new \Exception('Super Admin not found.');
+                // }
+
+                // $superBalance = $superAdmin->userBalance()
+                //     ->lockForUpdate()
+                //     ->first();
+
+                // if (!$superBalance) {
+                //     throw new \Exception('Super Admin balance not found.');
+                // }
+
+                // if ($superBalance->total_balance < $withdraw->coin_amount) {
+                //     throw new \Exception('Super Admin balance insufficient.');
+                // }
+
+                $account = Account::retrieve($user->stripe_account_id);
 
                 if (!$account->payouts_enabled) {
                     throw new \Exception('Stripe account not ready.');
                 }
 
                 $transfer = Transfer::create([
-                    'amount' => $withdraw->usd_amount * 100,
+                    'amount' => (int) ($withdraw->usd_amount * 100),
                     'currency' => 'usd',
                     'destination' => $user->stripe_account_id,
                     'description' => 'Withdrawal ' . $withdraw->withdraw_no,
                 ]);
 
                 $withdraw->update([
-                    'status' => WithdrawalStatus::ACCEPTED
+                    'status' => WithdrawalStatus::ACCEPTED,
+                    'stripe_transfer_id' =>  $transfer->id
                 ]);
 
-                $currentBalance = $user->userBalance()
-                    ->lockForUpdate()
-                    ->first()
-                    ->total_balance;
+                $userBalance->increment('total_withdraw', $withdraw->coin_amount);
+
+                // $superBalance->decrement('total_balance', $withdraw->coin_amount);
 
                 $user->coinTransactions()->create([
                     'type' => TransactionType::WITHDRAW,
                     'amount' => $withdraw->coin_amount,
-                    'balance_after' => $currentBalance,
-                    'reference' => $transfer->id
+                    'balance_after' => $userBalance->total_balance,
+                    'reference' => $transfer->id,
                 ]);
             });
 
@@ -83,6 +110,8 @@ class WithdrawController extends Controller
     }
 
 
+
+
     public function declined($id)
     {
         try {
@@ -92,7 +121,7 @@ class WithdrawController extends Controller
                 $withdraw = Withdrawal::lockForUpdate()
                     ->findOrFail($id);
 
-                if ($withdraw->status !== WithdrawalStatus::PENDING) {
+                if ($withdraw->status !== WithdrawalStatus::PENDING->value) {
                     throw new \Exception('Already processed.');
                 }
 
