@@ -8,7 +8,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\Backend\MatchController;
-
+use App\Http\Controllers\Backend\SupportController;
 
 Route::group(['middleware' => 'api'], function () {
     Route::post('register', [AuthController::class, 'register']);
@@ -16,7 +16,7 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('admin_login', [AuthController::class, 'admin_login']);
     Route::post('resend_verification', [AuthController::class, 'resend_verification']);
     Route::get('verify_email/{id}/{hash}', [AuthController::class, 'verify_email'])
-        ->middleware('signed')->name('verification.verify');
+    ->middleware('signed')->name('verification.verify');
 
     Route::get('{provider}/redirect', [SocialController::class, 'redirect']);
     Route::get('{provider}/callback', [SocialController::class, 'callback']);
@@ -28,11 +28,13 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
     Route::post('refresh', [AuthController::class, 'refresh'])->middleware('auth:api');
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
-});
 
-Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
-    //Category
-    Route::get('categories', [CategoryController::class, 'index']);
+    Route::post('/support', [SupportController::class, 'store']);
+    });
+
+    Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
+        //Category
+        Route::get('categories', [CategoryController::class, 'index']);
     Route::post('categories', [CategoryController::class, 'store']);
     Route::get('categories/{id}', [CategoryController::class, 'edit']);
     Route::put('categories/{id}', [CategoryController::class, 'update']);
@@ -54,6 +56,7 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::delete('matches/{id}', [MatchController::class, 'destroy']);
 
     Route::get('match-players/{id}', [MatchController::class, 'players']);
+
 
 
 });

@@ -78,6 +78,8 @@ class MatchController extends Controller
             'type'              => 'required|string|max:50',
             'winner_percentage' => 'nullable|in:0,1',
             'loser_percentage'  => 'nullable|in:0,1',
+            'tiktok_link'       => 'nullable|url',
+            'twitch_link'       => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
@@ -149,6 +151,8 @@ class MatchController extends Controller
             'type'              => 'required|string|max:50',
             'winner_percentage' => 'nullable|in:0,1',
             'loser_percentage'  => 'nullable|in:0,1',
+            'tiktok_link'       => 'nullable|url',
+            'twitch_link'       => 'nullable|url',
         ]);
 
         if ($validator->fails()) {

@@ -21,6 +21,8 @@ class GameMatch extends Model
         'type',
         'winner_percentage',
         'loser_percentage',
+        'tiktok_link',
+        'twitch_link',
     ];
 
 
