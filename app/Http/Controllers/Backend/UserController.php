@@ -13,6 +13,7 @@ use App\Notifications\UserSuspendedNotification;
 use App\Notifications\UserUnsuspendedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class UserController extends Controller
@@ -35,20 +36,26 @@ class UserController extends Controller
     {
         $validated = $request->validated();
 
-        $imagePath = FileHelper::uploadImage($request->file('image'));
+        $imagePath = null;
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')
+                ->store('users/images', 'public');
+        }
 
         $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => bcrypt($validated['password']),
-            'image'    => $imagePath,
+            'name'        => $validated['name'],
+            'email'       => $validated['email'],
+            'password'    => bcrypt($validated['password']),
+            'image'       => $imagePath,
             'referral_no' => Str::random(10),
         ]);
 
         $user->assignRole($validated['role']);
 
-        $user->load('roles');
         $user->userBalance()->create();
+
+        $user->load('roles');
 
         return $this->sendResponse(UserResource::make($user), 'User created successfully.');
     }
@@ -64,13 +71,22 @@ class UserController extends Controller
     /**
      * Update the specified resource in storage.
      */
+
     public function update(UpdateUserRequest $request, User $user)
     {
         $validated = $request->validated();
 
-        $user->name  = $validated['name'];
+        $user->name = $validated['name'];
 
-        $user->image = FileHelper::uploadImage($request->file('image'), $user->image);
+        if ($request->hasFile('image')) {
+
+            if ($user->image) {
+                Storage::disk('public')->delete($user->image);
+            }
+
+            $user->image = $request->file('image')
+                ->store('users/images', 'public');
+        }
 
         if (!empty($validated['password'])) {
             $user->password = bcrypt($validated['password']);
@@ -84,6 +100,7 @@ class UserController extends Controller
 
         return $this->sendResponse(UserResource::make($user), 'User updated successfully.');
     }
+
 
 
     /**

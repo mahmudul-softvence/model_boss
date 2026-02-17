@@ -16,40 +16,53 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:8',
-            'c_password' => 'required|same:password',
+            'name'        => 'required|string|max:255',
+            'email'       => 'required|email|unique:users,email',
+            'password'    => 'required|min:8',
+            'c_password'  => 'required|same:password',
             'referral_id' => 'nullable|string'
         ]);
 
-
         if ($validator->fails()) {
-            return $this->sendError('Validation Error.', $validator->errors());
+            return $this->sendError('Validation Error.', $validator->errors(), 422);
         }
+
+        $data = $request->only(['name', 'email', 'password']);
+        $data['password'] = bcrypt($data['password']);
+
+        $referralUser = null;
 
         if ($request->filled('referral_id')) {
-            $referral_user_id = User::where('referral_no', $request->referral_id)
-                ->value('id');
+
+            $referralUser = User::where('referral_no', $request->referral_id)->first();
+
+            if (!$referralUser) {
+                return $this->sendError('Invalid referral code.', [], 422);
+            }
+
+            $data['referral_user_id'] = $referralUser->id;
         }
 
-        $input = $request->all();
-        $input['referral_user_id'] = $referral_user_id;
-        $input['password'] = bcrypt($input['password']);
+        $user = User::create($data);
 
-        $user = User::create($input);
         $user->assignRole(UserRole::USER);
         $user->userBalance()->create();
 
-        Referral::create([
-            'user_id' => $referral_user_id,
-            'referral_user_id' => $user->id
-        ]);
+        if ($referralUser) {
+            Referral::create([
+                'user_id'          => $referralUser->id,
+                'referral_user_id' => $user->id
+            ]);
+        }
 
         $user->sendEmailVerificationNotification();
 
-        return $this->sendResponse(UserResource::make($user), 'A varification email has been sent to you email.');
+        return $this->sendResponse(
+            UserResource::make($user),
+            'A verification email has been sent to your email.'
+        );
     }
+
 
     public function login()
     {
@@ -174,7 +187,11 @@ class AuthController extends Controller
             $user->markEmailAsVerified();
         }
 
-        return $this->sendResponse([], 'Email verified successfully!');
+        return redirect()->to(
+            rtrim(config('app.frontend_url'), '/') . '/' .
+                ltrim(config('app.frontend_login'), '/') .
+                '?email_verified=true'
+        );
     }
 
     public function resend_verification(Request $request)
