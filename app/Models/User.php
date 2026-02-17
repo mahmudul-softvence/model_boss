@@ -84,6 +84,11 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         return $this->hasMany(GameMatch::class, 'winner_id');
     }
 
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+
 
     public function sendEmailVerificationNotification()
     {

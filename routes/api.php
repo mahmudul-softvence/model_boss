@@ -13,12 +13,12 @@ use App\Http\Controllers\Backend\SupportController;
 Route::group(['middleware' => 'api'], function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
-    Route::post('refresh', [AuthController::class, 'refresh'])->middleware('jwt.refresh');
+    Route::post('refresh', [AuthController::class, 'refresh']);
 
     Route::post('admin_login', [AuthController::class, 'admin_login']);
     Route::post('resend_verification', [AuthController::class, 'resend_verification']);
     Route::get('verify_email/{id}/{hash}', [AuthController::class, 'verify_email'])
-    ->middleware('signed')->name('verification.verify');
+        ->middleware('signed')->name('verification.verify');
 
     Route::get('{provider}/redirect', [SocialController::class, 'redirect']);
     Route::get('{provider}/callback', [SocialController::class, 'callback']);
@@ -26,7 +26,6 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('forgot_password', [ForgotPasswordController::class, 'forgot_password']);
     Route::post('verify_forgot_password', [ForgotPasswordController::class, 'verify_forgot_password']);
     Route::post('reset_password', [ForgotPasswordController::class, 'reset_password']);
-
 });
 
 Route::middleware(['auth:api'])->group(function () {
@@ -36,7 +35,6 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/support', [SupportController::class, 'store']);
 });
 
-// Admin routes
 Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
     //Category
     Route::get('categories', [CategoryController::class, 'index']);
@@ -63,7 +61,6 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
 
     Route::get('match-players/{id}', [MatchController::class, 'players']);
     Route::get('all-players', [MatchController::class, 'allPlayers']);
-
 });
 
 require __DIR__ . '/backend.php';
