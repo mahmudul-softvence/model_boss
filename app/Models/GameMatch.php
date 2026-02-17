@@ -23,6 +23,7 @@ class GameMatch extends Model
         'loser_percentage',
         'tiktok_link',
         'twitch_link',
+        'confirmation_status', // 0=pending, 1=confirmed, 2=declined
     ];
 
 

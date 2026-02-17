@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Models\GameMatch;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Spatie\Permission\Traits\HasRoles;
 
 class MatchController extends Controller
 {
@@ -69,7 +71,7 @@ class MatchController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'match_no'          => 'required|string|max:50|unique:game_matches,match_no',
+            // 'match_no'          => 'required|string|max:50|unique:game_matches,match_no',
             'game_id'           => 'required|exists:games,id',
             'player_one_id'     => 'required|exists:users,id',
             'player_one_bet'    => 'required|numeric|min:0',
@@ -92,6 +94,11 @@ class MatchController extends Controller
 
         $data = $request->all();
 
+        do {
+            $matchNo = random_int(100000, 999999);
+        } while (GameMatch::where('match_no', $matchNo)->exists());
+
+        $data['match_no'] = $matchNo;
         $data['player_one_total'] = $data['player_one_bet'];
         $data['player_two_total'] = $data['player_two_bet'];
 
@@ -242,5 +249,26 @@ class MatchController extends Controller
             ],
         ]);
     }
+
+    public function allPlayers(Request $request)
+    {
+        $query = User::role('artist')
+            ->select('id', 'name');
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+
+            $query->where('name', 'LIKE', "%{$search}%");
+        }
+
+        $players = $query->get();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'All players retrieved successfully',
+            'data'    => $players,
+        ]);
+    }
+
 
 }
