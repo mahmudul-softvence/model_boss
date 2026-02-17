@@ -33,9 +33,9 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('/support', [SupportController::class, 'store']);
     });
 
-    Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
+Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
         //Category
-        Route::get('categories', [CategoryController::class, 'index']);
+    Route::get('categories', [CategoryController::class, 'index']);
     Route::post('categories', [CategoryController::class, 'store']);
     Route::get('categories/{id}', [CategoryController::class, 'edit']);
     Route::put('categories/{id}', [CategoryController::class, 'update']);
