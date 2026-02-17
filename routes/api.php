@@ -27,15 +27,19 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('verify_forgot_password', [ForgotPasswordController::class, 'verify_forgot_password']);
     Route::post('reset_password', [ForgotPasswordController::class, 'reset_password']);
 
-    Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:api');
-    Route::get('me', [AuthController::class, 'me'])->middleware('auth:api');
+});
+
+Route::middleware(['auth:api'])->group(function () {
+    Route::post('logout', [AuthController::class, 'logout']);
+    Route::get('me', [AuthController::class, 'me']);
 
     Route::post('/support', [SupportController::class, 'store']);
-    });
+});
 
-    Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
-        //Category
-        Route::get('categories', [CategoryController::class, 'index']);
+// Admin routes
+Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
+    //Category
+    Route::get('categories', [CategoryController::class, 'index']);
     Route::post('categories', [CategoryController::class, 'store']);
     Route::get('categories/{id}', [CategoryController::class, 'edit']);
     Route::put('categories/{id}', [CategoryController::class, 'update']);
@@ -48,15 +52,18 @@ Route::group(['middleware' => 'api'], function () {
     Route::put('games/{id}', [GameController::class, 'update']);
     Route::delete('games/{id}', [GameController::class, 'destroy']);
 
-
     //Match
     Route::get('matches', [MatchController::class, 'index']);
     Route::post('matches', [MatchController::class, 'store']);
     Route::get('matches/{id}', [MatchController::class, 'edit']);
     Route::put('matches/{id}', [MatchController::class, 'update']);
     Route::delete('matches/{id}', [MatchController::class, 'destroy']);
+    //match confirmation
+    Route::post('match-confirm/{id}', [SupportController::class, 'confirm']);
 
     Route::get('match-players/{id}', [MatchController::class, 'players']);
+    Route::get('all-players', [MatchController::class, 'allPlayers']);
+
 });
 
 require __DIR__ . '/backend.php';
