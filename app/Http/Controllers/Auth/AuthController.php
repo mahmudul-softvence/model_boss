@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -166,9 +167,16 @@ class AuthController extends Controller
 
     public function refresh()
     {
-        $success = $this->respondWithToken(auth()->refresh());
 
-        return $this->sendResponse($success, 'Refresh token return successfully.');
+        try {
+            $token = JWTAuth::parseToken()->refresh();
+            auth()->setToken($token)->authenticate();
+
+            $success = $this->respondWithToken($token);
+            return $this->sendResponse($success, 'Refresh token return successfully.');
+        } catch (\Exception $e) {
+            return $this->sendError('Token cannot be refreshed' . $e, [], 401);
+        }
     }
 
     public function verify_email($id, $hash, Request $request)

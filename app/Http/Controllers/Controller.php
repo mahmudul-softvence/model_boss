@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
 abstract class Controller
 {
+    use AuthorizesRequests;
+
     protected function sendResponse($data = [], $message = 'Success', $code = 200): JsonResponse
     {
         if ($data instanceof ResourceCollection) {
