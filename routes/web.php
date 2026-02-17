@@ -8,8 +8,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route ::get ('clear', function() {
-    Artisan ::call ('optimize:clear');
+Route::get('clear', function () {
+    Artisan::call('optimize:clear');
     return "Cache is cleared";
 });
 
