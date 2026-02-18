@@ -42,7 +42,8 @@ class GameController extends Controller
         $imagePath = null;
 
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('games', 'public');
+            $storedPath = $request->file('image')->store('games', 'public');
+            $imagePath = 'storage/' . $storedPath;
         }
 
         $game = Game::create([
@@ -110,7 +111,8 @@ class GameController extends Controller
                 Storage::disk('public')->delete($game->image);
             }
 
-            $game->image = $request->file('image')->store('games', 'public');
+            $storedPath = $request->file('image')->store('games', 'public');
+            $game->image = 'storage/' . $storedPath;
         }
 
         $game->name        = $request->name;
@@ -147,4 +149,34 @@ class GameController extends Controller
             'message' => 'Game deleted successfully',
         ]);
     }
+
+    public function allGames()
+    {
+        $games = Game::select('id', 'name')->get();
+
+        if ($games->isEmpty()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'No games found',
+            ], 404);
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'All games retrieved successfully',
+            'data'    => $games,
+        ]);
+    }
+
+    // For landing page
+    public function landing()
+    {
+        $games = Game::select('id', 'name', 'image')->latest()->get();
+        return response()->json([
+            'status'  => true,
+            'message' => 'Games retrieved successfully',
+            'data'    => $games,
+        ]);
+    }
+
 }

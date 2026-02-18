@@ -27,6 +27,10 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('verify_forgot_password', [ForgotPasswordController::class, 'verify_forgot_password']);
     Route::post('reset_password', [ForgotPasswordController::class, 'reset_password']);
 
+    Route::get('categories', [CategoryController::class, 'landing']);
+    Route::get('games', [GameController::class, 'landing']);
+    Route::get('matches', [MatchController::class, 'landing']);
+
 });
 
 Route::middleware(['auth:api'])->group(function () {
@@ -51,6 +55,7 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::get('games/{id}', [GameController::class, 'edit']);
     Route::put('games/{id}', [GameController::class, 'update']);
     Route::delete('games/{id}', [GameController::class, 'destroy']);
+    Route::get('all-games', [GameController::class, 'allGames']);
 
     //Match
     Route::get('matches', [MatchController::class, 'index']);
