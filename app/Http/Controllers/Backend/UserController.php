@@ -9,6 +9,7 @@ use App\Http\Requests\SuspendUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Models\UserSuspension;
 use App\Notifications\UserSuspendedNotification;
 use App\Notifications\UserUnsuspendedNotification;
 use Illuminate\Http\Request;
@@ -110,17 +111,31 @@ class UserController extends Controller
     {
         $validated = $request->validated();
 
-        if ($validated['duration'] === 'permanent') {
-            $user->is_permanent_suspended = true;
-            $user->suspended_until = null;
+        $duration = $validated['duration'];
+
+        $data = [
+            'reason' => $validated['reason_category'],
+            'note'   => $validated['note'] ?? null,
+        ];
+
+        if ($duration === 'permanent') {
+            $data['is_permanent'] = true;
+            $data['suspended_until'] = null;
         } else {
-            $user->suspended_until = Carbon::now()->addDays((int) $validated['duration']);
-            $user->is_permanent_suspended = false;
+            $days = (int) $duration;
+
+            if ($days <= 0) {
+                return $this->sendError('Invalid suspension duration.');
+            }
+
+            $data['is_permanent'] = false;
+            $data['suspended_until'] = Carbon::now()->addDays($days);
         }
 
-        $user->suspension_reason = $validated['reason_category'];
-        $user->suspension_note   = $validated['note'] ?? null;
-        $user->save();
+        UserSuspension::updateOrCreate(
+            ['user_id' => $user->id],
+            $data
+        );
 
         if (!empty($validated['notify_email'])) {
             $user->notify(new UserSuspendedNotification($user));
@@ -138,12 +153,7 @@ class UserController extends Controller
             'notify_email' => 'nullable|boolean',
         ]);
 
-        $user->is_permanent_suspended = false;
-        $user->suspended_until = null;
-        $user->suspension_reason = null;
-        $user->suspension_note = null;
-
-        $user->save();
+        $user->suspension()?->delete();
 
         if (!empty($validated['notify_email'])) {
             $user->notify(new UserUnsuspendedNotification());

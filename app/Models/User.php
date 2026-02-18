@@ -89,6 +89,11 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         return $this->hasMany(Post::class);
     }
 
+    public function suspension()
+    {
+        return $this->hasOne(UserSuspension::class);
+    }
+
 
     public function sendEmailVerificationNotification()
     {
@@ -108,15 +113,11 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     public function isSuspended(): bool
     {
-        if ($this->is_permanent_suspended) {
-            return true;
-        }
-
-        if ($this->suspended_until && Carbon::parse($this->suspended_until)->isFuture()) {
-            return true;
-        }
-
-        return false;
+        return $this->suspension &&
+            (
+                $this->suspension->is_permanent ||
+                ($this->suspension->suspended_until?->isFuture())
+            );
     }
 
     protected static function boot()

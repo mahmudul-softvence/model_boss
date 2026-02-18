@@ -65,24 +65,34 @@ class SocialController extends Controller
             $user->assignRole(UserRole::USER);
         }
 
+        $user->load('suspension');
+
         if ($user->isSuspended()) {
-            auth()->logout();
+
+            $suspension = $user->suspension;
 
             $data = [
+                'success'   => false,
                 'suspended' => true,
-                'permanent' => $user->is_permanent_suspended,
-                'until'     => $user->suspended_until,
-                'reason'    => $user->suspension_reason,
-                'note'      => $user->suspension_note
+                'permanent' => $suspension?->is_permanent ?? false,
+                'until'     => $suspension?->suspended_until,
+                'reason'    => $suspension?->reason,
+                'note'      => $suspension?->note,
             ];
 
-            return $this->sendError('Your account is suspended.', $data, 403);
+            $encodedData = base64_encode(json_encode($data));
+
+            return redirect()->away(
+                config('app.frontend_url') . '/' . $provider . '/callback?data=' . $encodedData
+            );
         }
+
+
         $token = auth()->login($user);
 
         $data = $this->respondWithToken($token);
 
-        $encodedData = urlencode(base64_encode(json_encode($data)));
+        $encodedData = base64_encode(json_encode($data));
 
         return redirect()->away(config('app.frontend_url') . '/' . $provider . '/callback?data=' . $encodedData);
     }

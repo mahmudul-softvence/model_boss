@@ -78,12 +78,14 @@ class AuthController extends Controller
         if ($user->isSuspended()) {
             auth()->logout();
 
+            $suspension = $user->suspension;
+
             $data = [
-                'suspended' => true,
-                'permanent' => $user->is_permanent_suspended,
-                'until'     => $user->suspended_until,
-                'reason'    => $user->suspension_reason,
-                'note'      => $user->suspension_note
+                'suspended' => $user->isSuspended(),
+                'permanent' => $suspension?->is_permanent ?? false,
+                'until'     => $suspension?->suspended_until,
+                'reason'    => $suspension?->reason,
+                'note'      => $suspension?->note,
             ];
 
             return $this->sendError('Your account is suspended.', $data, 403);

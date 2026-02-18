@@ -14,6 +14,8 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $suspension = $this->suspension;
+
         return [
             'id'    => $this->id,
             'name'  => $this->name,
@@ -23,13 +25,15 @@ class UserResource extends JsonResource
                 : null,
             'provider' => $this->provider,
             'verified_at' => !is_null($this->email_verified_at),
-            'suspended_until'        => $this->suspended_until,
-            'is_permanent_suspended' => $this->is_permanent_suspended,
-            'suspension_reason' => $this->suspension_reason,
-            'note'            => $this->suspension_note,
+
+            'suspended_until' => $suspension?->suspended_until,
+            'is_permanent_suspended' => $suspension?->is_permanent ?? false,
+            'suspension_reason' => $suspension?->reason,
+            'note' => $suspension?->note,
+
             'role'  => $this->getRoleNames()->first(),
             'referral_no' => $this->referral_no,
-            'created_at' => $this->created_at
+            'created_at' => $this->created_at,
         ];
     }
 }
