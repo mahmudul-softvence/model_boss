@@ -70,16 +70,10 @@ class AuthController extends Controller
         $credentials = request(['email', 'password']);
 
         if (! $token = auth()->attempt($credentials)) {
-            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised'], 401);
+            return $this->sendError('Invalid username or password.', ['error' => 'Invalid username or password'], 401);
         }
 
         $user = auth()->user();
-
-        if ($user->hasRole(UserRole::SUPER_ADMIN)) {
-            auth()->logout();
-
-            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised'], 401);
-        }
 
         if ($user->isSuspended()) {
             auth()->logout();
@@ -108,33 +102,6 @@ class AuthController extends Controller
         return $this->sendResponse($data, 'User login successfully.');
     }
 
-    public function admin_login()
-    {
-        $credentials = request(['email', 'password']);
-
-        if (! $token = auth()->attempt($credentials)) {
-            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised'], 401);
-        }
-
-        $user = auth()->user();
-
-        if (! $user->hasRole(UserRole::SUPER_ADMIN)) {
-            auth()->logout();
-
-            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised'], 401);
-        }
-
-        if (! $user->hasVerifiedEmail()) {
-            $user->sendEmailVerificationNotification();
-            auth()->logout();
-
-            return $this->sendError('Please verify your email.', ['verified' => false], 403);
-        }
-
-        $data = $this->respondWithToken($token);
-
-        return $this->sendResponse($data, 'User login successfully.');
-    }
 
     public function me()
     {

@@ -21,11 +21,21 @@ class SocialController extends Controller
 
     public function redirect(string $provider)
     {
-        $data = [
-            'url' => Socialite::driver($provider)->stateless()->redirect()->getTargetUrl(),
-        ];
+        if (!in_array($provider, ['google'])) {
+            return $this->sendError('Unsupported provider', [], 400);
+        }
 
-        return $this->sendResponse($data);
+        $socialite = Socialite::driver($provider)->stateless();
+
+        if ($provider === 'google') {
+            $socialite->with([
+                'prompt' => 'select_account'
+            ]);
+        }
+
+        return $this->sendResponse([
+            'url' => $socialite->redirect()->getTargetUrl(),
+        ]);
     }
 
 
@@ -68,13 +78,13 @@ class SocialController extends Controller
 
             return $this->sendError('Your account is suspended.', $data, 403);
         }
-
-
         $token = auth()->login($user);
 
         $data = $this->respondWithToken($token);
 
-        return $this->sendResponse($data, 'User login successfully.');
+        $encodedData = urlencode(base64_encode(json_encode($data)));
+
+        return redirect()->away(config('app.frontend_url') . '/' . $provider . '/callback?data=' . $encodedData);
     }
 
 

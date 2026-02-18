@@ -15,7 +15,6 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('refresh', [AuthController::class, 'refresh']);
 
-    Route::post('admin_login', [AuthController::class, 'admin_login']);
     Route::post('resend_verification', [AuthController::class, 'resend_verification']);
     Route::get('verify_email/{id}/{hash}', [AuthController::class, 'verify_email'])
         ->middleware('signed')->name('verification.verify');
