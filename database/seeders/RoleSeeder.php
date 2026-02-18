@@ -37,6 +37,7 @@ class RoleSeeder extends Seeder
         if (! $admin->hasRole(UserRole::SUPER_ADMIN)) {
             $admin->assignRole(UserRole::SUPER_ADMIN);
         }
+
         UserBalance::firstOrCreate([
             'user_id' => $admin->id,
         ], [

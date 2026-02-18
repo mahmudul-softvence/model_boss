@@ -21,7 +21,7 @@ class SocialController extends Controller
 
     public function redirect(string $provider)
     {
-        if (!in_array($provider, ['google'])) {
+        if (!in_array($provider, ['google', 'facebook'])) {
             return $this->sendError('Unsupported provider', [], 400);
         }
 
@@ -50,15 +50,36 @@ class SocialController extends Controller
     {
         $socialUser = Socialite::driver($provider)->stateless()->user();
 
-        $user = User::where('email', $socialUser->getEmail())->first();
+        $providerId = $socialUser->getId();
+        $email      = $socialUser->getEmail();
+
+        $user = User::where('provider', $provider)
+            ->where('provider_id', $providerId)
+            ->first();
+
+        if (! $user && $email) {
+            $user = User::where('email', $email)->first();
+
+            if ($user) {
+                $user->update([
+                    'provider'    => $provider,
+                    'provider_id' => $providerId,
+                    'image'       => $socialUser->getAvatar(),
+                ]);
+            }
+        }
 
         if (! $user) {
+            if (! $email) {
+                $email = $providerId . '@' . $provider . '.local';
+            }
+
             $user = User::create([
-                'name'              => $socialUser->getName() ?? $socialUser->getNickname(),
-                'email'             => $socialUser->getEmail(),
-                'image'             => $socialUser->getAvatar(),
-                'provider'          => $provider,
-                'provider_id'       => $socialUser->getId()
+                'name'        => $socialUser->getName() ?? $socialUser->getNickname(),
+                'email'       => $email,
+                'image'       => $socialUser->getAvatar(),
+                'provider'    => $provider,
+                'provider_id' => $providerId,
             ]);
 
             $user->markEmailAsVerified();
@@ -87,14 +108,15 @@ class SocialController extends Controller
             );
         }
 
-
         $token = auth()->login($user);
 
         $data = $this->respondWithToken($token);
 
         $encodedData = base64_encode(json_encode($data));
 
-        return redirect()->away(config('app.frontend_url') . '/' . $provider . '/callback?data=' . $encodedData);
+        return redirect()->away(
+            config('app.frontend_url') . '/' . $provider . '/callback?data=' . $encodedData
+        );
     }
 
 
