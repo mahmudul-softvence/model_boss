@@ -33,6 +33,8 @@ class UserResource extends JsonResource
 
             'role'  => $this->getRoleNames()->first(),
             'referral_no' => $this->referral_no,
+            'followers_count' => $this->followers_count,
+            'following_count' => $this->following_count,
             'created_at' => $this->created_at,
         ];
     }

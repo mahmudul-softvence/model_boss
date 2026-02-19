@@ -124,6 +124,8 @@ return [
     ],
 
     'frontend_url' => env('FRONTEND_URL'),
-    'frontend_login' => env('FRONTEND_LOGIN')
+    'frontend_login' => env('FRONTEND_LOGIN'),
+    'frontend_account_connect' => env('FRONTEND_ACCOUNT_CONNECT'),
+    'frontend_account_connect_failed' => env('FRONTEND_ACCOUNT_CONNECT_FAILED'),
 
 ];

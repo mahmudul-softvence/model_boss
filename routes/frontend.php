@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Frontend\FollowController;
 use App\Http\Controllers\Frontend\PostController;
 use App\Http\Controllers\Stripe\CheckoutController;
 use App\Http\Controllers\Stripe\StripeConnectController;
@@ -11,6 +12,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:api'])->group(function () {
     // Post
     Route::apiResource('posts', PostController::class);
+
+    //Follow/Unfollow
+    Route::post('follow/{id}', [FollowController::class, 'follow']);
+    Route::delete('unfollow/{id}', [FollowController::class, 'unfollow']);
 
     // Payment Releted
     Route::post('checkout', [CheckoutController::class, 'checkout']);

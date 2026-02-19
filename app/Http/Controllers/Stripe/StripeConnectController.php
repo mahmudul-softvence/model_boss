@@ -29,14 +29,16 @@ class StripeConnectController extends Controller
 
         $link = AccountLink::create([
             'account' => $user->stripe_account_id,
-            'refresh_url' => config('app.frontend_url') . '/stripe/refresh',
-            'return_url'  => config('app.frontend_url') . '/stripe/return',
+            'refresh_url' => config('app.frontend_url') . '/' . config('app.frontend_account_connect'),
+            'return_url'  => config('app.frontend_url') . '/' . config('app.frontend_account_connect_failed'),
             'type' => 'account_onboarding',
         ]);
 
-        return response()->json([
+        $data = [
             'url' => $link->url
-        ]);
+        ];
+
+        return $this->sendResponse($data);
     }
 
 
