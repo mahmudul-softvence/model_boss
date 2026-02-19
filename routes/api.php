@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\Backend\MatchController;
 use App\Http\Controllers\Backend\SupportController;
+use App\Http\Controllers\Backend\WinnerController;
 
 Route::group(['middleware' => 'api'], function () {
     Route::post('register', [AuthController::class, 'register']);
@@ -67,7 +68,9 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::post('match-confirm/{id}', [SupportController::class, 'confirm']);
 
     Route::get('match-players/{id}', [MatchController::class, 'players']);
+
     Route::get('all-players', [MatchController::class, 'allPlayers']);
+    Route::post('match-winner/{id}', [WinnerController::class, 'winner']);
 
 });
 
