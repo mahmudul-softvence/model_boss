@@ -29,8 +29,8 @@ class StripeConnectController extends Controller
 
         $link = AccountLink::create([
             'account' => $user->stripe_account_id,
-            'refresh_url' => config('app.frontend_url') . '/' . config('app.frontend_account_connect'),
-            'return_url'  => config('app.frontend_url') . '/' . config('app.frontend_account_connect_failed'),
+            'refresh_url' => config('app.frontend_url') . '/' . config('app.frontend_account_connect_failed'),
+            'return_url'  => config('app.frontend_url') . '/' . config('app.frontend_account_connect'),
             'type' => 'account_onboarding',
         ]);
 
