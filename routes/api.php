@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\Backend\MatchController;
 use App\Http\Controllers\Backend\SupportController;
+use App\Http\Controllers\Backend\WinnerController;
 
 Route::group(['middleware' => 'api'], function () {
     Route::post('register', [AuthController::class, 'register']);
@@ -25,6 +26,11 @@ Route::group(['middleware' => 'api'], function () {
     Route::post('forgot_password', [ForgotPasswordController::class, 'forgot_password']);
     Route::post('verify_forgot_password', [ForgotPasswordController::class, 'verify_forgot_password']);
     Route::post('reset_password', [ForgotPasswordController::class, 'reset_password']);
+
+    Route::get('categories', [CategoryController::class, 'landing']);
+    Route::get('games', [GameController::class, 'landing']);
+    Route::get('matches', [MatchController::class, 'landing']);
+
 });
 
 Route::middleware(['auth:api'])->group(function () {
@@ -48,6 +54,7 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::get('games/{id}', [GameController::class, 'edit']);
     Route::put('games/{id}', [GameController::class, 'update']);
     Route::delete('games/{id}', [GameController::class, 'destroy']);
+    Route::get('all-games', [GameController::class, 'allGames']);
 
     //Match
     Route::get('matches', [MatchController::class, 'index']);
@@ -59,7 +66,10 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::post('match-confirm/{id}', [SupportController::class, 'confirm']);
 
     Route::get('match-players/{id}', [MatchController::class, 'players']);
+
     Route::get('all-players', [MatchController::class, 'allPlayers']);
+    Route::post('match-winner/{id}', [WinnerController::class, 'winner']);
+
 });
 
 require __DIR__ . '/backend.php';

@@ -71,17 +71,18 @@ class MatchController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            // 'match_no'          => 'required|string|max:50|unique:game_matches,match_no',
-            'game_id'           => 'required|exists:games,id',
-            'player_one_id'     => 'required|exists:users,id',
-            'player_one_bet'    => 'required|numeric|min:0',
-            'player_two_id'     => 'required|exists:users,id|different:player_one_id',
-            'player_two_bet'    => 'required|numeric|min:0',
-            'type'              => 'required|string|max:50',
-            'winner_percentage' => 'nullable|in:0,1',
-            'loser_percentage'  => 'nullable|in:0,1',
-            'tiktok_link'       => 'nullable|url',
-            'twitch_link'       => 'nullable|url',
+            // 'match_no'        => 'required|string|max:50|unique:game_matches,match_no',
+            'game_id'            => 'required|exists:games,id',
+            'player_one_id'      => 'required|exists:users,id',
+            'player_two_id'      => 'required|exists:users,id|different:player_one_id',
+            'players_bet_amount' => 'required|numeric|min:0',
+            'type'               => 'required|string|max:50',
+            'match_date'         => 'required|date|after_or_equal:today',
+            'match_time'         => 'required|date_format:H:i',
+            'winner_percentage'  => 'nullable|in:0,1',
+            'loser_percentage'   => 'nullable|in:0,1',
+            'tiktok_link'        => 'nullable|url',
+            'twitch_link'        => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
@@ -99,8 +100,10 @@ class MatchController extends Controller
         } while (GameMatch::where('match_no', $matchNo)->exists());
 
         $data['match_no'] = $matchNo;
-        $data['player_one_total'] = $data['player_one_bet'];
-        $data['player_two_total'] = $data['player_two_bet'];
+        $data['player_one_bet'] = $data['players_bet_amount'];
+        $data['player_two_bet'] = $data['players_bet_amount'];
+        $data['player_one_total'] = $data['players_bet_amount'];
+        $data['player_two_total'] = $data['players_bet_amount'];
 
         $match = GameMatch::create($data);
 
@@ -149,17 +152,18 @@ class MatchController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'match_no'          => 'required|string|max:50|unique:game_matches,match_no,' . $match->id,
-            'game_id'           => 'required|exists:games,id',
-            'player_one_id'     => 'required|exists:users,id',
-            'player_one_bet'    => 'required|numeric|min:0',
-            'player_two_id'     => 'required|exists:users,id|different:player_one_id',
-            'player_two_bet'    => 'required|numeric|min:0',
-            'type'              => 'required|string|max:50',
-            'winner_percentage' => 'nullable|in:0,1',
-            'loser_percentage'  => 'nullable|in:0,1',
-            'tiktok_link'       => 'nullable|url',
-            'twitch_link'       => 'nullable|url',
+            // 'match_no'          => 'required|string|max:50|unique:game_matches,match_no,' . $match->id,
+            'game_id'              => 'required|exists:games,id',
+            'player_one_id'        => 'required|exists:users,id',
+            'player_two_id'        => 'required|exists:users,id|different:player_one_id',
+            'players_bet_amount'   => 'required|numeric|min:0',
+            'type'                 => 'required|string|max:50',
+            'match_date'           => 'required|date',
+            'match_time'           => 'required|date_format:H:i',
+            'winner_percentage'    => 'nullable|in:0,1',
+            'loser_percentage'     => 'nullable|in:0,1',
+            'tiktok_link'          => 'nullable|url',
+            'twitch_link'          => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
@@ -171,26 +175,27 @@ class MatchController extends Controller
         }
 
         $data = $request->all();
+        $data['match_no'] = $match->match_no;
 
-        if ($data['player_one_bet'] != $match->player_one_bet) {
+        if ($data['players_bet_amount'] != $match->player_one_bet) {
 
             if ($match->player_one_total == $match->player_one_bet) {
-                $data['player_one_total'] = $data['player_one_bet'];
+                $data['player_one_bet'] = $data['players_bet_amount'];
+                $data['player_one_total'] = $data['players_bet_amount'];
             } else {
+                $data['player_one_bet'] = $data['players_bet_amount'];
                 $data['player_one_total'] =
                     ($match->player_one_total - $match->player_one_bet)
-                    + $data['player_one_bet'];
+                    + $data['players_bet_amount'];
             }
-        }
-
-        if ($data['player_two_bet'] != $match->player_two_bet) {
-
             if ($match->player_two_total == $match->player_two_bet) {
-                $data['player_two_total'] = $data['player_two_bet'];
+                $data['player_two_bet'] = $data['players_bet_amount'];
+                $data['player_two_total'] = $data['players_bet_amount'];
             } else {
+                $data['player_two_bet'] = $data['players_bet_amount'];
                 $data['player_two_total'] =
                     ($match->player_two_total - $match->player_two_bet)
-                    + $data['player_two_bet'];
+                    + $data['players_bet_amount'];
             }
         }
 
@@ -267,6 +272,22 @@ class MatchController extends Controller
             'status'  => true,
             'message' => 'All players retrieved successfully',
             'data'    => $players,
+        ]);
+    }
+
+    // For landing page
+    public function landing()
+    {
+        $matches = GameMatch::with([
+            'game:id,name,image',
+            'playerOne:id,name,image',
+            'playerTwo:id,name,image',
+        ])->latest()->get();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Matches retrieved successfully',
+            'data'    => $matches,
         ]);
     }
 

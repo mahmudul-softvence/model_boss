@@ -38,7 +38,8 @@ class CategoryController extends Controller
         $imagePath = null;
 
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('categories', 'public');
+            $storedPath = $request->file('image')->store('categories', 'public');
+            $imagePath = 'storage/' . $storedPath;
         }
 
         $category = Category::create([
@@ -101,7 +102,8 @@ class CategoryController extends Controller
                 Storage::disk('public')->delete($category->image);
             }
 
-            $category->image = $request->file('image')->store('categories', 'public');
+            $storedPath = $request->file('image')->store('categories', 'public');
+            $category->image = 'storage/' . $storedPath;
         }
 
         $category->name = $request->name;
@@ -136,4 +138,16 @@ class CategoryController extends Controller
             'message' => 'Category deleted successfully',
         ]);
     }
+
+    // For landing page
+    public function landing()
+    {
+        $categories = Category::select('id', 'name', 'image')->latest()->get();
+        return response()->json([
+            'status' => true,
+            'message' => 'Categories retrieved successfully',
+            'data' => $categories,
+        ]);
+    }
+
 }
