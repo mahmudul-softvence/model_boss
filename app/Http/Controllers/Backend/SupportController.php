@@ -7,8 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Models\CoinTransaction;
 use App\Models\FinalSupport;
 use App\Models\GameMatch;
+use App\Models\Referral;
 use App\Models\Support;
 use App\Models\Tip;
+use App\Models\User;
 use App\Models\UserBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -416,6 +418,86 @@ class SupportController extends Controller
                 'message' => 'Something went wrong.'
             ], 500);
         }
+    }
+
+    public function pastSupport(Request $request)
+    {
+        $userId = auth('api')->id();
+
+        $supports = FinalSupport::with(['match.game', 'supportedPlayer'])
+            ->where('user_id', $userId)
+            ->get()
+            ->groupBy(['match_id', 'supported_player_id']);
+
+        $data = [];
+        $rankNo = 1;
+
+        foreach ($supports as $matchId => $playerGroups) {
+
+            foreach ($playerGroups as $playerId => $playerSupports) {
+
+                $rangePoints = $playerSupports->pluck('coin_amount')
+                    ->sortDesc()
+                    ->map(fn($v) => number_format($v, 2))
+                    ->values();
+
+                $firstSupport = $playerSupports->first();
+
+                $data[] = [
+                    'rank_no'          => str_pad($rankNo, 3, '0', STR_PAD_LEFT),
+                    'game_name'        => $firstSupport->match->game->name ?? null,
+                    'match_no'         => $firstSupport->match->match_no,
+                    'supported_player' => $firstSupport->supportedPlayer->name ?? null,
+                    'result'           => $firstSupport->result,
+                    'range_points'     => $rangePoints->toArray(),
+                ];
+
+                $rankNo++;
+            }
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Past supports retrieved successfully.',
+            'data'    => $data,
+        ], 200);
+    }
+
+    public function referralLinkUsed(Request $request)
+    {
+        $userId = auth('api')->id();
+
+        $referralUsers = Referral::where('user_id', $userId)
+            ->pluck('referral_user_id');
+
+        $users = User::whereIn('id', $referralUsers)->get();
+
+        $data = [];
+        $rankNo = 1;
+
+        foreach ($users as $user) {
+
+            $rangePoints = FinalSupport::where('user_id', $user->id)
+                ->orderByDesc('coin_amount')
+                ->pluck('coin_amount')
+                ->map(fn($v) => number_format($v, 2))
+                ->values()
+                ->toArray();
+
+            $data[] = [
+                'rank_no'      => str_pad($rankNo, 3, '0', STR_PAD_LEFT),
+                'user_name'    => $user->name,
+                'range_points' => $rangePoints,
+            ];
+
+            $rankNo++;
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Referral users data retrieved successfully.',
+            'data'    => $data,
+        ], 200);
     }
 
 }

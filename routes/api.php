@@ -39,6 +39,9 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::post('/support', [SupportController::class, 'store']);
     Route::post('send-tip', [SupportController::class, 'sendTip']);
+    Route::get('user-transactions', [WinnerController::class, 'userTransactions']);
+    Route::get('past-supports', [SupportController::class, 'pastSupport']);
+    Route::get('referral-link-used', [SupportController::class, 'referralLinkUsed']);
 });
 
 Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {

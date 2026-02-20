@@ -136,4 +136,18 @@ class WinnerController extends Controller
         }
     }
 
+    public function userTransactions(Request $request)
+    {
+        $userId = auth('api')->id();
+
+        $transactions = CoinTransaction::where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'data'   => $transactions
+        ], 200);
+    }
+
 }
