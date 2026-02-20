@@ -114,6 +114,7 @@ class WinnerController extends Controller
         });
 
         return response()->json([
+            'status' => true,
             'message' => 'Winner declared and payouts processed successfully'
         ], 200);
     }

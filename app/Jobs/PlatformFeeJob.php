@@ -10,6 +10,7 @@ use App\Models\UserBalance;
 use App\Models\FinalSupport;
 use App\Models\CoinTransaction;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class PlatformFeeJob implements ShouldQueue
 {
@@ -20,6 +21,7 @@ class PlatformFeeJob implements ShouldQueue
 
     public function __construct($amount, $matchId)
     {
+        Log::info("PlatformFeeJob initialized with amount: $amount for match ID: $matchId");
         $this->amount  = $amount;
         $this->matchId = $matchId;
     }
@@ -42,26 +44,34 @@ class PlatformFeeJob implements ShouldQueue
 
             $amount = $this->amount;
 
-            $winnerShare = 0;
-            $loserShare  = 0;
-            $adminShare  = 0;
-            $referralPool = $amount * 0.01;
+            $winnerShare  = 0;
+            $loserShare   = 0;
+            $adminShare   = 0;
+            $referralPool = 0;
 
             if ($match->winner_percentage == 1 && $match->loser_percentage == 1) {
-                $winnerShare = $amount * 0.02;
-                $loserShare  = $amount * 0.01;
-                $adminShare  = $amount * 0.11;
+
+                $winnerShare  = $amount * (2 / 15);
+                $loserShare   = $amount * (1 / 15);
+                $referralPool = $amount * (1 / 15);
+                $adminShare   = $amount * (11 / 15);
 
             } elseif ($match->winner_percentage == 1 && $match->loser_percentage == 0) {
-                $winnerShare = $amount * 0.02;
-                $adminShare  = $amount * 0.12;
+
+                $winnerShare  = $amount * (2 / 15);
+                $referralPool = $amount * (1 / 15);
+                $adminShare   = $amount * (12 / 15);
 
             } elseif ($match->winner_percentage == 0 && $match->loser_percentage == 1) {
-                $loserShare  = $amount * 0.01;
-                $adminShare  = $amount * 0.13;
+
+                $loserShare   = $amount * (1 / 15);
+                $referralPool = $amount * (1 / 15);
+                $adminShare   = $amount * (13 / 15);
 
             } else {
-                $adminShare  = $amount * 0.14;
+
+                $referralPool = $amount * (1 / 15);
+                $adminShare   = $amount * (14 / 15);
             }
 
             $balanceIds = collect([$winnerId, $loserId, $adminId])->unique();
@@ -176,4 +186,6 @@ class PlatformFeeJob implements ShouldQueue
             }
         });
     }
+
+
 }
