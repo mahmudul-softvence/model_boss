@@ -21,7 +21,7 @@ class PlatformFeeJob implements ShouldQueue
 
     public function __construct($amount, $matchId)
     {
-        Log::info("PlatformFeeJob initialized with amount: $amount for match ID: $matchId");
+        // Log::info("PlatformFeeJob initialized with amount: $amount for match ID: $matchId");
         $this->amount  = $amount;
         $this->matchId = $matchId;
     }
@@ -84,6 +84,7 @@ class PlatformFeeJob implements ShouldQueue
             if ($winnerShare > 0 && isset($balances[$winnerId])) {
 
                 $balances[$winnerId]->total_balance += $winnerShare;
+                $balances[$winnerId]->total_earning += $winnerShare;
                 $balances[$winnerId]->save();
 
                 CoinTransaction::create([
@@ -98,6 +99,7 @@ class PlatformFeeJob implements ShouldQueue
             if ($loserShare > 0 && isset($balances[$loserId])) {
 
                 $balances[$loserId]->total_balance += $loserShare;
+                $balances[$loserId]->total_earning += $loserShare;
                 $balances[$loserId]->save();
 
                 CoinTransaction::create([
@@ -152,6 +154,8 @@ class PlatformFeeJob implements ShouldQueue
                     }
 
                     $refBalance->total_balance += $refAmount;
+                    $refBalance->total_referral_earning += $refAmount;
+                    $refBalance->total_earning += $refAmount;
                     $refBalance->save();
 
                     $distributedReferral += $refAmount;
@@ -174,6 +178,7 @@ class PlatformFeeJob implements ShouldQueue
             if (isset($balances[$adminId])) {
 
                 $balances[$adminId]->total_balance += $adminFinal;
+                $balances[$adminId]->total_earning += $adminFinal;
                 $balances[$adminId]->save();
 
                 CoinTransaction::create([

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -9,14 +10,7 @@ return new class extends Migration
     {
         DB::statement("
             ALTER TABLE coin_transactions
-            MODIFY COLUMN type ENUM(
-                'recharge',
-                'support',
-                'win',
-                'loss',
-                'withdraw',
-                'support-return'
-            ) NOT NULL
+            MODIFY COLUMN `type` VARCHAR(50) NOT NULL
         ");
     }
 
@@ -24,7 +18,7 @@ return new class extends Migration
     {
         DB::statement("
             ALTER TABLE coin_transactions
-            MODIFY COLUMN type ENUM(
+            MODIFY COLUMN `type` ENUM(
                 'recharge',
                 'support',
                 'win',

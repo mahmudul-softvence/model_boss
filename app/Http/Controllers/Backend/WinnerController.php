@@ -18,105 +18,122 @@ class WinnerController extends Controller
 
     public function winner(Request $request, $id)
     {
-        DB::transaction(function () use ($request, $id) {
+        try {
 
-            $match = GameMatch::lockForUpdate()->find($id);
+            DB::transaction(function () use ($request, $id) {
 
-            if (!$match) {
-                abort(404, 'Match not found');
-            }
+                $match = GameMatch::lockForUpdate()->find($id);
 
-            if ($match->confirmation_status != 1) {
-                abort(400, 'Match is not confirmed');
-            }
+                if (!$match) {
+                    throw new \RuntimeException('Match not found');
+                }
 
-            if ($match->winner_id) {
-                abort(400, 'Winner has already been declared');
-            }
+                if ($match->confirmation_status != 1) {
+                    throw new \RuntimeException('Match is not confirmed');
+                }
 
-            $request->validate([
-                'winner_id' => [
-                    'required',
-                    'exists:users,id',
-                    Rule::in([$match->player_one_id, $match->player_two_id]),
-                ],
-            ]);
+                if ($match->winner_id) {
+                    throw new \RuntimeException('Winner has already been declared');
+                }
 
-            $winnerId = $request->winner_id;
+                $request->validate([
+                    'winner_id' => [
+                        'required',
+                        'exists:users,id',
+                        Rule::in([$match->player_one_id, $match->player_two_id]),
+                    ],
+                ]);
 
-            $match->update([
-                'winner_id' => $winnerId,
-            ]);
+                $winnerId = $request->winner_id;
 
-            $totalWin = $winnerId == $match->player_one_id
-                ? ($match->player_one_total - $match->player_one_bet) * 2
-                : ($match->player_two_total - $match->player_two_bet) * 2;
+                $match->update([
+                    'winner_id' => $winnerId,
+                ]);
 
-            $platformFee = $totalWin * 0.15;
+                $totalWin = $winnerId == $match->player_one_id
+                    ? ($match->player_one_total - $match->player_one_bet) * 2
+                    : ($match->player_two_total - $match->player_two_bet) * 2;
 
-            DB::afterCommit(function () use ($platformFee, $match) {
-                PlatformFeeJob::dispatch($platformFee, $match->id);
+                $platformFee = $totalWin * 0.15;
+
+                DB::afterCommit(function () use ($platformFee, $match) {
+                    PlatformFeeJob::dispatch($platformFee, $match->id);
+                });
+
+                $supports = FinalSupport::where('match_id', $match->id)->get();
+
+                if ($supports->isEmpty()) {
+                    return;
+                }
+
+                $userIds = $supports->pluck('user_id')->unique();
+
+                $balances = UserBalance::whereIn('user_id', $userIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('user_id');
+
+                foreach ($supports as $support) {
+
+                    $userBalance = $balances->get($support->user_id);
+
+                    if (!$userBalance) {
+                        continue;
+                    }
+
+                    if ($support->supported_player_id == $winnerId) {
+
+                        $gross = $support->coin_amount * 2;
+                        $net   = $gross - ($gross * 0.15);
+
+                        $userBalance->total_balance += $net;
+                        $userBalance->total_earning += $net;
+                        $userBalance->save();
+
+                        CoinTransaction::create([
+                            'user_id'       => $support->user_id,
+                            'type'          => 'win',
+                            'amount'        => $net,
+                            'balance_after' => $userBalance->total_balance,
+                            'reference'     => 'Match Win #' . $match->match_no,
+                        ]);
+
+                        $support->update(['result' => 'win']);
+
+                    } else {
+
+                        CoinTransaction::create([
+                            'user_id'       => $support->user_id,
+                            'type'          => 'loss',
+                            'amount'        => $support->coin_amount,
+                            'balance_after' => $userBalance->total_balance,
+                            'reference'     => 'Match Lose #' . $match->match_no,
+                        ]);
+
+                        $support->update(['result' => 'loss']);
+                    }
+                }
             });
 
-            $supports = FinalSupport::where('match_id', $match->id)->get();
+            return response()->json([
+                'status'  => true,
+                'message' => 'Winner declared and payouts processed successfully'
+            ], 200);
 
-            if ($supports->isEmpty()) {
-                return;
-            }
+        } catch (\RuntimeException $e) {
 
-            $userIds = $supports->pluck('user_id')->unique();
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ], 400);
 
-            $balances = UserBalance::whereIn('user_id', $userIds)
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('user_id');
+        } catch (\Throwable $e) {
 
-            foreach ($supports as $support) {
-
-                $userBalance = $balances->get($support->user_id);
-
-                if (!$userBalance) {
-                    continue;
-                }
-
-                if ($support->supported_player_id == $winnerId) {
-
-                    $gross = $support->coin_amount * 2;
-                    $net   = $gross - ($gross * 0.15);
-
-                    $userBalance->total_balance += $net;
-                    $userBalance->total_earning += $net;
-                    $userBalance->save();
-
-                    CoinTransaction::create([
-                        'user_id'       => $support->user_id,
-                        'type'          => 'win',
-                        'amount'        => $net,
-                        'balance_after' => $userBalance->total_balance,
-                        'reference'     => 'Match Win #' . $match->match_no,
-                    ]);
-
-                    $support->update(['result' => 'win']);
-
-                } else {
-
-                    CoinTransaction::create([
-                        'user_id'       => $support->user_id,
-                        'type'          => 'loss',
-                        'amount'        => $support->coin_amount,
-                        'balance_after' => $userBalance->total_balance,
-                        'reference'     => 'Match Lose #' . $match->match_no,
-                    ]);
-
-                    $support->update(['result' => 'loss']);
-                }
-            }
-        });
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Winner declared and payouts processed successfully'
-        ], 200);
+            return response()->json([
+                'status'  => false,
+                'message' => 'Something went wrong.'
+            ], 500);
+        }
     }
 
 }

@@ -8,9 +8,11 @@ use App\Models\CoinTransaction;
 use App\Models\FinalSupport;
 use App\Models\GameMatch;
 use App\Models\Support;
+use App\Models\Tip;
 use App\Models\UserBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -38,21 +40,17 @@ class SupportController extends Controller
                 $match = GameMatch::lockForUpdate()
                     ->findOrFail($request->match_id);
 
-                // Match must be open
                 if ($match->confirmation_status !== 0) {
                     abort(400, 'Match is not open for support. Time is over.');
                 }
 
-                // Check balance
                 if ($balance->total_balance < $request->coin_amount) {
                     abort(400, 'Insufficient balance');
                 }
 
-                // Deduct balance
                 $balance->decrement('total_balance', $request->coin_amount);
                 $balance->increment('total_bet', $request->coin_amount);
 
-                // Validate supported player
                 if (!in_array($request->supported_player_id, [
                     $match->player_one_id,
                     $match->player_two_id
@@ -60,7 +58,6 @@ class SupportController extends Controller
                     abort(400, 'Invalid supported player');
                 }
 
-                // Create support
                 $support = Support::create([
                     'match_id'            => $match->id,
                     'match_no'            => $match->match_no,
@@ -70,14 +67,12 @@ class SupportController extends Controller
                     'result'              => 'pending',
                 ]);
 
-                // Update match totals
                 if ($request->supported_player_id == $match->player_one_id) {
                     $match->increment('player_one_total', $request->coin_amount);
                 } else {
                     $match->increment('player_two_total', $request->coin_amount);
                 }
 
-                // Log transaction
                 CoinTransaction::create([
                     'user_id'       => $user->id,
                     'type'          => 'support',
@@ -141,118 +136,6 @@ class SupportController extends Controller
             ], 500);
         }
     }
-
-    // public function confirm(Request $request, $id)
-    // {
-    //     $request->validate([
-    //         'confirmation_status' => 'required|in:1,2',
-    //     ]);
-
-    //     try {
-
-    //         $match = DB::transaction(function () use ($request, $id) {
-
-    //             $match = GameMatch::lockForUpdate()->findOrFail($id);
-
-    //             if ($match->confirmation_status !== 0) {
-    //                 abort(400, 'Match has already been confirmed or declined.');
-    //             }
-
-    //             $match->confirmation_status = $request->confirmation_status;
-    //             $match->save();
-
-    //             $supports = Support::where('match_id', $match->id)
-    //                 ->lockForUpdate()
-    //                 ->orderBy('id')
-    //                 ->get();
-
-    //             if ($request->confirmation_status == 1) {
-    //                 $p1_total = $match->player_one_total;
-    //                 $p2_total = $match->player_two_total;
-
-    //                 if ($p1_total != $p2_total) {
-    //                     $bigger_player_id = $p1_total > $p2_total ? $match->player_one_id : $match->player_two_id;
-    //                     $bigger_total = max($p1_total, $p2_total);
-    //                     $smaller_total = min($p1_total, $p2_total);
-    //                     $excess = $bigger_total - $smaller_total;
-
-    //                     $bigger_supports = $supports->where('supported_player_id', $bigger_player_id)->reverse();
-
-    //                     foreach ($bigger_supports as $support) {
-    //                         if ($excess <= 0) break;
-
-    //                         $userBalance = UserBalance::where('user_id', $support->user_id)->lockForUpdate()->firstOrFail();
-    //                         $refund_amount = min($support->coin_amount, $excess);
-
-    //                         $userBalance->total_balance += $refund_amount;
-    //                         $userBalance->save();
-
-    //                         CoinTransaction::create([
-    //                             'user_id'       => $support->user_id,
-    //                             'type'          => 'support-return',
-    //                             'amount'        => $refund_amount,
-    //                             'balance_after' => $userBalance->total_balance,
-    //                             'reference'     => "Refund support for match #{$match->match_no}",
-    //                         ]);
-
-    //                         $excess -= $refund_amount;
-    //                     }
-
-    //                     $match->player_one_total = $smaller_total;
-    //                     $match->player_two_total = $smaller_total;
-    //                     $match->save();
-    //                 }
-
-    //             } elseif ($request->confirmation_status == 2) {
-    //                 $match->player_one_total = 0;
-    //                 $match->player_two_total = 0;
-    //                 $match->save();
-
-    //                 foreach ($supports as $support) {
-    //                     $userBalance = UserBalance::where('user_id', $support->user_id)->lockForUpdate()->firstOrFail();
-
-    //                     $userBalance->total_balance += $support->coin_amount;
-    //                     $userBalance->save();
-
-    //                     CoinTransaction::create([
-    //                         'user_id'       => $support->user_id,
-    //                         'type'          => 'support-return',
-    //                         'amount'        => $support->coin_amount,
-    //                         'balance_after' => $userBalance->total_balance,
-    //                         'reference'     => "Refund support for declined match #{$match->match_no}",
-    //                     ]);
-    //                 }
-    //             }
-
-    //             return $match;
-    //         });
-
-    //         return response()->json([
-    //             'status'  => true,
-    //             'message' => 'Match confirmation status updated and balances adjusted successfully.',
-    //             'data'    => [
-    //                 'match_id'            => $match->id,
-    //                 'confirmation_status' => $match->confirmation_status,
-    //                 'player_one_total'    => $match->player_one_total,
-    //                 'player_two_total'    => $match->player_two_total,
-    //             ],
-    //         ], 200);
-
-    //     } catch (HttpException $e) {
-
-    //         return response()->json([
-    //             'status'  => false,
-    //             'message' => $e->getMessage(),
-    //         ], $e->getStatusCode());
-
-    //     } catch (\Throwable $e) {
-
-    //         return response()->json([
-    //             'status'  => false,
-    //             'message' => 'Something went wrong',
-    //         ], 500);
-    //     }
-    // }
 
     public function confirm(Request $request, $id)
     {
@@ -407,6 +290,130 @@ class SupportController extends Controller
             return response()->json([
                 'status'  => false,
                 'message' => 'Something went wrong',
+            ], 500);
+        }
+    }
+
+    public function sendTip(Request $request)
+    {
+        $request->validate([
+            'receiver_id' => 'required|exists:users,id',
+            'tip_amount'       => 'required|numeric|min:1',
+        ]);
+
+        $senderId   = auth('api')->id();
+        $receiverId = $request->receiver_id;
+        $amount     = $request->tip_amount;
+
+        if ($senderId == $receiverId) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'You cannot tip yourself.'
+            ], 422);
+        }
+
+        try {
+
+            DB::transaction(function () use ($senderId, $receiverId, $amount) {
+
+                $senderBalance = UserBalance::where('user_id', $senderId)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ($senderBalance->total_balance < $amount) {
+                    throw new \RuntimeException('Insufficient balance.');
+                }
+
+                // deduct sender
+                $senderBalance->total_balance -= $amount;
+                $senderBalance->save();
+
+                CoinTransaction::create([
+                    'user_id'       => $senderId,
+                    'type'          => 'tip',
+                    'amount'        => -$amount,
+                    'balance_after' => $senderBalance->total_balance,
+                    'reference'     => 'Tip sent to user #' . $receiverId,
+                ]);
+
+                if ($receiverId != 1) {
+
+                    $receiverShare = $amount * 0.5;
+                    $adminShare    = $amount * 0.5;
+
+                    $receiverBalance = UserBalance::where('user_id', $receiverId)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $adminBalance = UserBalance::where('user_id', 1)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $receiverBalance->total_balance += $receiverShare;
+                    $receiverBalance->total_tip_received += $receiverShare;
+                    $receiverBalance->save();
+
+                    CoinTransaction::create([
+                        'user_id'       => $receiverId,
+                        'type'          => 'tip',
+                        'amount'        => $receiverShare,
+                        'balance_after' => $receiverBalance->total_balance,
+                        'reference'     => 'Tip received from user #' . $senderId,
+                    ]);
+
+                    $adminBalance->total_balance += $adminShare;
+                    $adminBalance->total_tip_received += $adminShare;
+                    $adminBalance->save();
+                    CoinTransaction::create([
+                        'user_id'       => 1,
+                        'type'          => 'tip',
+                        'amount'        => $adminShare,
+                        'balance_after' => $adminBalance->total_balance,
+                        'reference'     => 'Admin share from tip sent by user #' . $senderId,
+                    ]);
+
+                } else {
+
+                    $adminBalance = UserBalance::where('user_id', 1)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $adminBalance->total_balance += $amount;
+                    $adminBalance->total_tip_received += $amount;
+                    $adminBalance->save();
+                    CoinTransaction::create([
+                        'user_id'       => 1,
+                        'type'          => 'tip',
+                        'amount'        => $amount,
+                        'balance_after' => $adminBalance->total_balance,
+                        'reference'     => 'Tip received from user #' . $senderId,
+                    ]);
+                }
+
+                Tip::create([
+                    'send_user_id'     => $senderId,
+                    'received_user_id' => $receiverId,
+                    'tip_amount'       => $amount,
+                ]);
+            });
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Tip sent successfully.'
+            ]);
+
+        } catch (\RuntimeException $e) {
+
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage()
+            ], 400);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Something went wrong.'
             ], 500);
         }
     }
