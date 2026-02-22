@@ -22,14 +22,12 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     protected $fillable = [
         'name',
         'email',
+        'phone_number',
+        'nationality',
         'image',
         'provider',
         'provider_id',
         'password',
-        'suspended_until',
-        'is_permanent_suspended',
-        'suspension_reason',
-        'suspension_note',
         'reference_status',
         'referral_user_id',
         'referral_no'

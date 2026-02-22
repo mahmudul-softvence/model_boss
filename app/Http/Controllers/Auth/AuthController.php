@@ -111,11 +111,8 @@ class AuthController extends Controller
         $userBalance = UserBalance::where('user_id', $user->id)->first();
 
         $data = [
-            'name' => $user->name,
-            'email' => $user->email,
-            'image' => $user->image,
-            'email_verified' => !is_null($user->email_verified_at),
-            'role' => $user->getRoleNames()->first(),
+            'user' => UserResource::make($user),
+
             'total_earning' => $userBalance->total_earning,
             'total_referral_earning' => $userBalance->total_referral_earning,
             'total_tip_received' => $userBalance->total_tip_received,
