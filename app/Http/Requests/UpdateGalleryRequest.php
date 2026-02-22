@@ -24,7 +24,8 @@ class UpdateGalleryRequest extends FormRequest
         return [
             'short_video' => 'file|mimes:mp4,mov,avi|max:20480',
             'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
+            'is_featured' => 'boolean',
         ];
     }
 }

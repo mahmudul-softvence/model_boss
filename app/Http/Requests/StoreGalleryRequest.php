@@ -24,7 +24,8 @@ class StoreGalleryRequest extends FormRequest
         return [
             'short_video' => 'required|file|mimes:mp4,mov,avi|max:102400',
             'short_video_thumb' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
+            'is_featured' => 'sometimes|boolean',
         ];
     }
 }
