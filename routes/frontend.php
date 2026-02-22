@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Frontend\FollowController;
+use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\PostController;
 use App\Http\Controllers\Frontend\ProfileController;
 use App\Http\Controllers\Frontend\TwitchController;
@@ -31,4 +32,9 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('stripe/connect', [StripeConnectController::class, 'connect']);
     Route::get('stripe/status', [StripeConnectController::class, 'status']);
     Route::post('withdraw/request', [StripeWithdrawController::class, 'request']);
+});
+
+
+Route::middleware(['api'])->group(function () {
+    Route::get('get_featured_news', [HomeController::class, 'get_featured_news']);
 });
