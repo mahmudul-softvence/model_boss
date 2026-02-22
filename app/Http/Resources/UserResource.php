@@ -20,8 +20,12 @@ class UserResource extends JsonResource
             'id'    => $this->id,
             'name'  => $this->name,
             'email' => $this->email,
+            'phone_number' => $this->phone_number,
+            'nationality' => $this->nationality,
             'image' => $this->image
-                ? ($this->provider ? $this->image : asset($this->image))
+                ? ($this->provider
+                    ? $this->image
+                    : asset('storage/' . $this->image))
                 : null,
             'provider' => $this->provider,
             'verified_at' => !is_null($this->email_verified_at),
@@ -30,7 +34,7 @@ class UserResource extends JsonResource
             'is_permanent_suspended' => $suspension?->is_permanent ?? false,
             'suspension_reason' => $suspension?->reason,
             'note' => $suspension?->note,
-
+            'total_post' => $this->posts()->count(),
             'role'  => $this->getRoleNames()->first(),
             'referral_no' => $this->referral_no,
             'followers_count' => $this->followers_count,

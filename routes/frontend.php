@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Frontend\FollowController;
 use App\Http\Controllers\Frontend\PostController;
+use App\Http\Controllers\Frontend\ProfileController;
+use App\Http\Controllers\Frontend\TwitchController;
 use App\Http\Controllers\Stripe\CheckoutController;
 use App\Http\Controllers\Stripe\StripeConnectController;
 use App\Http\Controllers\Stripe\StripeWithdrawController;
@@ -16,6 +18,12 @@ Route::middleware(['auth:api'])->group(function () {
     //Follow/Unfollow
     Route::post('follow/{id}', [FollowController::class, 'follow']);
     Route::delete('unfollow/{id}', [FollowController::class, 'unfollow']);
+
+    //Profile
+    Route::put('profile/update', [ProfileController::class, 'update']);
+
+    // Twitch live
+    Route::get('twitch/check_live', [TwitchController::class, 'status']);
 
     // Payment Releted
     Route::post('checkout', [CheckoutController::class, 'checkout']);
