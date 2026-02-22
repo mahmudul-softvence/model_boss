@@ -27,7 +27,7 @@ class GalleryResource extends JsonResource
 
             'description' => $this->description,
 
-            'created_at' => $this->created_at
+            'created_at' => $this->created_at->toDateTimeString()
         ];
     }
 }

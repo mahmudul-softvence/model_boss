@@ -22,6 +22,11 @@ class News extends Model
     ];
 
 
+    public function getImageUrlAttribute()
+    {
+        return $this->image ? asset('storage/' . $this->image) : null;
+    }
+
     public function scopePublished($query)
     {
         return $query->where('status', 'published');
