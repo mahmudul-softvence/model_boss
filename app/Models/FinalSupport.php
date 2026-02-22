@@ -9,6 +9,7 @@ class FinalSupport extends Model
     protected $table = 'final_supports';
 
     protected $fillable = [
+        'support_id',
         'match_id',
         'match_no',
         'supported_player_id',
