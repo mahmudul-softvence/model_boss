@@ -217,6 +217,7 @@ class SupportController extends Controller
                         $match->update([
                             'player_one_total' => $smaller_total,
                             'player_two_total' => $smaller_total,
+                            'type'             => 'live',
                         ]);
                     }
 
@@ -229,6 +230,7 @@ class SupportController extends Controller
                         }
 
                         FinalSupport::create([
+                            'support_id'          => $support->id,
                             'match_id'            => $match->id,
                             'match_no'            => $match->match_no,
                             'supported_player_id' => $support->supported_player_id,
@@ -244,6 +246,7 @@ class SupportController extends Controller
                     $match->update([
                         'player_one_total' => 0,
                         'player_two_total' => 0,
+                        'type'             => 'unsettled',
                     ]);
 
                     foreach ($supports as $support) {
@@ -422,10 +425,13 @@ class SupportController extends Controller
 
     public function pastSupport(Request $request)
     {
-        $userId = auth('api')->id();
+        $userId  = auth('api')->id();
+        $perPage = $request->per_page ?? 10;
+        $page    = $request->page ?? 1;
 
         $supports = FinalSupport::with(['match.game', 'supportedPlayer'])
             ->where('user_id', $userId)
+            ->orderByDesc('created_at')
             ->get()
             ->groupBy(['match_id', 'supported_player_id']);
 
@@ -433,7 +439,6 @@ class SupportController extends Controller
         $rankNo = 1;
 
         foreach ($supports as $matchId => $playerGroups) {
-
             foreach ($playerGroups as $playerId => $playerSupports) {
 
                 $rangePoints = $playerSupports->pluck('coin_amount')
@@ -456,48 +461,177 @@ class SupportController extends Controller
             }
         }
 
+        $collection = collect($data);
+
+        $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+            $collection->forPage($page, $perPage)->values(),
+            $collection->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url()]
+        );
+
         return response()->json([
             'status'  => true,
             'message' => 'Past supports retrieved successfully.',
-            'data'    => $data,
+            'data'    => $paginated->items(),
+            'meta'    => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
+            ],
         ], 200);
     }
 
     public function referralLinkUsed(Request $request)
     {
-        $userId = auth('api')->id();
+        $userId  = auth('api')->id();
+        $perPage = $request->per_page ?? 10;
 
-        $referralUsers = Referral::where('user_id', $userId)
+        // Get referral user IDs
+        $referralUserIds = Referral::where('user_id', $userId)
             ->pluck('referral_user_id');
 
-        $users = User::whereIn('id', $referralUsers)->get();
+        // Paginate referred users
+        $users = User::whereIn('id', $referralUserIds)
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        // Get all final supports for paginated users at once (avoid N+1)
+        $finalSupports = FinalSupport::whereIn('user_id', $users->pluck('id'))
+            ->orderByDesc('coin_amount')
+            ->get()
+            ->groupBy('user_id');
 
         $data = [];
-        $rankNo = 1;
+        $rankStart = ($users->currentPage() - 1) * $users->perPage() + 1;
 
-        foreach ($users as $user) {
+        foreach ($users as $index => $user) {
 
-            $rangePoints = FinalSupport::where('user_id', $user->id)
-                ->orderByDesc('coin_amount')
-                ->pluck('coin_amount')
+            $userSupports = $finalSupports[$user->id] ?? collect();
+
+            $rangePoints = $userSupports->pluck('coin_amount')
                 ->map(fn($v) => number_format($v, 2))
                 ->values()
                 ->toArray();
 
             $data[] = [
-                'rank_no'      => str_pad($rankNo, 3, '0', STR_PAD_LEFT),
+                'rank_no'      => str_pad($rankStart + $index, 3, '0', STR_PAD_LEFT),
                 'user_name'    => $user->name,
                 'range_points' => $rangePoints,
             ];
-
-            $rankNo++;
         }
 
         return response()->json([
             'status'  => true,
             'message' => 'Referral users data retrieved successfully.',
             'data'    => $data,
+            'meta'    => [
+                'current_page' => $users->currentPage(),
+                'last_page'    => $users->lastPage(),
+                'per_page'     => $users->perPage(),
+                'total'        => $users->total(),
+            ],
         ], 200);
+    }
+
+    public function supportHistory(Request $request)
+    {
+        $userId  = auth('api')->id();
+        $filter  = $request->type ?? 'all';
+        $perPage = $request->per_page ?? 10;
+        $page    = $request->page ?? 1;
+
+        $supports = Support::with([
+            'match.playerOne:id,name,image',
+            'match.playerTwo:id,name,image',
+        ])
+        ->where('user_id', $userId)
+        ->whereHas('match', function ($q) use ($filter) {
+
+            if ($filter === 'live') {
+                $q->where('confirmation_status', 1)
+                ->where('type', 'live');
+            }
+
+            if ($filter === 'settled') {
+                $q->where('confirmation_status', 1)
+                ->where('type', 'completed');
+            }
+
+            if ($filter === 'unsettled') {
+                $q->where('confirmation_status', 2);
+            }
+
+            // all → no condition
+        })
+        ->latest()
+        ->get();
+
+        // Get all final supports for this user
+        $finalSupports = FinalSupport::where('user_id', $userId)
+            ->get()
+            ->keyBy('support_id');
+
+        // Map data
+        $data = $supports->map(function ($support) use ($finalSupports) {
+
+            $match = $support->match;
+
+            if (!$match) return null;
+
+            $coinAmount = $support->coin_amount;
+            $result     = $support->result;
+
+            if ($match->confirmation_status == 1 && isset($finalSupports[$support->id])) {
+                $coinAmount = $finalSupports[$support->id]->coin_amount;
+                $result     = $finalSupports[$support->id]->result;
+            }
+
+            return [
+                'match_id'   => $match->id,
+                'match_no'   => $match->match_no,
+                'match_date' => $match->match_date,
+                'match_time' => $match->match_time,
+                'type'       => $match->type,
+                'confirmation_status' => $match->confirmation_status,
+
+                'player_one' => [
+                    'name'  => optional($match->playerOne)->name,
+                    'image' => optional($match->playerOne)->image,
+                ],
+
+                'player_two' => [
+                    'name'  => optional($match->playerTwo)->name,
+                    'image' => optional($match->playerTwo)->image,
+                ],
+
+                'coin_amount' => $coinAmount,
+                'result'      => $result,
+            ];
+        })->filter()->values();
+
+        // Manual pagination
+        $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+            $data->forPage($page, $perPage)->values(),
+            $data->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => $request->query()]
+        );
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Support history retrieved successfully.',
+            'data'    => $paginated->items(),
+            'meta'    => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
+            ],
+        ]);
     }
 
 }

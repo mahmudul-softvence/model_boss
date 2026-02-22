@@ -48,6 +48,7 @@ class WinnerController extends Controller
 
                 $match->update([
                     'winner_id' => $winnerId,
+                    'status'    => 'completed',
                 ]);
 
                 $totalWin = $winnerId == $match->player_one_id
@@ -139,15 +140,22 @@ class WinnerController extends Controller
     public function userTransactions(Request $request)
     {
         $userId = auth('api')->id();
+        $perPage = $request->per_page ?? 15; // default 15 per page
 
         $transactions = CoinTransaction::where('user_id', $userId)
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
 
         return response()->json([
             'status' => true,
-            'data'   => $transactions
+            'data'   => $transactions->items(),
+            'meta'   => [
+                'current_page' => $transactions->currentPage(),
+                'last_page'    => $transactions->lastPage(),
+                'per_page'     => $transactions->perPage(),
+                'total'        => $transactions->total(),
+            ],
         ], 200);
     }
-
+    
 }

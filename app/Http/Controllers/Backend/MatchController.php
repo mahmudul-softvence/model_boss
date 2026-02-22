@@ -276,18 +276,45 @@ class MatchController extends Controller
     }
 
     // For landing page
-    public function landing()
+    public function landing(Request $request)
     {
+        $filter  = $request->type ?? 'all';
+        $perPage = $request->per_page ?? 10;
+
         $matches = GameMatch::with([
             'game:id,name,image',
             'playerOne:id,name,image',
             'playerTwo:id,name,image',
-        ])->latest()->get();
+        ])
+        ->when($filter === 'live', function ($query) {
+            $query->where('confirmation_status', 1)
+                ->where('type', 'live');
+        })
+        ->when($filter === 'past', function ($query) {
+            $query->where(function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('confirmation_status', 1)
+                        ->where('type', '!=', 'live');
+                })
+                ->orWhere('confirmation_status', 2);
+            });
+        })
+        ->when($filter === 'upcoming', function ($query) {
+            $query->where('confirmation_status', 0);
+        })
+        ->latest()
+        ->paginate($perPage);
 
         return response()->json([
             'status'  => true,
             'message' => 'Matches retrieved successfully',
-            'data'    => $matches,
+            'data'    => $matches->items(),
+            'meta'    => [
+                'current_page' => $matches->currentPage(),
+                'last_page'    => $matches->lastPage(),
+                'per_page'     => $matches->perPage(),
+                'total'        => $matches->total(),
+            ],
         ]);
     }
 
