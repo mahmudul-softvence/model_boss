@@ -16,17 +16,10 @@ class GalleryResource extends JsonResource
     {
         return [
             'id' => $this->id,
-
-            'short_video' => $this->short_video
-                ? asset('storage/' . $this->short_video)
-                : null,
-
-            'short_video_thumb' => $this->short_video_thumb
-                ? asset('storage/' . $this->short_video_thumb)
-                : null,
-
+            'short_video' => $this->video_url,
+            'short_video_thumb' => $this->image_url,
             'description' => $this->description,
-
+            'is_featured' => $this->is_featured,
             'created_at' => $this->created_at->toDateTimeString()
         ];
     }

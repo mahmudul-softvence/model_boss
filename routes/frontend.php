@@ -37,4 +37,5 @@ Route::middleware(['auth:api'])->group(function () {
 
 Route::middleware(['api'])->group(function () {
     Route::get('get_featured_news', [HomeController::class, 'get_featured_news']);
+    Route::get('get_featured_gallery', [HomeController::class, 'get_featured_gallery']);
 });

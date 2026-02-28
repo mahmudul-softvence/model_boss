@@ -18,7 +18,7 @@ class WithdrawController extends Controller
 {
     public function index()
     {
-        $withdraw_req = Withdrawal::all();
+        $withdraw_req = Withdrawal::latest()->paginate(10);
         return $this->sendResponse($withdraw_req);
     }
 
