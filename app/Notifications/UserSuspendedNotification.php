@@ -38,7 +38,9 @@ class UserSuspendedNotification extends Notification  implements ShouldQueue
         if ($this->user->is_permanent_suspended) {
             $message->line('Duration: Permanent');
         } else {
-            $message->line('Suspension ends: ' . $this->user->suspended_until->format('Y-m-d H:i'));
+            $message->line('Suspension ends: ' . $this->user->suspended_at
+                ? $this->user->suspended_at
+                : 'N/A');
         }
 
         $message->line('Please contact support if you think this is a mistake.');
