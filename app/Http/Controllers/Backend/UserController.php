@@ -27,7 +27,7 @@ class UserController extends Controller
         $users = User::with('roles')
             ->paginate();
 
-        return $this->sendResponse(UserResource::collection($users), 'All users');
+        return $this->sendResponse(UserResource::collection($users));
     }
 
     /**
