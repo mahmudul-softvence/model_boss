@@ -107,7 +107,7 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(SuspendUserRequest $request, User $user)
+    public function suspend(SuspendUserRequest $request, User $user)
     {
         $validated = $request->validated();
 

@@ -11,8 +11,9 @@ Route::middleware(['api'])->prefix('admin')->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index']);
 
     // User Manage
-    Route::apiResource('users', UserController::class);
+    Route::apiResource('users', UserController::class)->except(['destroy']);
     Route::post('users/unsuspend/{user}', [UserController::class, 'unsuspend']);
+    Route::post('users/suspend/{user}', [UserController::class, 'suspend']);
 
     // Withdraw Manage
     Route::get('withdraws', [WithdrawController::class, 'index']);
