@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Backend;
 use App\Enums\TransactionType;
 use App\Enums\WithdrawalStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\WithdrawalResource;
 use App\Models\CoinTransaction;
 use App\Models\User;
 use App\Models\Withdrawal;
@@ -19,7 +20,7 @@ class WithdrawController extends Controller
     public function index()
     {
         $withdraw_req = Withdrawal::latest()->paginate(10);
-        return $this->sendResponse($withdraw_req);
+        return $this->sendResponse(WithdrawalResource::collection($withdraw_req));
     }
 
 
