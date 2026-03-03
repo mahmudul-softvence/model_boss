@@ -25,22 +25,33 @@ class UserSuspendedNotification extends Notification  implements ShouldQueue
 
     public function toMail($notifiable)
     {
+        $suspension = $this->user->suspension;
+
         $message = (new MailMessage)
             ->subject('Your Account Has Been Suspended')
-            ->greeting('Hello ' . $this->user->name . ',')
-            ->line('Your account has been suspended.')
-            ->line('Reason: ' . $this->user->suspension->reason);
+            ->greeting('Hello ' . $this->user->name . ',');
 
-        if ($this->user->suspension->note) {
-            $message->line('Note: ' . $this->user->suspension->note);
+        if ($suspension->is_permanent) {
+
+            $message->line('Your account has been suspended permanently.');
+        } else {
+
+            if ($suspension->suspended_until) {
+
+                $days = now()->diffInDays($suspension->suspended_until);
+
+                $message->line("Your account has been suspended for {$days} days.")
+                    ->line('Suspension ends on: ' . $suspension->suspended_until->format('d M Y'));
+            } else {
+
+                $message->line('Your account has been temporarily suspended.');
+            }
         }
 
-        if ($this->user->suspension->is_permanent) {
-            $message->line('Duration: Permanent');
-        } else {
-            $message->line('Suspension ends: ' . $this->user->suspension->suspended_until
-                ? $this->user->suspension->suspended_until->format('d M Y')
-                : 'N/A');
+        $message->line('Reason: ' . $suspension->reason);
+
+        if ($suspension->note) {
+            $message->line('Note: ' . $suspension->note);
         }
 
         $message->line('Please contact support if you think this is a mistake.');
