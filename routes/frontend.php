@@ -21,7 +21,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::delete('unfollow/{id}', [FollowController::class, 'unfollow']);
 
     //Profile
-    Route::put('profile/update', [ProfileController::class, 'update']);
+    Route::post('profile/update', [ProfileController::class, 'update']);
 
     // Twitch live
     Route::get('twitch/check_live', [TwitchController::class, 'status']);
