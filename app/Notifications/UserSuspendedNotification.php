@@ -29,17 +29,17 @@ class UserSuspendedNotification extends Notification  implements ShouldQueue
             ->subject('Your Account Has Been Suspended')
             ->greeting('Hello ' . $this->user->name . ',')
             ->line('Your account has been suspended.')
-            ->line('Reason: ' . $this->user->suspension_reason);
+            ->line('Reason: ' . $this->user->suspension->reason);
 
-        if ($this->user->suspension_note) {
-            $message->line('Note: ' . $this->user->suspension_note);
+        if ($this->user->suspension->note) {
+            $message->line('Note: ' . $this->user->suspension->note);
         }
 
-        if ($this->user->is_permanent_suspended) {
+        if ($this->user->suspension->is_permanent) {
             $message->line('Duration: Permanent');
         } else {
-            $message->line('Suspension ends: ' . $this->user->suspended_at
-                ? $this->user->suspended_at
+            $message->line('Suspension ends: ' . $this->user->suspension->suspended_until
+                ? $this->user->suspension->suspended_until->format('d M Y')
                 : 'N/A');
         }
 
