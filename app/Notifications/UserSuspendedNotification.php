@@ -38,7 +38,7 @@ class UserSuspendedNotification extends Notification  implements ShouldQueue
 
             if ($suspension->suspended_until) {
 
-                $days = now()->diffInDays($suspension->suspended_until);
+                $days =  round(now()->floatDiffInDays($suspension->suspended_until));
 
                 $message->line("Your account has been suspended for {$days} days.")
                     ->line('Suspension ends on: ' . $suspension->suspended_until->format('d M Y'));
