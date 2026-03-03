@@ -28,7 +28,7 @@ class UserUnsuspendedNotification extends Notification
             ->greeting('Hello ' . $notifiable->name . ',')
             ->line('Good news! Your account suspension has been lifted.')
             ->line('You now have full access to your account again.')
-            ->action('Login to Your Account', config('app.frontend_login'))
+            ->action('Login to Your Account', env('FRONTEND_LOGIN'))
             ->line('If you have any questions, please contact our support team.');
     }
 
