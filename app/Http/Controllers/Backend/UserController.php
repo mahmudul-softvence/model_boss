@@ -89,10 +89,6 @@ class UserController extends Controller
                 ->store('users/images', 'public');
         }
 
-        if (!empty($validated['password'])) {
-            $user->password = bcrypt($validated['password']);
-        }
-
         $user->save();
 
         $user->syncRoles($validated['role']);
@@ -160,5 +156,50 @@ class UserController extends Controller
         }
 
         return $this->sendResponse(null, 'User unsuspended successfully.');
+    }
+
+
+    public function search()
+    {
+        $keyword = request('keyword');
+        $role = request('role', 'all');
+
+        $usersQuery = User::query();
+
+        if ($keyword) {
+            $usersQuery->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")
+                    ->orWhere('email', 'like', "%{$keyword}%");
+            });
+        } else {
+
+            $usersQuery->limit(4);
+        }
+
+        if ($role !== 'all') {
+            $usersQuery->role($role);
+        }
+
+        $users = $usersQuery->with('roles')->get();
+
+        return $this->sendResponse(UserResource::collection($users));
+    }
+
+
+    public function change_role(User $user)
+    {
+        $currentRole = $user->roles()->first();
+
+        if (!$currentRole) {
+            return $this->sendError('User has no role assigned.');
+        }
+
+        if ($currentRole->name === 'user') {
+            $user->syncRoles('artist');
+            $user->load('roles');
+            return $this->sendResponse(UserResource::make($user), 'User role changed to artist successfully.');
+        }
+
+        return $this->sendError('Role change not allowed for this user.');
     }
 }
