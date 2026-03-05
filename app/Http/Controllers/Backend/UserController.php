@@ -25,7 +25,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $limit = $request->query('limit', 10);
-        $users = User::with('roles')->paginate();
+        $users = User::with('roles')->paginate($limit);
 
         return $this->sendResponse(UserResource::collection($users));
     }
