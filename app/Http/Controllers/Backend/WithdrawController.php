@@ -11,12 +11,14 @@ use Illuminate\Support\Facades\DB;
 use Stripe\Account;
 use Stripe\Stripe;
 use Stripe\Transfer;
+use Symfony\Component\HttpFoundation\Request;
 
 class WithdrawController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $withdraw_req = Withdrawal::latest()->paginate(10);
+        $limit = $request->query('limit', 10);
+        $withdraw_req = Withdrawal::latest()->paginate($limit);
         return $this->sendResponse(WithdrawalResource::collection($withdraw_req));
     }
 
