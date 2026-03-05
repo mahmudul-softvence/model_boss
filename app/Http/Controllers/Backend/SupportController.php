@@ -83,24 +83,34 @@ class SupportController extends Controller
                     'reference'     => 'Support for match #' . $match->match_no,
                 ]);
 
+                $topUsers = Support::selectRaw('user_id, SUM(coin_amount) as total_amount')
+                    ->where('match_id', $match->id)
+                    ->groupBy('user_id')
+                    ->orderByDesc('total_amount')
+                    ->limit(10)
+                    ->pluck('user_id');
+
                 $topSupporters = Support::with('supporter:id,name')
-                    ->orderByDesc('coin_amount')
+                    ->where('match_id', $match->id)
+                    ->whereIn('user_id', $topUsers)
                     ->get()
                     ->groupBy('user_id')
-                    ->sortByDesc(function ($userSupports) {
-
-                        return $userSupports->sum('coin_amount');
-                    })
-                    ->take(10)
+                    ->sortByDesc(fn ($userSupports) => $userSupports->sum('coin_amount'))
                     ->values()
                     ->map(function ($userSupports, $index) {
+
+                        $sortedSupports = $userSupports->sortByDesc('coin_amount')->values();
+                        $first = $sortedSupports->first();
+
                         return [
-                            'user_id' => $userSupports[0]->user_id,
+                            'user_id' => $first->user_id,
                             'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
-                            'supported_amounts' => $userSupports->pluck('coin_amount')->implode(', '),
+                            'supported_amounts' => $sortedSupports
+                                ->pluck('coin_amount')
+                                ->implode(', '),
                             'supporter' => [
-                                'id' => $userSupports[0]->supporter->id,
-                                'name' => $userSupports[0]->supporter->name,
+                                'id' => $first->supporter->id,
+                                'name' => $first->supporter->name,
                             ],
                         ];
                     });
@@ -489,16 +499,13 @@ class SupportController extends Controller
         $userId  = auth('api')->id();
         $perPage = $request->per_page ?? 10;
 
-        // Get referral user IDs
         $referralUserIds = Referral::where('user_id', $userId)
             ->pluck('referral_user_id');
 
-        // Paginate referred users
         $users = User::whereIn('id', $referralUserIds)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
-        // Get all final supports for paginated users at once (avoid N+1)
         $finalSupports = FinalSupport::whereIn('user_id', $users->pluck('id'))
             ->orderByDesc('coin_amount')
             ->get()
@@ -569,12 +576,10 @@ class SupportController extends Controller
         ->latest()
         ->get();
 
-        // Get all final supports for this user
         $finalSupports = FinalSupport::where('user_id', $userId)
             ->get()
             ->keyBy('support_id');
 
-        // Map data
         $data = $supports->map(function ($support) use ($finalSupports) {
 
             $match = $support->match;
@@ -612,7 +617,6 @@ class SupportController extends Controller
             ];
         })->filter()->values();
 
-        // Manual pagination
         $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
             $data->forPage($page, $perPage)->values(),
             $data->count(),
@@ -632,6 +636,45 @@ class SupportController extends Controller
                 'total'        => $paginated->total(),
             ],
         ]);
+    }
+
+    public function bigBossSupporter()
+    {
+        $topUsers = Support::selectRaw('user_id, SUM(coin_amount) as total_amount')
+            ->groupBy('user_id')
+            ->orderByDesc('total_amount')
+            ->limit(10)
+            ->pluck('user_id');
+
+        $topSupporters = Support::with('supporter:id,name')
+            ->whereIn('user_id', $topUsers)
+            ->get()
+            ->groupBy('user_id')
+            ->sortByDesc(fn ($userSupports) => $userSupports->sum('coin_amount'))
+            ->values()
+            ->map(function ($userSupports, $index) {
+
+                $sortedSupports = $userSupports->sortByDesc('coin_amount')->values();
+                $first = $sortedSupports->first();
+
+                return [
+                    'user_id' => $first->user_id,
+                    'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                    'supported_amounts' => $sortedSupports
+                        ->pluck('coin_amount')
+                        ->implode(', '),
+                    'supporter' => [
+                        'id' => $first->supporter->id,
+                        'name' => $first->supporter->name,
+                    ],
+                ];
+            });
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Big Boss Supporter retrieved successfully.',
+            'data'    => $topSupporters,
+        ], 200);
     }
 
 }

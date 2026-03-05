@@ -30,6 +30,7 @@ Route::group(['middleware' => 'api'], function () {
     Route::get('categories', [CategoryController::class, 'landing']);
     Route::get('games', [GameController::class, 'landing']);
     Route::get('matches', [MatchController::class, 'landing']);
+    Route::get('bigboss-supporter', [SupportController::class, 'bigBossSupporter']);
 
 });
 
@@ -50,14 +51,14 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::get('categories', [CategoryController::class, 'index']);
     Route::post('categories', [CategoryController::class, 'store']);
     Route::get('categories/{id}', [CategoryController::class, 'edit']);
-    Route::put('categories/{id}', [CategoryController::class, 'update']);
+    Route::post('categories/{id}', [CategoryController::class, 'update']);
     Route::delete('categories/{id}', [CategoryController::class, 'destroy']);
 
     //Game
     Route::get('games', [GameController::class, 'index']);
     Route::post('games', [GameController::class, 'store']);
     Route::get('games/{id}', [GameController::class, 'edit']);
-    Route::put('games/{id}', [GameController::class, 'update']);
+    Route::post('games/{id}', [GameController::class, 'update']);
     Route::delete('games/{id}', [GameController::class, 'destroy']);
     Route::get('all-games', [GameController::class, 'allGames']);
 
@@ -65,7 +66,7 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::get('matches', [MatchController::class, 'index']);
     Route::post('matches', [MatchController::class, 'store']);
     Route::get('matches/{id}', [MatchController::class, 'edit']);
-    Route::put('matches/{id}', [MatchController::class, 'update']);
+    Route::post('matches/{id}', [MatchController::class, 'update']);
     Route::delete('matches/{id}', [MatchController::class, 'destroy']);
     //match confirmation
     Route::post('match-confirm/{id}', [SupportController::class, 'confirm']);
