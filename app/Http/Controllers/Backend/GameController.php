@@ -10,17 +10,25 @@ use Illuminate\Support\Facades\Storage;
 
 class GameController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = $request->per_page ?? 10;
+
         $games = Game::with('category:id,name')
             ->latest()
-            ->get();
+            ->paginate($perPage);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Games retrieved successfully',
-            'data'    => $games,
-        ]);
+            'data' => $games->items(),
+            'meta' => [
+                'current_page' => $games->currentPage(),
+                'last_page' => $games->lastPage(),
+                'per_page' => $games->perPage(),
+                'total' => $games->total(),
+            ],
+        ], 200, [], JSON_UNESCAPED_SLASHES);
     }
 
     public function store(Request $request)
@@ -106,9 +114,14 @@ class GameController extends Controller
 
         // Update image
         if ($request->hasFile('image')) {
+            $oldImage = $game->getRawOriginal('image');
 
-            if ($game->image && Storage::disk('public')->exists($game->image)) {
-                Storage::disk('public')->delete($game->image);
+            if ($oldImage) {
+                $oldImagePath = ltrim(str_replace('storage/', '', $oldImage), '/');
+
+                if (Storage::disk('public')->exists($oldImagePath)) {
+                    Storage::disk('public')->delete($oldImagePath);
+                }
             }
 
             $storedPath = $request->file('image')->store('games', 'public');
@@ -137,9 +150,21 @@ class GameController extends Controller
             ], 404);
         }
 
+        if ($game->match()->exists()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Game cannot be deleted because it is used by one or more matches',
+            ], 409);
+        }
+
         // Delete image
-        if ($game->image && Storage::disk('public')->exists($game->image)) {
-            Storage::disk('public')->delete($game->image);
+        $image = $game->getRawOriginal('image');
+        if ($image) {
+            $imagePath = ltrim(str_replace('storage/', '', $image), '/');
+
+            if (Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+            }
         }
 
         $game->delete();
@@ -150,9 +175,16 @@ class GameController extends Controller
         ]);
     }
 
-    public function allGames()
+    public function allGames(Request $request)
     {
-        $games = Game::select('id', 'name')->get();
+        $query = Game::select('id', 'name');
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $games = $query->get();
 
         if ($games->isEmpty()) {
             return response()->json([
@@ -169,13 +201,24 @@ class GameController extends Controller
     }
 
     // For landing page
-    public function landing()
+    public function landing(Request $request)
     {
-        $games = Game::select('id', 'name', 'image')->latest()->get();
+        $perPage = $request->per_page ?? 10;
+
+        $games = Game::select('id', 'name', 'image')
+            ->latest()
+            ->paginate($perPage);
+
         return response()->json([
             'status'  => true,
             'message' => 'Games retrieved successfully',
-            'data'    => $games,
+            'data'    => $games->items(),
+            'meta'    => [
+                'current_page' => $games->currentPage(),
+                'last_page'    => $games->lastPage(),
+                'per_page'     => $games->perPage(),
+                'total'        => $games->total(),
+            ],
         ]);
     }
 

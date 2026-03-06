@@ -4,20 +4,29 @@ namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Game;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::latest()->get();
+        $perPage = $request->per_page ?? 10;
+
+        $categories = Category::latest()->paginate($perPage);
 
         return response()->json([
             'status' => true,
             'message' => 'Categories retrieved successfully',
-            'data' => $categories,
+            'data' => $categories->items(),
+            'meta' => [
+                'current_page' => $categories->currentPage(),
+                'last_page' => $categories->lastPage(),
+                'per_page' => $categories->perPage(),
+                'total' => $categories->total(),
+            ],
         ]);
     }
 
@@ -97,9 +106,14 @@ class CategoryController extends Controller
         }
 
         if ($request->hasFile('image')) {
+            $oldImage = $category->getRawOriginal('image');
 
-            if ($category->image && Storage::disk('public')->exists($category->image)) {
-                Storage::disk('public')->delete($category->image);
+            if ($oldImage) {
+                $oldImagePath = ltrim(str_replace('storage/', '', $oldImage), '/');
+
+                if (Storage::disk('public')->exists($oldImagePath)) {
+                    Storage::disk('public')->delete($oldImagePath);
+                }
             }
 
             $storedPath = $request->file('image')->store('categories', 'public');
@@ -127,8 +141,20 @@ class CategoryController extends Controller
             ], 404);
         }
 
-        if ($category->image && Storage::disk('public')->exists($category->image)) {
-            Storage::disk('public')->delete($category->image);
+        if (Game::where('category_id', $category->id)->exists()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Category cannot be deleted because it is used by one or more games',
+            ], 409);
+        }
+
+        $image = $category->getRawOriginal('image');
+        if ($image) {
+            $imagePath = ltrim(str_replace('storage/', '', $image), '/');
+
+            if (Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+            }
         }
 
         $category->delete();
@@ -140,13 +166,24 @@ class CategoryController extends Controller
     }
 
     // For landing page
-    public function landing()
+    public function landing(Request $request)
     {
-        $categories = Category::select('id', 'name', 'image')->latest()->get();
+        $perPage = $request->per_page ?? 10;
+
+        $categories = Category::select('id', 'name', 'image')
+            ->latest()
+            ->paginate($perPage);
+
         return response()->json([
             'status' => true,
             'message' => 'Categories retrieved successfully',
-            'data' => $categories,
+            'data' => $categories->items(),
+            'meta' => [
+                'current_page' => $categories->currentPage(),
+                'last_page' => $categories->lastPage(),
+                'per_page' => $categories->perPage(),
+                'total' => $categories->total(),
+            ],
         ]);
     }
 }

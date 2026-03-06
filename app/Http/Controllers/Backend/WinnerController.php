@@ -140,7 +140,7 @@ class WinnerController extends Controller
     public function userTransactions(Request $request)
     {
         $userId = auth('api')->id();
-        $perPage = $request->per_page ?? 15; // default 15 per page
+        $perPage = $request->per_page ?? 10;
 
         $transactions = CoinTransaction::where('user_id', $userId)
             ->orderBy('created_at', 'desc')
@@ -148,6 +148,7 @@ class WinnerController extends Controller
 
         return response()->json([
             'status' => true,
+            'message' => 'Transactions retrieved successfully',
             'data'   => $transactions->items(),
             'meta'   => [
                 'current_page' => $transactions->currentPage(),
@@ -157,5 +158,5 @@ class WinnerController extends Controller
             ],
         ], 200);
     }
-    
+
 }

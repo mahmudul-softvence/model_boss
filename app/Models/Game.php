@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Game extends Model
 {
@@ -14,6 +15,19 @@ class Game extends Model
         'category_id',
     ];
 
+    public function getImageAttribute($value)
+    {
+        if (! $value || Str::startsWith($value, ['http://', 'https://'])) {
+            return $value;
+        }
+
+        $imagePath = Str::startsWith($value, 'public/')
+            ? $value
+            : 'public/' . ltrim($value, '/');
+
+        return url($imagePath);
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_id');
@@ -23,6 +37,5 @@ class Game extends Model
     {
         return $this->hasMany(GameMatch::class, 'game_id');
     }
-    
-}
 
+}

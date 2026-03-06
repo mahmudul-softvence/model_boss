@@ -64,7 +64,13 @@ class MatchController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Matches retrieved successfully',
-            'data'    => $matches,
+            'data'    => $matches->items(),
+            'meta'    => [
+                'current_page' => $matches->currentPage(),
+                'last_page'    => $matches->lastPage(),
+                'per_page'     => $matches->perPage(),
+                'total'        => $matches->total(),
+            ],
         ]);
     }
 
