@@ -20,10 +20,6 @@ class Category extends Model
             return $value;
         }
 
-        $relativePath = Str::startsWith($value, 'storage/')
-            ? Str::after($value, 'storage/')
-            : $value;
-
-        return url('storage-proxy/' . ltrim($relativePath, '/'));
+        return url(ltrim($value, '/'));
     }
 }
