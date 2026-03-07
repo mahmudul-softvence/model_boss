@@ -21,11 +21,11 @@ class Game extends Model
             return $value;
         }
 
-        $imagePath = Str::startsWith($value, 'public/')
-            ? $value
-            : 'public/' . ltrim($value, '/');
+        $relativePath = Str::startsWith($value, 'storage/')
+            ? Str::after($value, 'storage/')
+            : $value;
 
-        return url($imagePath);
+        return url('storage-proxy/' . ltrim($relativePath, '/'));
     }
 
     public function category()
