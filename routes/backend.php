@@ -13,7 +13,10 @@ Route::middleware(['api'])->prefix('admin')->group(function () {
     // User Manage
     Route::get('users/search', [UserController::class, 'search']);
     Route::patch('users/change_role/{user}', [UserController::class, 'change_role']);
-    Route::apiResource('users', UserController::class)->except(['destroy']);
+    Route::get('users', [UserController::class, 'index']);
+    Route::post('users', [UserController::class, 'store']);
+    Route::get('users/{user}', [UserController::class, 'show']);
+    Route::post('users/{user}', [UserController::class, 'update']);
     Route::post('users/unsuspend/{user}', [UserController::class, 'unsuspend']);
     Route::post('users/suspend/{user}', [UserController::class, 'suspend']);
 
@@ -23,8 +26,16 @@ Route::middleware(['api'])->prefix('admin')->group(function () {
     Route::post('withdraws/declined/{id}', [WithdrawController::class, 'declined']);
 
     // Gallery
-    Route::apiResource('galleries', GalleryController::class);
+    Route::get('galleries', [GalleryController::class, 'index']);
+    Route::post('galleries', [GalleryController::class, 'store']);
+    Route::get('galleries/{gallery}', [GalleryController::class, 'show']);
+    Route::post('galleries/{gallery}', [GalleryController::class, 'update']);
+    Route::delete('galleries/{gallery}', [GalleryController::class, 'destroy']);
 
     // News
-    Route::apiResource('news', NewsController::class);
+    Route::get('news', [NewsController::class, 'index']);
+    Route::post('news', [NewsController::class, 'store']);
+    Route::get('news/{news}', [NewsController::class, 'show']);
+    Route::post('news/{news}', [NewsController::class, 'update']);
+    Route::delete('news/{news}', [NewsController::class, 'destroy']);
 });
