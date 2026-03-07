@@ -20,6 +20,10 @@ class Category extends Model
             return $value;
         }
 
-        return url(ltrim($value, '/'));
+        $imagePath = Str::startsWith($value, 'public/')
+            ? $value
+            : 'public/' . ltrim($value, '/');
+
+        return url($imagePath);
     }
 }
