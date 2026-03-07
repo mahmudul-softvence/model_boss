@@ -25,7 +25,7 @@ Route::middleware(['api'])->prefix('admin')->group(function () {
     Route::post('withdraws/accept/{id}', [WithdrawController::class, 'accept']);
     Route::post('withdraws/declined/{id}', [WithdrawController::class, 'declined']);
 
-    // Gallery
+    // Gallery Manage
     Route::get('galleries', [GalleryController::class, 'index']);
     Route::post('galleries', [GalleryController::class, 'store']);
     Route::get('galleries/{gallery}', [GalleryController::class, 'show']);
