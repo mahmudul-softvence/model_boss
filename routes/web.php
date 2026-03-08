@@ -14,3 +14,9 @@ Route::get('clear', function () {
 });
 
 Route::post('stripe/webhook', [WebhookController::class, 'handleWebhook']);
+
+
+
+Route::get('/storage-link', function () {
+    Artisan::call('storage:link');
+});
