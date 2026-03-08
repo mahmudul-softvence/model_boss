@@ -13,5 +13,4 @@ Route::get('clear', function () {
     return "Cache is cleared";
 });
 
-
 Route::post('stripe/webhook', [WebhookController::class, 'handleWebhook']);
