@@ -43,7 +43,7 @@ Route::middleware(['api'])->prefix('admin')->group(function () {
     Route::delete('news/{news}', [NewsController::class, 'destroy']);
 
 
-    Route::get('update/something', function (Request $request) {
+    Route::get('update/something', function () {
         // $request->validate([
         //     'name' => 'required',
         //     'email' => 'required'
@@ -52,8 +52,6 @@ Route::middleware(['api'])->prefix('admin')->group(function () {
         $g = Gallery::get();
 
         return response()->json([
-            'name' => $request->name,
-            'email' => $request->email,
             'gallery' => GalleryResource::collection($g)
         ]);
     });
