@@ -5,6 +5,7 @@ use App\Http\Controllers\Backend\GalleryController;
 use App\Http\Controllers\Backend\NewsController;
 use App\Http\Controllers\Backend\UserController;
 use App\Http\Controllers\Backend\WithdrawController;
+use App\Models\Gallery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,9 +48,12 @@ Route::middleware(['api'])->prefix('admin')->group(function () {
             'email' => 'required'
         ]);
 
+        $g = Gallery::get();
+
         return response()->json([
             'name' => $request->name,
-            'email' => $request->email
+            'email' => $request->email,
+            'gallery' => $g
         ]);
     });
 });
