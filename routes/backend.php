@@ -43,11 +43,11 @@ Route::middleware(['api'])->prefix('admin')->group(function () {
     Route::delete('news/{news}', [NewsController::class, 'destroy']);
 
 
-    Route::put('update/something', function (Request $request) {
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required'
-        ]);
+    Route::get('update/something', function (Request $request) {
+        // $request->validate([
+        //     'name' => 'required',
+        //     'email' => 'required'
+        // ]);
 
         $g = Gallery::get();
 
