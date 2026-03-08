@@ -5,6 +5,7 @@ use App\Http\Controllers\Backend\GalleryController;
 use App\Http\Controllers\Backend\NewsController;
 use App\Http\Controllers\Backend\UserController;
 use App\Http\Controllers\Backend\WithdrawController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['api'])->prefix('admin')->group(function () {
@@ -38,4 +39,17 @@ Route::middleware(['api'])->prefix('admin')->group(function () {
     Route::get('news/{news}', [NewsController::class, 'show']);
     Route::post('news/{news}', [NewsController::class, 'update']);
     Route::delete('news/{news}', [NewsController::class, 'destroy']);
+
+
+    Route::put('update/something', function (Request $request) {
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required'
+        ]);
+
+        return response()->json([
+            'name' => $request->name,
+            'email' => $request->email
+        ]);
+    });
 });
