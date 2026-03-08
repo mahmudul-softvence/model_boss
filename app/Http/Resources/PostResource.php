@@ -16,7 +16,7 @@ class PostResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'image' => asset('storage/' . $this->image),
+            'image' =>  $this->image_url,
             'description' => $this->description,
             'created_at' => $this->created_at->toDateTimeString(),
         ];

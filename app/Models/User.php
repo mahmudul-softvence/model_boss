@@ -124,6 +124,17 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         return [];
     }
 
+    public function getImageUrlAttribute()
+    {
+        if (!$this->image) {
+            return null;
+        }
+
+        return $this->provider
+            ? $this->image
+            : asset('public/storage/' . $this->image);
+    }
+
 
     public function isSuspended(): bool
     {

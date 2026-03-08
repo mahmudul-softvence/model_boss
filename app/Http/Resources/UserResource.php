@@ -22,11 +22,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'phone_number' => $this->phone_number,
             'nationality' => $this->nationality,
-            'image' => $this->image
-                ? ($this->provider
-                    ? $this->image
-                    : asset('storage/' . $this->image))
-                : null,
+            'image' => $this->image_url,
             'provider' => $this->provider,
             'verified_at' => !is_null($this->email_verified_at),
 

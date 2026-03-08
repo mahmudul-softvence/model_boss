@@ -17,4 +17,9 @@ class Post extends Model
     {
         return $this->hasOne(User::class);
     }
+
+    public function getImageUrlAttribute()
+    {
+        return $this->image ? asset('public/storage/' . $this->image) : null;
+    }
 }
