@@ -45,7 +45,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'password' => 'hashed',
         ];
     }
-
+    protected $appends = ['image_url'];
 
     public function userBalance()
     {
