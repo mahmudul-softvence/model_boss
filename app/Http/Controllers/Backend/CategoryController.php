@@ -26,6 +26,8 @@ class CategoryController extends Controller
                 'last_page' => $categories->lastPage(),
                 'per_page' => $categories->perPage(),
                 'total' => $categories->total(),
+                'prev' => $categories->currentPage() > 1,
+                'next' => $categories->hasMorePages(),
             ],
         ]);
     }
@@ -183,6 +185,8 @@ class CategoryController extends Controller
                 'last_page' => $categories->lastPage(),
                 'per_page' => $categories->perPage(),
                 'total' => $categories->total(),
+                'prev' => $categories->currentPage() > 1,
+                'next' => $categories->hasMorePages(),
             ],
         ]);
     }

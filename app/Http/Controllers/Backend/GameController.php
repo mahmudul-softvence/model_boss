@@ -27,6 +27,8 @@ class GameController extends Controller
                 'last_page' => $games->lastPage(),
                 'per_page' => $games->perPage(),
                 'total' => $games->total(),
+                'prev' => $games->currentPage() > 1,
+                'next' => $games->hasMorePages(),
             ],
         ], 200, [], JSON_UNESCAPED_SLASHES);
     }
@@ -218,6 +220,8 @@ class GameController extends Controller
                 'last_page'    => $games->lastPage(),
                 'per_page'     => $games->perPage(),
                 'total'        => $games->total(),
+                'prev'         => $games->currentPage() > 1,
+                'next'         => $games->hasMorePages(),
             ],
         ]);
     }

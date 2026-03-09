@@ -490,6 +490,8 @@ class SupportController extends Controller
                 'last_page'    => $paginated->lastPage(),
                 'per_page'     => $paginated->perPage(),
                 'total'        => $paginated->total(),
+                'prev'         => $paginated->currentPage() > 1,
+                'next'         => $paginated->hasMorePages(),
             ],
         ], 200);
     }
@@ -539,6 +541,8 @@ class SupportController extends Controller
                 'last_page'    => $users->lastPage(),
                 'per_page'     => $users->perPage(),
                 'total'        => $users->total(),
+                'prev'         => $users->currentPage() > 1,
+                'next'         => $users->hasMorePages(),
             ],
         ], 200);
     }
@@ -634,6 +638,8 @@ class SupportController extends Controller
                 'last_page'    => $paginated->lastPage(),
                 'per_page'     => $paginated->perPage(),
                 'total'        => $paginated->total(),
+                'prev'         => $paginated->currentPage() > 1,
+                'next'         => $paginated->hasMorePages(),
             ],
         ]);
     }

@@ -70,6 +70,8 @@ class MatchController extends Controller
                 'last_page'    => $matches->lastPage(),
                 'per_page'     => $matches->perPage(),
                 'total'        => $matches->total(),
+                'prev'         => $matches->currentPage() > 1,
+                'next'         => $matches->hasMorePages(),
             ],
         ]);
     }
@@ -320,6 +322,8 @@ class MatchController extends Controller
                 'last_page'    => $matches->lastPage(),
                 'per_page'     => $matches->perPage(),
                 'total'        => $matches->total(),
+                'prev'         => $matches->currentPage() > 1,
+                'next'         => $matches->hasMorePages(),
             ],
         ]);
     }

@@ -155,6 +155,8 @@ class WinnerController extends Controller
                 'last_page'    => $transactions->lastPage(),
                 'per_page'     => $transactions->perPage(),
                 'total'        => $transactions->total(),
+                'prev'         => $transactions->currentPage() > 1,
+                'next'         => $transactions->hasMorePages(),
             ],
         ], 200);
     }
