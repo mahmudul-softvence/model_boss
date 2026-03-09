@@ -24,7 +24,7 @@ class UpdateUserRequest extends FormRequest
         return [
             'name'     => 'required|string|max:255',
             'role'     => 'required|exists:roles,name',
-            'image'    => 'nullable|image|max:2048'
+            'image'    => 'nullable|image|max:3072'
         ];
     }
 
