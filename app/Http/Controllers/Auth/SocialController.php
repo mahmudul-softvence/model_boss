@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialController extends Controller
@@ -61,10 +63,18 @@ class SocialController extends Controller
             $user = User::where('email', $email)->first();
 
             if ($user) {
+                $avatarPath = null;
+                if ($socialUser->getAvatar()) {
+                    $avatarContents = file_get_contents($socialUser->getAvatar());
+                    $avatarName = 'users/images/' . Str::random(40) . '.jpg';
+                    Storage::disk('public')->put($avatarName, $avatarContents);
+                    $avatarPath = $avatarName;
+                }
+
                 $user->update([
                     'provider'    => $provider,
                     'provider_id' => $providerId,
-                    'image'       => $socialUser->getAvatar(),
+                    'image'       => $avatarPath ?? $user->image,
                 ]);
             }
         }
@@ -74,10 +84,18 @@ class SocialController extends Controller
                 $email = $providerId . '@' . $provider . '.local';
             }
 
+            $avatarPath = null;
+            if ($socialUser->getAvatar()) {
+                $avatarContents = file_get_contents($socialUser->getAvatar());
+                $avatarName = 'users/images/' . Str::random(40) . '.jpg';
+                Storage::disk('public')->put($avatarName, $avatarContents);
+                $avatarPath = $avatarName;
+            }
+
             $user = User::create([
                 'name'        => $socialUser->getName() ?? $socialUser->getNickname(),
                 'email'       => $email,
-                'image'       => $socialUser->getAvatar(),
+                'image'       => $avatarPath,
                 'provider'    => $provider,
                 'provider_id' => $providerId,
             ]);
