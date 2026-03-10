@@ -7,7 +7,7 @@ use App\Http\Resources\GalleryResource;
 use App\Http\Resources\NewsResource;
 use App\Models\Gallery;
 use App\Models\News;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
