@@ -31,7 +31,6 @@ Route::group(['middleware' => 'api'], function () {
     Route::get('games', [GameController::class, 'landing']);
     Route::get('matches', [MatchController::class, 'landing']);
     Route::get('bigboss-supporter', [SupportController::class, 'bigBossSupporter']);
-
 });
 
 Route::middleware(['auth:api'])->group(function () {
@@ -75,7 +74,6 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
 
     Route::get('all-players', [MatchController::class, 'allPlayers']);
     Route::post('match-winner/{id}', [WinnerController::class, 'winner']);
-
 });
 
 require __DIR__ . '/backend.php';

@@ -10,7 +10,7 @@ use App\Models\Gallery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['api'])->prefix('admin')->group(function () {
+Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index']);
 
     // User Manage
