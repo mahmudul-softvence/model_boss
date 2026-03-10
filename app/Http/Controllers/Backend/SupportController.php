@@ -90,7 +90,7 @@ class SupportController extends Controller
                     ->limit(10)
                     ->pluck('user_id');
 
-                $topSupporters = Support::with('supporter:id,name')
+                $topSupporters = Support::with('supporter:id,name,image')
                     ->where('match_id', $match->id)
                     ->whereIn('user_id', $topUsers)
                     ->get()
@@ -111,6 +111,7 @@ class SupportController extends Controller
                             'supporter' => [
                                 'id' => $first->supporter->id,
                                 'name' => $first->supporter->name,
+                                'image' => optional($first->supporter)->image_url,
                             ],
                         ];
                     });
@@ -652,7 +653,7 @@ class SupportController extends Controller
             ->limit(10)
             ->pluck('user_id');
 
-        $topSupporters = Support::with('supporter:id,name')
+        $topSupporters = Support::with('supporter:id,name,image')
             ->whereIn('user_id', $topUsers)
             ->get()
             ->groupBy('user_id')
@@ -672,6 +673,7 @@ class SupportController extends Controller
                     'supporter' => [
                         'id' => $first->supporter->id,
                         'name' => $first->supporter->name,
+                        'image' => optional($first->supporter)->image_url
                     ],
                 ];
             });
