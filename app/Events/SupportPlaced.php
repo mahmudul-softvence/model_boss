@@ -18,11 +18,6 @@ class SupportPlaced implements ShouldBroadcastNow
     {
         $this->data = $data;
         $this->matchId = $matchId;
-
-        // Log::info('SupportPlaced Constructor Data:', [
-        //     'data' => $this->data,
-        //     'matchId' => $this->matchId,
-        // ]);
     }
 
     public function broadcastOn()

@@ -83,6 +83,7 @@ class SupportController extends Controller
                     'reference'     => 'Support for match #' . $match->match_no,
                 ]);
 
+                // Existing top supporters logic
                 $topUsers = Support::selectRaw('user_id, SUM(coin_amount) as total_amount')
                     ->where('match_id', $match->id)
                     ->groupBy('user_id')
@@ -116,6 +117,42 @@ class SupportController extends Controller
                         ];
                     });
 
+                $playerOneSupport = Support::with('supporter')
+                    ->where('match_id', $match->id)
+                    ->where('supported_player_id', $match->player_one_id)
+                    ->select('user_id', DB::raw('SUM(coin_amount) as total_amount'))
+                    ->groupBy('user_id')
+                    ->orderByDesc('total_amount')
+                    ->first();
+
+                $playerTwoSupport = Support::with('supporter')
+                    ->where('match_id', $match->id)
+                    ->where('supported_player_id', $match->player_two_id)
+                    ->select('user_id', DB::raw('SUM(coin_amount) as total_amount'))
+                    ->groupBy('user_id')
+                    ->orderByDesc('total_amount')
+                    ->first();
+
+                $playerOneTopSupporter = $playerOneSupport && $playerOneSupport->supporter
+                    ? [
+                        'id' => $playerOneSupport->supporter->id,
+                        'name' => $playerOneSupport->supporter->name,
+                        'image' => $playerOneSupport->supporter->image
+                            ? asset('public/storage/' . $playerOneSupport->supporter->image)
+                            : null,
+                    ]
+                    : null;
+
+                $playerTwoTopSupporter = $playerTwoSupport && $playerTwoSupport->supporter
+                    ? [
+                        'id' => $playerTwoSupport->supporter->id,
+                        'name' => $playerTwoSupport->supporter->name,
+                        'image' => $playerTwoSupport->supporter->image
+                            ? asset('public/storage/' . $playerTwoSupport->supporter->image)
+                            : null,
+                    ]
+                    : null;
+
                 return [
                     'support'                    => $support,
                     'updated_balance'            => $balance->fresh()->total_balance,
@@ -123,6 +160,8 @@ class SupportController extends Controller
                     'match_player_one_total'     => $match->fresh()->player_one_total,
                     'match_player_two_total'     => $match->fresh()->player_two_total,
                     'top_supporters'             => $topSupporters,
+                    'player_one_top_supporter'   => $playerOneTopSupporter,
+                    'player_two_top_supporter'   => $playerTwoTopSupporter,
                 ];
             });
 

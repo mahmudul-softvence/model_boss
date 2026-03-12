@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Models\GameMatch;
+use App\Models\Support;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -325,6 +327,97 @@ class MatchController extends Controller
                 'prev'         => $matches->currentPage() > 1,
                 'next'         => $matches->hasMorePages(),
             ],
+        ]);
+    }
+
+    public function socketMatch($id)
+    {
+        $match = GameMatch::with([
+            'game:id,name,image',
+            'playerOne:id,name,image',
+            'playerTwo:id,name,image',
+        ])->find($id);
+
+        if (! $match) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Match not found',
+            ], 404);
+        }
+
+        $getTopSupporters = function ($matchId, $limit = 10) {
+            return Support::with('supporter')
+                ->where('match_id', $matchId)
+                ->select(
+                    'user_id',
+                    DB::raw('GROUP_CONCAT(coin_amount ORDER BY id ASC) as supported_amounts'),
+                    DB::raw('SUM(coin_amount) as total_amount')
+                )
+                ->groupBy('user_id')
+                ->orderByDesc('total_amount')
+                ->limit($limit)
+                ->get()
+                ->map(function ($support, $index) {
+                    return [
+                        'user_id' => $support->user_id,
+                        'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                        'supported_amounts' => $support->supported_amounts,
+                        'supporter' => [
+                            'id' => $support->supporter->id,
+                            'name' => $support->supporter->name,
+                            'image' => $support->supporter->image
+                                ? asset('public/storage/' . $support->supporter->image)
+                                : null,
+                        ],
+                    ];
+                });
+        };
+
+        $topSupporters = $getTopSupporters($id);
+
+        $playerOneSupport = Support::with('supporter')
+            ->where('match_id', $id)
+            ->where('supported_player_id', $match->player_one_id)
+            ->select('user_id', DB::raw('SUM(coin_amount) as total_amount'))
+            ->groupBy('user_id')
+            ->orderByDesc('total_amount')
+            ->first();
+
+        $playerOneTopSupporter = $playerOneSupport && $playerOneSupport->supporter
+            ? [
+                'id' => $playerOneSupport->supporter->id,
+                'name' => $playerOneSupport->supporter->name,
+                'image' => $playerOneSupport->supporter->image
+                    ? asset('public/storage/' . $playerOneSupport->supporter->image)
+                    : null,
+            ]
+            : null;
+
+        $playerTwoSupport = Support::with('supporter')
+            ->where('match_id', $id)
+            ->where('supported_player_id', $match->player_two_id)
+            ->select('user_id', DB::raw('SUM(coin_amount) as total_amount'))
+            ->groupBy('user_id')
+            ->orderByDesc('total_amount')
+            ->first();
+
+        $playerTwoTopSupporter = $playerTwoSupport && $playerTwoSupport->supporter
+            ? [
+                'id' => $playerTwoSupport->supporter->id,
+                'name' => $playerTwoSupport->supporter->name,
+                'image' => $playerTwoSupport->supporter->image
+                    ? asset('public/storage/' . $playerTwoSupport->supporter->image)
+                    : null,
+            ]
+            : null;
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Match retrieved successfully',
+            'data'    => $match,
+            'top_supporters' => $topSupporters,
+            'player_one_top_supporter' => $playerOneTopSupporter,
+            'player_two_top_supporter' => $playerTwoTopSupporter,
         ]);
     }
 
