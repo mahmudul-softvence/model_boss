@@ -366,7 +366,7 @@ class MatchController extends Controller
                             'id' => $support->supporter->id,
                             'name' => $support->supporter->name,
                             'image' => $support->supporter->image
-                                ? asset('public/storage/' . $support->supporter->image)
+                                ? asset('storage/' . $support->supporter->image)
                                 : null,
                         ],
                     ];
@@ -388,7 +388,7 @@ class MatchController extends Controller
                 'id' => $playerOneSupport->supporter->id,
                 'name' => $playerOneSupport->supporter->name,
                 'image' => $playerOneSupport->supporter->image
-                    ? asset('public/storage/' . $playerOneSupport->supporter->image)
+                    ? asset('storage/' . $playerOneSupport->supporter->image)
                     : null,
             ]
             : null;
@@ -406,7 +406,7 @@ class MatchController extends Controller
                 'id' => $playerTwoSupport->supporter->id,
                 'name' => $playerTwoSupport->supporter->name,
                 'image' => $playerTwoSupport->supporter->image
-                    ? asset('public/storage/' . $playerTwoSupport->supporter->image)
+                    ? asset('storage/' . $playerTwoSupport->supporter->image)
                     : null,
             ]
             : null;

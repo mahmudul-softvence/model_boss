@@ -20,6 +20,6 @@ class Post extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image ? asset('public/storage/' . $this->image) : null;
+        return $this->image ? asset('storage/' . $this->image) : null;
     }
 }
