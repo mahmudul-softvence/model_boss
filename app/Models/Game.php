@@ -21,9 +21,10 @@ class Game extends Model
             return $value;
         }
 
-        $imagePath = Str::startsWith($value, 'public/')
-            ? $value
-            : 'public/' . ltrim($value, '/');
+        $imagePath = ltrim($value, '/');
+        $imagePath = Str::startsWith($imagePath, 'storage/')
+            ? $imagePath
+            : 'storage/' . $imagePath;
 
         return url($imagePath);
     }

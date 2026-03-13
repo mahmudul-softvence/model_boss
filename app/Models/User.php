@@ -131,7 +131,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         }
 
         return $this->image
-            ? asset('public/storage/' . $this->image)
+            ? asset('storage/' . $this->image)
             : null;
     }
 

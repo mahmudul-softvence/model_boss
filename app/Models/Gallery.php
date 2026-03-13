@@ -19,12 +19,12 @@ class Gallery extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->short_video_thumb ? asset('public/storage/' . $this->short_video_thumb) : null;
+        return $this->short_video_thumb ? asset('storage/' . $this->short_video_thumb) : null;
     }
 
     public function getVideoUrlAttribute()
     {
-        return $this->short_video ? asset('public/storage/' . $this->short_video) : null;
+        return $this->short_video ? asset('storage/' . $this->short_video) : null;
     }
 
 
