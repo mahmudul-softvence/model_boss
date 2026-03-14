@@ -61,7 +61,7 @@ class DashboardController extends Controller
 
     public function earnings(Request $request)
     {
-        $year = $request->year;
+        $year = $request->year ?? now()->year;
 
         $data = CoinTransaction::select(
                 DB::raw('MONTH(created_at) as month'),
@@ -89,10 +89,10 @@ class DashboardController extends Controller
         ]);
     }
 
-
     public function recentStreams()
     {
         $matches = GameMatch::where('confirmation_status', 1)
+            ->whereNotNull('winner_id')
             ->orderByDesc('id')
             ->take(4)
             ->get();
@@ -105,9 +105,12 @@ class DashboardController extends Controller
                 ->where('reference', 'like', '%#' . $match->match_no)
                 ->sum('amount');
 
+            $minutesAgo = (int) now()->diffInMinutes($match->updated_at, true);
+
             $result[] = [
                 'match_no' => $match->match_no,
-                'total_earnings' => $total
+                'total_earnings' => $total,
+                'end_time' => $minutesAgo . ' minutes ago'
             ];
         }
 
@@ -115,6 +118,68 @@ class DashboardController extends Controller
             'status' => true,
             'message' => 'Recent match earnings retrieved successfully',
             'data' => $result
+        ]);
+    }
+
+    public function runningMatches(Request $request)
+    {
+        $perPage = $request->per_page ?? 10;
+
+        $query = GameMatch::with([
+            'game:id,name',
+            'playerOne:id,name',
+            'playerTwo:id,name',
+            'winner:id,name'
+        ])
+        ->whereIn('type', ['upcoming', 'live']);
+
+        if ($request->filled('game_id')) {
+            $query->where('game_id', $request->game_id);
+        }
+
+        if ($request->filled('player_id')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('player_one_id', $request->player_id)
+                ->orWhere('player_two_id', $request->player_id);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+
+                $q->where('match_no', 'like', "%{$search}%")
+                ->orWhere('type', 'like', "%{$search}%")
+
+                ->orWhereHas('game', function ($gameQuery) use ($search) {
+                    $gameQuery->where('name', 'like', "%{$search}%");
+                })
+
+                ->orWhereHas('playerOne', function ($playerQuery) use ($search) {
+                    $playerQuery->where('name', 'like', "%{$search}%");
+                })
+
+                ->orWhereHas('playerTwo', function ($playerQuery) use ($search) {
+                    $playerQuery->where('name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        $matches = $query->latest()->paginate($perPage);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Matches retrieved successfully',
+            'data'    => $matches->items(),
+            'meta'    => [
+                'current_page' => $matches->currentPage(),
+                'last_page'    => $matches->lastPage(),
+                'per_page'     => $matches->perPage(),
+                'total'        => $matches->total(),
+                'prev'         => $matches->currentPage() > 1,
+                'next'         => $matches->hasMorePages(),
+            ],
         ]);
     }
 

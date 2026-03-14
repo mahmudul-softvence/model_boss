@@ -77,8 +77,10 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::get('all-players', [MatchController::class, 'allPlayers']);
     Route::post('match-winner/{id}', [WinnerController::class, 'winner']);
 
+    // Dashboard
     Route::get('earnings', [DashboardController::class, 'earnings']);
     Route::get('recent-streams', [DashboardController::class, 'recentStreams']);
+    Route::get('running-matches', [DashboardController::class, 'runningMatches']);
 });
 
 require __DIR__ . '/backend.php';
