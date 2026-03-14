@@ -7,6 +7,7 @@ use App\Http\Controllers\Backend\GameController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\MatchController;
 use App\Http\Controllers\Backend\SupportController;
 use App\Http\Controllers\Backend\WinnerController;
@@ -75,6 +76,9 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
 
     Route::get('all-players', [MatchController::class, 'allPlayers']);
     Route::post('match-winner/{id}', [WinnerController::class, 'winner']);
+
+    Route::get('earnings', [DashboardController::class, 'earnings']);
+    Route::get('recent-streams', [DashboardController::class, 'recentStreams']);
 });
 
 require __DIR__ . '/backend.php';
