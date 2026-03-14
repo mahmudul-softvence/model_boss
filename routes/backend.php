@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index']);
+    Route::post('dashboard/change_live_status', [DashboardController::class, 'change_live_status']);
 
     // User Manage
     Route::get('users/search', [UserController::class, 'search']);
