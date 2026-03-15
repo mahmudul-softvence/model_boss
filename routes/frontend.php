@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Frontend\FollowController;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\PostController;
@@ -25,6 +26,9 @@ Route::middleware(['auth:api'])->group(function () {
 
     // Twitch live
     Route::get('twitch/check_live', [TwitchController::class, 'status']);
+
+    // Check Live Status live
+    Route::get('get_live_staus', [HomeController::class, 'get_live_staus']);
 
     // Payment Releted
     Route::post('checkout', [CheckoutController::class, 'checkout']);

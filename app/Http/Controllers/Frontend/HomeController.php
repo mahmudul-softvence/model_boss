@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\GalleryResource;
+use App\Http\Resources\LiveStatusResource;
 use App\Http\Resources\NewsResource;
+use App\Models\CheckLiveStatus;
 use App\Models\Gallery;
 use App\Models\News;
 use Illuminate\Http\Request;
@@ -24,5 +26,17 @@ class HomeController extends Controller
         $per_page = $request->query('per_page', 5);
         $featured_gallery = Gallery::latest()->paginate($per_page);
         return $this->sendResponse(GalleryResource::collection($featured_gallery));
+    }
+
+
+    public function get_live_staus()
+    {
+        $live_status = CheckLiveStatus::get();
+
+        $data = [
+            'live_status' => LiveStatusResource::collection($live_status)
+        ];
+
+        return $this->sendResponse($data);
     }
 }
