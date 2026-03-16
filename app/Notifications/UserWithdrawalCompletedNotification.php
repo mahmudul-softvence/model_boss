@@ -20,12 +20,12 @@ class UserWithdrawalCompletedNotification extends Notification implements Should
         $this->withdrawal = $withdrawal;
     }
 
-    public function via($notifiable): array
+    public function via($notifiable)
     {
         return ['mail', 'database', 'broadcast'];
     }
 
-    public function toMail($notifiable): MailMessage
+    public function toMail($notifiable)
     {
         return (new MailMessage)
             ->subject('Withdrawal Completed - ' . $this->withdrawal->withdraw_no)
@@ -36,7 +36,7 @@ class UserWithdrawalCompletedNotification extends Notification implements Should
             ->line('Thank you.');
     }
 
-    public function toDatabase($notifiable): array
+    public function toDatabase($notifiable)
     {
         return [
             'type' => 'user.withdrawal.completed',
@@ -47,7 +47,7 @@ class UserWithdrawalCompletedNotification extends Notification implements Should
         ];
     }
 
-    public function toBroadcast($notifiable): BroadcastMessage
+    public function toBroadcast($notifiable)
     {
         return new BroadcastMessage([
             'id' => $this->id,

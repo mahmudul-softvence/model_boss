@@ -6,8 +6,11 @@ use App\Enums\TransactionType;
 use App\Enums\WithdrawalStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WithdrawalResource;
+use App\Models\User;
 use App\Models\Withdrawal;
+use App\Notifications\UserWithdrawalDeclinedNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Stripe\Account;
 use Stripe\Stripe;
 use Stripe\Transfer;
@@ -137,7 +140,10 @@ class WithdrawController extends Controller
                 $withdraw->update([
                     'status' => WithdrawalStatus::DECLINED
                 ]);
+
+                $withdraw->user->notify(new UserWithdrawalDeclinedNotification($withdraw));
             });
+
 
             return $this->sendResponse([], 'Withdrawal declined and refunded.');
         } catch (\Exception $e) {

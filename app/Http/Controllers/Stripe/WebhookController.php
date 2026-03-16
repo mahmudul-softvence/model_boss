@@ -138,11 +138,8 @@ class WebhookController extends CashierController
                 'status' => WithdrawalStatus::PAID,
             ]);
 
-            $user = User::find($withdraw->user_id)->first();
-            Notification::send($user, new UserWithdrawalCompletedNotification($withdraw));
+            $withdraw->user->notify(new UserWithdrawalCompletedNotification($withdraw));
         });
-
-
 
         return response()->noContent();
     }
