@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Traits\HasRoles;
+use App\Events\MatchCreated;
+use Illuminate\Support\Facades\Log;
 
 class MatchController extends Controller
 {
@@ -86,7 +88,7 @@ class MatchController extends Controller
             'player_one_id'      => 'required|exists:users,id',
             'player_two_id'      => 'required|exists:users,id|different:player_one_id',
             'players_bet_amount' => 'required|numeric|min:0',
-            'type'               => 'required|string|max:50',
+            'type'               => 'required|string|max:50|in:upcoming',
             'match_date'         => 'required|date|after_or_equal:today',
             'match_time'         => 'required|date_format:H:i',
             'winner_percentage'  => 'nullable|in:0,1',
@@ -116,6 +118,16 @@ class MatchController extends Controller
         $data['player_two_total'] = $data['players_bet_amount'];
 
         $match = GameMatch::create($data);
+
+        $match->load([
+            'game:id,name',
+            'playerOne:id,name',
+            'playerTwo:id,name'
+        ]);
+
+        $users = User::role(['user','artist'])->pluck('id')->toArray();
+
+        broadcast(new MatchCreated($users))->toOthers();
 
         return response()->json([
             'status'  => true,
