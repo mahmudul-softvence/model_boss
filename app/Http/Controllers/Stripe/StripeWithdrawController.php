@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Stripe;
 
 use App\Enums\WithdrawalStatus;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Withdrawal;
+use App\Notifications\AdminWithdrawalNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 class StripeWithdrawController extends Controller
 {
@@ -49,6 +52,10 @@ class StripeWithdrawController extends Controller
                     'usd_amount' => $usd,
                     'status' => WithdrawalStatus::PENDING,
                 ]);
+
+
+                $super_admin = User::role('super_admin')->first();
+                Notification::send($super_admin, new AdminWithdrawalNotification($withdraw, $user));
             });
 
             return $this->sendResponse($withdraw);

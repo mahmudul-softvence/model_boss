@@ -9,8 +9,10 @@ use App\Models\CoinTransaction;
 use App\Models\StripePayment;
 use App\Models\User;
 use App\Models\Withdrawal;
+use App\Notifications\UserWithdrawalCompletedNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierController;
 
 
@@ -135,6 +137,8 @@ class WebhookController extends CashierController
             $withdraw->update([
                 'status' => WithdrawalStatus::PAID,
             ]);
+
+            $withdraw->user->notify(new UserWithdrawalCompletedNotification($withdraw));
         });
 
         return response()->noContent();

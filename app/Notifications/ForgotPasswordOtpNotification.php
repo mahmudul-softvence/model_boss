@@ -35,6 +35,7 @@ class ForgotPasswordOtpNotification extends Notification
             ->line('Your One-Time Password (OTP) is:')
             ->line("**{$this->otp}**")
             ->line('This OTP will expire in 10 minutes.')
-            ->line('If you did not request a password reset, please ignore this email.');
+            ->line('If you did not request a password reset, please ignore this email.')
+            ->line('Thank you.');
     }
 }

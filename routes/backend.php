@@ -5,9 +5,11 @@ use App\Http\Controllers\Backend\GalleryController;
 use App\Http\Controllers\Backend\NewsController;
 use App\Http\Controllers\Backend\UserController;
 use App\Http\Controllers\Backend\WithdrawController;
+use App\Http\Controllers\Notifications\NotificationController;
 use App\Http\Resources\GalleryResource;
 use App\Models\Gallery;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(function () {
@@ -21,6 +23,7 @@ Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(func
     Route::post('users', [UserController::class, 'store']);
     Route::get('users/{user}', [UserController::class, 'show']);
     Route::post('users/{user}', [UserController::class, 'update']);
+    Route::delete('users/{user}', [UserController::class, 'delete']);
     Route::post('users/unsuspend/{user}', [UserController::class, 'unsuspend']);
     Route::post('users/suspend/{user}', [UserController::class, 'suspend']);
 
@@ -42,4 +45,10 @@ Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(func
     Route::get('news/{news}', [NewsController::class, 'show']);
     Route::post('news/{news}', [NewsController::class, 'update']);
     Route::delete('news/{news}', [NewsController::class, 'destroy']);
+});
+
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('notifications', [NotificationController::class, 'notifications']);
+    Route::post('notifications/{id}/read', [NotificationController::class, 'read_notifications']);
 });
