@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\GalleryResource;
 use App\Http\Resources\LiveStatusResource;
 use App\Http\Resources\NewsResource;
+use App\Http\Resources\UserResource;
 use App\Models\CheckLiveStatus;
 use App\Models\Gallery;
 use App\Models\News;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -38,5 +40,24 @@ class HomeController extends Controller
         ];
 
         return $this->sendResponse($data);
+    }
+
+
+    public function search_artist(Request $request)
+    {
+        $search = $request->query('search');
+
+        if (empty($search)) {
+            return $this->sendResponse([]);
+        }
+
+        $artist = User::role('artist')
+            ->where(function ($query) use ($search) {
+                $query->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('email', 'like', '%' . $search . '%');
+            })
+            ->get();
+
+        return $this->sendResponse(UserResource::collection($artist));
     }
 }

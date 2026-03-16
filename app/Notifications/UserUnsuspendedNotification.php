@@ -29,7 +29,8 @@ class UserUnsuspendedNotification extends Notification
             ->line('Good news! Your account suspension has been lifted.')
             ->line('You now have full access to your account again.')
             ->action('Login to Your Account', 'http://localhost:3000/login')
-            ->line('If you have any questions, please contact our support team.');
+            ->line('If you have any questions, please contact our support team.')
+            ->line('Thank you.');
     }
 
     /**

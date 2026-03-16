@@ -106,6 +106,20 @@ class UserController extends Controller
     }
 
 
+    /**
+     * Delete the specified resource in storage.
+     */
+
+    public function delete(User $user)
+    {
+        $user->userBalance()->delete();
+        $user->roles()->detach();
+        $user->delete();
+
+        return $this->sendResponse(UserResource::make($user), 'User deleted successfully.');
+    }
+
+
 
     /**
      * Remove the specified resource from storage.

@@ -27,8 +27,7 @@ Route::middleware(['auth:api'])->group(function () {
     // Twitch live
     Route::get('twitch/check_live', [TwitchController::class, 'status']);
 
-    // Check Live Status live
-    Route::get('get_live_staus', [HomeController::class, 'get_live_staus']);
+
 
     // Payment Releted
     Route::post('checkout', [CheckoutController::class, 'checkout']);
@@ -42,4 +41,6 @@ Route::middleware(['auth:api'])->group(function () {
 Route::middleware(['api'])->group(function () {
     Route::get('get_featured_news', [HomeController::class, 'get_featured_news']);
     Route::get('get_featured_gallery', [HomeController::class, 'get_featured_gallery']);
+    Route::get('get_live_staus', [HomeController::class, 'get_live_staus']);
+    Route::get('search_artist', [HomeController::class, 'search_artist']);
 });

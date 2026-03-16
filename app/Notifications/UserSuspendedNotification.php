@@ -54,7 +54,8 @@ class UserSuspendedNotification extends Notification  implements ShouldQueue
             $message->line('Note: ' . $suspension->note);
         }
 
-        $message->line('Please contact support if you think this is a mistake.');
+        $message->line('Please contact support if you think this is a mistake.')
+            ->line('Thank you.');
 
         return $message;
     }
