@@ -105,12 +105,25 @@ class DashboardController extends Controller
                 ->where('reference', 'like', '%#' . $match->match_no)
                 ->sum('amount');
 
-            $minutesAgo = (int) now()->diffInMinutes($match->updated_at, true);
+            $minutesAgo = (int) round($match->updated_at->diffInRealMinutes(now(), true));
+
+            if ($minutesAgo >= 60) {
+                $hours = intdiv($minutesAgo, 60);
+                $minutes = $minutesAgo % 60;
+
+                $time = $hours . ' hr';
+                if ($minutes > 0) {
+                    $time .= ' ' . $minutes . ' min';
+                }
+                $time .= ' ago';
+            } else {
+                $time = $minutesAgo . ' min ago';
+            }
 
             $result[] = [
                 'match_no' => $match->match_no,
-                'total_earnings' => $total,
-                'end_time' => $minutesAgo . ' minutes ago'
+                'total_earnings' => number_format($total, 2),
+                'end_time' => $time
             ];
         }
 
@@ -127,9 +140,9 @@ class DashboardController extends Controller
 
         $query = GameMatch::with([
             'game:id,name',
-            'playerOne:id,name',
-            'playerTwo:id,name',
-            'winner:id,name'
+            'playerOne:id,name,image',
+            'playerTwo:id,name,image',
+            'winner:id,name,image',
         ])
         ->whereIn('type', ['upcoming', 'live']);
 

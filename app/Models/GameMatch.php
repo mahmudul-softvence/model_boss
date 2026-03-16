@@ -28,6 +28,10 @@ class GameMatch extends Model
         'match_time',
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
     public function playerOne()
     {

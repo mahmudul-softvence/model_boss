@@ -48,7 +48,7 @@ class WinnerController extends Controller
 
                 $match->update([
                     'winner_id' => $winnerId,
-                    'status'    => 'completed',
+                    'type'    => 'completed',
                 ]);
 
                 $totalWin = $winnerId == $match->player_one_id

@@ -113,12 +113,12 @@ class AuthController extends Controller
         $data = [
             'user' => UserResource::make($user),
 
-            'total_earning' => $userBalance->total_earning,
-            'total_referral_earning' => $userBalance->total_referral_earning,
-            'total_tip_received' => $userBalance->total_tip_received,
-            'total_withdraw' => $userBalance->total_withdraw,
-            'total_balance' => $userBalance->total_balance,
-            'total_bet' => $userBalance->total_bet,
+            'total_earning' => $userBalance->total_earning ?? 0,
+            'total_referral_earning' => $userBalance->total_referral_earning ?? 0,
+            'total_tip_received' => $userBalance->total_tip_received ?? 0,
+            'total_withdraw' => $userBalance->total_withdraw ?? 0,
+            'total_balance' => $userBalance->total_balance ?? 0,
+            'total_bet' => $userBalance->total_bet ?? 0,
         ];;
 
         return $this->sendResponse($data, 'User informations.');

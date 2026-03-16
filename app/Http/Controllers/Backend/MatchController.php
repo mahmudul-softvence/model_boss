@@ -19,9 +19,9 @@ class MatchController extends Controller
 
         $query = GameMatch::with([
             'game:id,name',
-            'playerOne:id,name',
-            'playerTwo:id,name',
-            'winner:id,name'
+            'playerOne:id,name,image',
+            'playerTwo:id,name,image',
+            'winner:id,name,image',
         ]);
 
         if ($request->filled('game_id')) {
