@@ -51,4 +51,6 @@ Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(func
 Route::middleware('auth:api')->group(function () {
     Route::get('notifications', [NotificationController::class, 'notifications']);
     Route::post('notifications/{id}/read', [NotificationController::class, 'read_notifications']);
+    Route::delete('notifications/delete', [NotificationController::class, 'delete_all_notifications']);
+    Route::delete('notifications/{id}/delete', [NotificationController::class, 'delete_notifications']);
 });

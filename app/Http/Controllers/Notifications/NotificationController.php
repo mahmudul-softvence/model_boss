@@ -19,4 +19,16 @@ class NotificationController extends Controller
         $request->user()->notifications()->findOrFail($id)->markAsRead();
         return $this->sendResponse();
     }
+
+    public function delete_notifications(Request $request, $id)
+    {
+        $request->user()->notifications()->findOrFail($id)->delete();
+        return $this->sendResponse([], 'Notification Deleted Successfully');
+    }
+
+    public function delete_all_notifications(Request $request, $id)
+    {
+        $request->user()->notifications()->delete();
+        return $this->sendResponse([], 'All Notification Deleted Successfully');
+    }
 }
