@@ -59,6 +59,8 @@ class UserController extends Controller
             'referral_no' => Str::random(10),
         ]);
 
+        $user->markEmailAsVerified();
+
         $user->assignRole($validated['role']);
 
         $user->userBalance()->create();
@@ -82,6 +84,10 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user)
     {
+        if ($user->hasRole('super_admin')) {
+            return $this->sendError('You cannot change admin informations');
+        }
+
         $validated = $request->validated();
 
         $user->name = $validated['name'];
@@ -213,6 +219,10 @@ class UserController extends Controller
 
         if (!$currentRole) {
             return $this->sendError('User has no role assigned.');
+        }
+
+        if ($user->hasRole('super_admin')) {
+            return $this->sendError('You cannot change admin informations');
         }
 
         if ($currentRole->name === 'user') {
