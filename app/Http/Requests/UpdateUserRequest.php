@@ -24,6 +24,7 @@ class UpdateUserRequest extends FormRequest
         return [
             'name'     => 'required|string|max:255',
             'role'     => 'required|exists:roles,name',
+            'game_id'  => 'nullable|exists:games,id',
             'image'    => 'nullable|image|max:3072'
         ];
     }

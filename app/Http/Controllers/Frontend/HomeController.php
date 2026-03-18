@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\GalleryResource;
+use App\Http\Resources\GameResource;
 use App\Http\Resources\LiveStatusResource;
 use App\Http\Resources\NewsResource;
 use App\Http\Resources\UserResource;
 use App\Models\CheckLiveStatus;
 use App\Models\Gallery;
+use App\Models\Game;
 use App\Models\News;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -28,6 +30,13 @@ class HomeController extends Controller
         $per_page = $request->query('per_page', 5);
         $featured_gallery = Gallery::latest()->paginate($per_page);
         return $this->sendResponse(GalleryResource::collection($featured_gallery));
+    }
+
+
+    public function get_all_games()
+    {
+        $games = Game::latest()->get();
+        return $this->sendResponse(GameResource::collection($games));
     }
 
 

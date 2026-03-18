@@ -26,7 +26,7 @@ class RoleSeeder extends Seeder
             [
                 'name'     => 'Admin',
                 'password' => Hash::make('12345678'),
-                'referral_no' => 'ahfjkh',
+                'referral_no' => 'ahfjkh'
             ]
         );
 

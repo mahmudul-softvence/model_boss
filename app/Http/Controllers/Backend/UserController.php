@@ -27,7 +27,7 @@ class UserController extends Controller
         $limit = $request->query('limit', 10);
         $search = $request->query('search');
 
-        $users = User::with('roles')
+        $users = User::with(['roles', 'game'])
             ->when($search, function ($query) use ($search) {
                 $query->where('name', 'like', "%{$search}%");
             })
@@ -42,7 +42,10 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request)
     {
+
+
         $validated = $request->validated();
+
 
         $imagePath = null;
 
@@ -56,6 +59,7 @@ class UserController extends Controller
             'email'       => $validated['email'],
             'password'    => bcrypt($validated['password']),
             'image'       => $imagePath,
+            'game_id'     => $validated['game_id'],
             'referral_no' => Str::random(10),
         ]);
 
@@ -91,6 +95,7 @@ class UserController extends Controller
         $validated = $request->validated();
 
         $user->name = $validated['name'];
+        $user->game_id = $validated['game_id'];
 
         if ($request->hasFile('image')) {
 

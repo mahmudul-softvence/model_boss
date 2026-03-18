@@ -20,6 +20,7 @@ class AuthController extends Controller
             'name'        => 'required|string|max:255',
             'email'       => 'required|email|unique:users,email',
             'password'    => 'required|min:8',
+            'game_id'     => 'nullable|exists:games,id',
             'c_password'  => 'required|same:password',
             'referral_id' => 'nullable|string'
         ]);
@@ -30,6 +31,7 @@ class AuthController extends Controller
 
         $data = $request->only(['name', 'email', 'password']);
         $data['password'] = bcrypt($data['password']);
+        $data['game_id'] = $request->game_id;
 
         $referralUser = null;
 

@@ -30,7 +30,8 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'password',
         'reference_status',
         'referral_user_id',
-        'referral_no'
+        'referral_no',
+        'game_id',
     ];
 
     protected $hidden = [
@@ -105,6 +106,12 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     public function isFollowing($userId)
     {
         return $this->following()->where('following_id', $userId)->exists();
+    }
+
+
+    public function game()
+    {
+        return $this->belongsTo(Game::class);
     }
 
 

@@ -27,6 +27,7 @@ class StoreUserRequest extends FormRequest
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'role'     => 'required|exists:roles,name',
+            'game_id'  => 'nullable|exists:games,id',
             'image'    => 'nullable|image|max:3072',
         ];
     }

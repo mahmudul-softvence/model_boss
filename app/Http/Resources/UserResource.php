@@ -33,6 +33,7 @@ class UserResource extends JsonResource
             'total_post' => $this->posts()->count(),
             'role'  => $this->getRoleNames()->first(),
             'referral_no' => $this->referral_no,
+            'game' => $this->game ? GameResource::make($this->game) : null,
             'followers_count' => $this->followers_count,
             'following_count' => $this->following_count,
             'created_at' => $this->created_at->toDateTimeString(),

@@ -43,4 +43,5 @@ Route::middleware(['api'])->group(function () {
     Route::get('get_featured_gallery', [HomeController::class, 'get_featured_gallery']);
     Route::get('get_live_staus', [HomeController::class, 'get_live_staus']);
     Route::get('search_artist', [HomeController::class, 'search_artist']);
+    Route::get('get_all_games', [HomeController::class, 'get_all_games']);
 });
