@@ -59,7 +59,7 @@ class UserController extends Controller
             'email'       => $validated['email'],
             'password'    => bcrypt($validated['password']),
             'image'       => $imagePath,
-            'game_id'     => $validated['game_id'],
+            'game_id'     => $validated['game_id'] ?? null,
             'referral_no' => Str::random(10),
         ]);
 
