@@ -95,7 +95,7 @@ class UserController extends Controller
         $validated = $request->validated();
 
         $user->name = $validated['name'];
-        $user->game_id = $validated['game_id'];
+        $user->game_id = $validated['game_id'] ?? null;
 
         if ($request->hasFile('image')) {
 
