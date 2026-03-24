@@ -11,6 +11,7 @@ use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\MatchController;
 use App\Http\Controllers\Backend\SupportController;
 use App\Http\Controllers\Backend\WinnerController;
+use App\Http\Controllers\Backend\MatchForVotingController;
 
 Route::group(['middleware' => 'api'], function () {
     Route::post('register', [AuthController::class, 'register']);
@@ -81,6 +82,13 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::get('earnings', [DashboardController::class, 'earnings']);
     Route::get('recent-streams', [DashboardController::class, 'recentStreams']);
     Route::get('running-matches', [DashboardController::class, 'runningMatches']);
+
+    //match voting
+    Route::get('match-voting/', [MatchForVotingController::class, 'index']);
+    Route::post('match-voting/', [MatchForVotingController::class, 'store']);
+    Route::get('match-voting/{id}', [MatchForVotingController::class, 'edit']);
+    Route::post('match-voting/{id}', [MatchForVotingController::class, 'update']);
+    Route::delete('match-voting/{id}', [MatchForVotingController::class, 'destroy']);
 });
 
 require __DIR__ . '/backend.php';
