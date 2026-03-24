@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Models\MatchForVoting;
+use App\Models\MatchVoter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MatchForVotingController extends Controller
 {
@@ -161,4 +163,72 @@ class MatchForVotingController extends Controller
             'message' => 'Match deleted successfully'
         ]);
     }
+
+    public function vote(Request $request)
+    {
+        $request->validate([
+            'match_for_voting_id' => 'required|exists:match_for_votings,id',
+        ]);
+
+        $userId = auth('api')->id();
+
+        $alreadyVoted = MatchVoter::where('user_id', $userId)
+            ->where('match_for_voting_id', $request->match_for_voting_id)
+            ->exists();
+
+        if ($alreadyVoted) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You have already voted for this match'
+            ], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            MatchVoter::create([
+                'user_id' => $userId,
+                'match_for_voting_id' => $request->match_for_voting_id,
+            ]);
+
+            $match = MatchForVoting::find($request->match_for_voting_id);
+            $match->increment('total_vote');
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Vote submitted successfully',
+                'data' => [
+                    'match_id' => $match->id,
+                    'total_vote' => $match->total_vote
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong'
+            ], 500);
+        }
+    }
+
+    public function todaysMatches()
+    {
+        $matches = MatchForVoting::with([
+            'game:id,name,image',
+            'playerOne:id,name,image',
+            'playerTwo:id,name,image',
+        ])->whereDate('created_at', now()->toDateString())->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Today\'s matches retrieved successfully',
+            'data' => $matches
+        ]);
+    }
+
 }

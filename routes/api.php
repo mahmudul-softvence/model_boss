@@ -46,6 +46,9 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('past-supports', [SupportController::class, 'pastSupport']);
     Route::get('referral-link-used', [SupportController::class, 'referralLinkUsed']);
     Route::get('support-history', [SupportController::class, 'supportHistory']);
+
+    Route::get('match-for-voting', [MatchForVotingController::class, 'todaysMatches']);
+    Route::post('/vote', [MatchForVotingController::class, 'vote']);
 });
 
 Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
