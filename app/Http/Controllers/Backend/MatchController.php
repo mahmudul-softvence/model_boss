@@ -95,6 +95,7 @@ class MatchController extends Controller
             'loser_percentage'   => 'nullable|in:0,1',
             'tiktok_link'        => 'nullable|url',
             'twitch_link'        => 'nullable|url',
+            'rules'              => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -127,7 +128,16 @@ class MatchController extends Controller
 
         $users = User::role(['user','artist'])->pluck('id')->toArray();
 
-        broadcast(new MatchCreated($users))->toOthers();
+        $players = [
+            $data['player_one_id'],
+            $data['player_two_id']
+        ];
+
+        broadcast(new MatchCreated(
+            $users,
+            $players,
+            $data['rules'] ?? null
+        ))->toOthers();
 
         return response()->json([
             'status'  => true,
@@ -186,6 +196,7 @@ class MatchController extends Controller
             'loser_percentage'     => 'nullable|in:0,1',
             'tiktok_link'          => 'nullable|url',
             'twitch_link'          => 'nullable|url',
+            'rules'                => 'nullable|string',
         ]);
 
         if ($validator->fails()) {

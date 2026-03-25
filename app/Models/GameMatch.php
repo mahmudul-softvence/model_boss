@@ -26,6 +26,7 @@ class GameMatch extends Model
         'confirmation_status', // 0=pending, 1=confirmed, 2=declined
         'match_date',
         'match_time',
+        'rules',
     ];
 
     protected $casts = [
