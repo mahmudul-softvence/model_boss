@@ -13,6 +13,14 @@ use App\Http\Controllers\Backend\SupportController;
 use App\Http\Controllers\Backend\WinnerController;
 use App\Http\Controllers\Backend\MatchForVotingController;
 
+
+Route::get('/login', function () {
+    return response()->json([
+        'success' => false,
+        'message' => 'Please login to continue',
+    ], 401);
+})->name('login');
+
 Route::group(['middleware' => 'api'], function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
