@@ -222,11 +222,11 @@ class MatchForVotingController extends Controller
             'game:id,name,image',
             'playerOne:id,name,image',
             'playerTwo:id,name,image',
-        ])->whereDate('created_at', now()->toDateString())->get();
+        ])->get();
 
         return response()->json([
             'status' => true,
-            'message' => 'Today\'s matches retrieved successfully',
+            'message' => 'Matches retrieved successfully',
             'data' => $matches
         ]);
     }
