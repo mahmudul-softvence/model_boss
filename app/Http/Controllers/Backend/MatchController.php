@@ -13,6 +13,8 @@ use Spatie\Permission\Traits\HasRoles;
 use App\Events\MatchCreated;
 use Illuminate\Support\Facades\Log;
 
+use function Laravel\Prompts\select;
+
 class MatchController extends Controller
 {
     public function index(Request $request)
@@ -314,6 +316,8 @@ class MatchController extends Controller
         $filter  = $request->type ?? 'all';
         $perPage = $request->per_page ?? 10;
 
+        $super = User::where('id',1)->select('image')->first();
+
         $matches = GameMatch::with([
             'game:id,name,image',
             'playerOne:id,name,image',
@@ -342,6 +346,7 @@ class MatchController extends Controller
             'status'  => true,
             'message' => 'Matches retrieved successfully',
             'data'    => $matches->items(),
+            'model_picture'   => $super->image ? asset('storage/' . $super->image) : null,
             'meta'    => [
                 'current_page' => $matches->currentPage(),
                 'last_page'    => $matches->lastPage(),
@@ -355,6 +360,7 @@ class MatchController extends Controller
 
     public function socketMatch($id)
     {
+        $super = User::where('id',1)->select('image')->first();
         $match = GameMatch::with([
             'game:id,name,image',
             'playerOne:id,name,image',
@@ -438,6 +444,7 @@ class MatchController extends Controller
             'status'  => true,
             'message' => 'Match retrieved successfully',
             'data'    => $match,
+            'model_picture'   => $super->image ? asset('storage/' . $super->image) : null,
             'top_supporters' => $topSupporters,
             'player_one_top_supporter' => $playerOneTopSupporter,
             'player_two_top_supporter' => $playerTwoTopSupporter,
