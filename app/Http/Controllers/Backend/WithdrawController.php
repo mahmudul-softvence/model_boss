@@ -57,24 +57,6 @@ class WithdrawController extends Controller
                     throw new \Exception('User balance not found.');
                 }
 
-                // $superAdmin = User::role('super_admin')->first();
-
-                // if (!$superAdmin) {
-                //     throw new \Exception('Super Admin not found.');
-                // }
-
-                // $superBalance = $superAdmin->userBalance()
-                //     ->lockForUpdate()
-                //     ->first();
-
-                // if (!$superBalance) {
-                //     throw new \Exception('Super Admin balance not found.');
-                // }
-
-                // if ($superBalance->total_balance < $withdraw->coin_amount) {
-                //     throw new \Exception('Super Admin balance insufficient.');
-                // }
-
                 $account = Account::retrieve($user->stripe_account_id);
 
                 if (!$account->payouts_enabled) {
@@ -94,8 +76,6 @@ class WithdrawController extends Controller
                 ]);
 
                 $userBalance->increment('total_withdraw', $withdraw->coin_amount);
-
-                // $superBalance->decrement('total_balance', $withdraw->coin_amount);
 
                 $user->coinTransactions()->create([
                     'type' => TransactionType::WITHDRAW,
