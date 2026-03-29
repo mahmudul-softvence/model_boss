@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Backend\AdminSettingController;
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\GalleryController;
 use App\Http\Controllers\Backend\NewsController;
@@ -45,6 +46,14 @@ Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(func
     Route::get('news/{news}', [NewsController::class, 'show']);
     Route::post('news/{news}', [NewsController::class, 'update']);
     Route::delete('news/{news}', [NewsController::class, 'destroy']);
+
+
+    // Admin Profile Change
+
+    Route::put('settings', [AdminSettingController::class, 'update']);
+    Route::put('settings/change_password', [AdminSettingController::class, 'change_password']);
+    Route::get('settings/auto_accept_withdraw', [AdminSettingController::class, 'get_auto_accept_withdraw']);
+    Route::put('settings/auto_accept_withdraw', [AdminSettingController::class, 'auto_accept_withdraw']);
 });
 
 

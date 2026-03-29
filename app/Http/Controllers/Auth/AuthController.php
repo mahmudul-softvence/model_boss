@@ -12,8 +12,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
+
 class AuthController extends Controller
 {
+    /**
+     * Register a new user
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -121,7 +129,7 @@ class AuthController extends Controller
             'total_withdraw' => $userBalance->total_withdraw ?? 0,
             'total_balance' => $userBalance->total_balance ?? 0,
             'total_bet' => $userBalance->total_bet ?? 0,
-        ];;
+        ];
 
         return $this->sendResponse($data, 'User informations.');
     }

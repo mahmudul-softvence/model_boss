@@ -35,6 +35,8 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('stripe/connect', [StripeConnectController::class, 'connect']);
     Route::get('stripe/status', [StripeConnectController::class, 'status']);
     Route::post('withdraw/request', [StripeWithdrawController::class, 'request']);
+
+    Route::get('show_artist_prifile/{id}', [ProfileController::class, 'show_artist_prifile']);
 });
 
 
