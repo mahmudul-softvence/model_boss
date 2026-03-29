@@ -19,8 +19,8 @@ class AdminSettingController extends Controller
             'name'        => 'required|string|max:255',
             'email'       => 'required|email|max:255|unique:users,email,' . $user->id,
             'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'phone'       => 'required|string|max:20',
-            'nationality' => 'required|string|max:100',
+            'phone'       => 'nullable|string|max:20',
+            'nationality' => 'nullable|string|max:100',
         ]);
 
         if ($request->hasFile('image')) {
@@ -75,5 +75,15 @@ class AdminSettingController extends Controller
         ];
 
         return $this->sendResponse($data, 'Auto accept withdraw updated');
+    }
+
+    public function get_auto_accept_withdraw()
+    {
+        $data = [
+            'key'   => 'auto_accept_withdrawals',
+            'value' => Setting::where('key', 'auto_accept_withdrawals')->first()->value
+        ];
+
+        return $this->sendResponse($data);
     }
 }

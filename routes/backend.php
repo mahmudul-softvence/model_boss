@@ -52,6 +52,7 @@ Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(func
 
     Route::put('settings', [AdminSettingController::class, 'update']);
     Route::put('settings/change_password', [AdminSettingController::class, 'change_password']);
+    Route::get('settings/auto_accept_withdraw', [AdminSettingController::class, 'get_auto_accept_withdraw']);
     Route::put('settings/auto_accept_withdraw', [AdminSettingController::class, 'auto_accept_withdraw']);
 });
 
