@@ -27,7 +27,7 @@ class MatchForVotingController extends Controller
         if ($request->filled('player_id')) {
             $query->where(function ($q) use ($request) {
                 $q->where('player_one_id', $request->player_id)
-                ->orWhere('player_two_id', $request->player_id);
+                    ->orWhere('player_two_id', $request->player_id);
             });
         }
 
@@ -38,17 +38,17 @@ class MatchForVotingController extends Controller
 
                 $q->where('id', 'like', "%{$search}%")
 
-                ->orWhereHas('game', function ($gameQuery) use ($search) {
-                    $gameQuery->where('name', 'like', "%{$search}%");
-                })
+                    ->orWhereHas('game', function ($gameQuery) use ($search) {
+                        $gameQuery->where('name', 'like', "%{$search}%");
+                    })
 
-                ->orWhereHas('playerOne', function ($playerQuery) use ($search) {
-                    $playerQuery->where('name', 'like', "%{$search}%");
-                })
+                    ->orWhereHas('playerOne', function ($playerQuery) use ($search) {
+                        $playerQuery->where('name', 'like', "%{$search}%");
+                    })
 
-                ->orWhereHas('playerTwo', function ($playerQuery) use ($search) {
-                    $playerQuery->where('name', 'like', "%{$search}%");
-                });
+                    ->orWhereHas('playerTwo', function ($playerQuery) use ($search) {
+                        $playerQuery->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -94,10 +94,10 @@ class MatchForVotingController extends Controller
     public function edit($id)
     {
         $match = MatchForVoting::with([
-                'game:id,name',
-                'playerOne:id,name',
-                'playerTwo:id,name',
-            ])
+            'game:id,name',
+            'playerOne:id,name',
+            'playerTwo:id,name',
+        ])
             ->find($id);
 
         if (!$match) {
@@ -204,7 +204,6 @@ class MatchForVotingController extends Controller
                     'total_vote' => $match->total_vote
                 ]
             ]);
-
         } catch (\Exception $e) {
 
             DB::rollBack();
@@ -230,5 +229,4 @@ class MatchForVotingController extends Controller
             'data' => $matches
         ]);
     }
-
 }

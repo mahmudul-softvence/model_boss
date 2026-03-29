@@ -42,6 +42,8 @@ Route::group(['middleware' => 'api'], function () {
     Route::get('matches', [MatchController::class, 'landing']);
     Route::get('match/{id}', [MatchController::class, 'socketMatch']);
     Route::get('bigboss-supporter', [SupportController::class, 'bigBossSupporter']);
+
+    Route::get('match-for-voting', [MatchForVotingController::class, 'todaysMatches']);
 });
 
 Route::middleware(['auth:api'])->group(function () {
@@ -55,7 +57,6 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('referral-link-used', [SupportController::class, 'referralLinkUsed']);
     Route::get('support-history', [SupportController::class, 'supportHistory']);
 
-    Route::get('match-for-voting', [MatchForVotingController::class, 'todaysMatches']);
     Route::post('/vote', [MatchForVotingController::class, 'vote']);
 });
 
