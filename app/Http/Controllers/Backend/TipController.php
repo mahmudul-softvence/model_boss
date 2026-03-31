@@ -153,9 +153,19 @@ class TipController extends Controller
             ], 422);
         }
 
+        $fee = $this->calculateFee($amount);
+        $receiverAmount = $amount - $fee;
+
+        if ($receiverAmount <= 0) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Amount is too small after fee deduction.'
+            ], 422);
+        }
+
         try {
 
-            DB::transaction(function () use ($senderId, $receiverId, $amount) {
+            DB::transaction(function () use ($senderId, $receiverId, $amount, $fee, $receiverAmount) {
 
                 $senderBalance = UserBalance::where('user_id', $senderId)
                     ->lockForUpdate()
@@ -165,7 +175,6 @@ class TipController extends Controller
                     throw new \RuntimeException('Insufficient balance.');
                 }
 
-                // deduct sender
                 $senderBalance->total_balance -= $amount;
                 $senderBalance->save();
 
@@ -177,20 +186,34 @@ class TipController extends Controller
                     'reference'     => 'Sent coins to user #' . $receiverId,
                 ]);
 
-                // credit receiver
                 $receiverBalance = UserBalance::where('user_id', $receiverId)
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                $receiverBalance->total_balance += $amount;
+                $receiverBalance->total_balance += $receiverAmount;
                 $receiverBalance->save();
 
                 CoinTransaction::create([
                     'user_id'       => $receiverId,
-                    'type'          => 'receive_coin',
-                    'amount'        => $amount,
+                    'type'          => 'receive-coin',
+                    'amount'        => $receiverAmount,
                     'balance_after' => $receiverBalance->total_balance,
-                    'reference'     => 'Received coins from user #' . $senderId,
+                    'reference'     => 'Received coins (after fee) from user #' . $senderId,
+                ]);
+
+                $adminBalance = UserBalance::where('user_id', 1)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $adminBalance->total_balance += $fee;
+                $adminBalance->save();
+
+                CoinTransaction::create([
+                    'user_id'       => 1,
+                    'type'          => 'Send-coin fee',
+                    'amount'        => $fee,
+                    'balance_after' => $adminBalance->total_balance,
+                    'reference'     => 'Fee from send coin by user #' . $senderId,
                 ]);
             });
 
@@ -212,6 +235,25 @@ class TipController extends Controller
                 'status'  => false,
                 'message' => 'Something went wrong.'
             ], 500);
+        }
+    }
+
+    private function calculateFee($amount)
+    {
+        if ($amount >= 0 && $amount <= 50) {
+            return 5;
+        } elseif ($amount <= 500) {
+            return 10;
+        } elseif ($amount <= 1000) {
+            return 15;
+        } elseif ($amount <= 5000) {
+            return 30;
+        } elseif ($amount <= 20000) {
+            return 100;
+        } elseif ($amount <= 100000) {
+            return 300;
+        } else {
+            return 500;
         }
     }
 
