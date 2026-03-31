@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierController;
-
+use Stripe\StripeClient;
 
 class WebhookController extends CashierController
 {
@@ -27,9 +27,7 @@ class WebhookController extends CashierController
         }
 
         try {
-
             DB::transaction(function () use ($session) {
-
                 $payment = StripePayment::where('stripe_payment_id', $session['id'])
                     ->lockForUpdate()
                     ->firstOrFail();
@@ -38,9 +36,15 @@ class WebhookController extends CashierController
                     return;
                 }
 
+                $invoicePdf = null;
+                if (!empty($session['invoice'])) {
+                    $stripe = new StripeClient(config('cashier.secret'));
+                    $invoice = $stripe->invoices->retrieve($session['invoice']);
+                    $invoicePdf = $invoice->invoice_pdf;
+                }
+
                 $userId = $session['metadata']['user_id'];
                 $amount = $session['metadata']['amount'];
-
                 $user = User::findOrFail($userId);
 
                 if ((int) ($amount * 100) !== $session['amount_total']) {
@@ -58,9 +62,7 @@ class WebhookController extends CashierController
                 $balance = $user->userBalance()->lockForUpdate()->first();
 
                 if (!$balance) {
-                    $balance = $user->userBalance()->create([
-                        'total_balance' => 0
-                    ]);
+                    $balance = $user->userBalance()->create(['total_balance' => 0]);
                 }
 
                 $balance->increment('total_balance', $amount);
@@ -72,14 +74,13 @@ class WebhookController extends CashierController
                     'amount' => $amount,
                     'balance_after' => $balance->total_balance,
                     'reference' => $session['id'],
+                    'invoice_pdf' => $invoicePdf
                 ]);
             });
 
             return response()->noContent();
         } catch (\Throwable $e) {
-
             Log::error('Stripe webhook error: ' . $e->getMessage());
-
             return response()->json(['error' => 'Webhook failed'], 500);
         }
     }

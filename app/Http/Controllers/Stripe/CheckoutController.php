@@ -35,7 +35,11 @@ class CheckoutController extends Controller
                     'user_id' => $user->id,
                     'amount'  => $amount,
                 ],
-            ]
+
+                'invoice_creation' => [
+                    'enabled' => true,
+                ]
+            ],
         );
 
         StripePayment::create([
