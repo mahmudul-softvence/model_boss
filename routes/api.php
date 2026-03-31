@@ -12,7 +12,7 @@ use App\Http\Controllers\Backend\MatchController;
 use App\Http\Controllers\Backend\SupportController;
 use App\Http\Controllers\Backend\WinnerController;
 use App\Http\Controllers\Backend\MatchForVotingController;
-
+use App\Http\Controllers\Backend\TipController;
 
 Route::get('/login', function () {
     return response()->json([
@@ -51,7 +51,11 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('me', [AuthController::class, 'me']);
 
     Route::post('/support', [SupportController::class, 'store']);
-    Route::post('send-tip', [SupportController::class, 'sendTip']);
+    Route::post('send-tip', [TipController::class, 'sendTip']);
+
+    //Send Coin
+    Route::post('send-coin', [TipController::class, 'sendCoin']);
+
     Route::get('user-transactions', [WinnerController::class, 'userTransactions']);
     Route::get('past-supports', [SupportController::class, 'pastSupport']);
     Route::get('referral-link-used', [SupportController::class, 'referralLinkUsed']);
