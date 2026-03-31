@@ -14,6 +14,7 @@ class CoinTransaction extends Model
         'amount',
         'balance_after',
         'reference',
+        'invoice_pdf'
     ];
 
     public function user()
