@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\UserBalance;
 use App\Models\CoinTransaction;
 use App\Models\Tip;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class TipController extends Controller
@@ -257,6 +258,28 @@ class TipController extends Controller
         }
     }
 
+    public function userList(Request $request)
+    {
+        $search = $request->query('search');
 
+        $users = User::query()
+            ->where('id', '!=', 1)
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->select('id', 'name', 'email')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Users retrieved successfully.',
+            'data'   => $users
+        ]);
+    }
 
 }
