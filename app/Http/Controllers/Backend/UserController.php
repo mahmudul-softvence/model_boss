@@ -29,7 +29,12 @@ class UserController extends Controller
 
         $users = User::with(['roles', 'game'])
             ->when($search, function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%");
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('first_name', 'like', "%{$search}%")
+                        ->orWhere('middle_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%");
+                });
             })
             ->latest()
             ->paginate($limit);
@@ -55,11 +60,16 @@ class UserController extends Controller
         }
 
         $user = User::create([
-            'name'        => $validated['name'],
+            'first_name'  => $validated['first_name'],
+            'middle_name' => $validated['middle_name'] ?? null,
+            'last_name'   => $validated['last_name'],
             'email'       => $validated['email'],
             'password'    => bcrypt($validated['password']),
             'image'       => $imagePath,
             'game_id'     => $validated['game_id'] ?? null,
+            'address'     => $validated['address'] ?? null,
+            'zip_code'    => $validated['zip_code'] ?? null,
+            'state'       => $validated['state'] ?? null,
             'referral_no' => Str::random(10),
         ]);
 
@@ -94,8 +104,15 @@ class UserController extends Controller
 
         $validated = $request->validated();
 
-        $user->name = $validated['name'];
-        $user->game_id = $validated['game_id'] ?? null;
+        $user->fill([
+            'first_name' => $validated['first_name'],
+            'middle_name' => $validated['middle_name'] ?? null,
+            'last_name' => $validated['last_name'],
+            'game_id' => $validated['game_id'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'zip_code' => $validated['zip_code'] ?? null,
+            'state' => $validated['state'] ?? null,
+        ]);
 
         if ($request->hasFile('image')) {
 
@@ -201,6 +218,9 @@ class UserController extends Controller
         if ($keyword) {
             $usersQuery->where(function ($q) use ($keyword) {
                 $q->where('name', 'like', "%{$keyword}%")
+                    ->orWhere('first_name', 'like', "%{$keyword}%")
+                    ->orWhere('middle_name', 'like', "%{$keyword}%")
+                    ->orWhere('last_name', 'like', "%{$keyword}%")
                     ->orWhere('email', 'like', "%{$keyword}%");
             });
         } else {

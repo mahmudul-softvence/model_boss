@@ -21,9 +21,15 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     protected $fillable = [
         'name',
+        'first_name',
+        'middle_name',
+        'last_name',
         'email',
         'phone_number',
         'nationality',
+        'address',
+        'zip_code',
+        'state',
         'image',
         'provider',
         'provider_id',
@@ -46,7 +52,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'password' => 'hashed',
         ];
     }
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'full_name'];
 
     public function userBalance()
     {
@@ -142,6 +148,15 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             : null;
     }
 
+    public function getFullNameAttribute(): ?string
+    {
+        return static::formatFullName(
+            $this->first_name,
+            $this->middle_name,
+            $this->last_name
+        );
+    }
+
 
     public function isSuspended(): bool
     {
@@ -150,6 +165,66 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
                 $this->suspension->is_permanent ||
                 ($this->suspension->suspended_until?->isFuture())
             );
+    }
+
+    public static function splitFullName(?string $fullName): array
+    {
+        $fullName = preg_replace('/\s+/', ' ', trim((string) $fullName));
+
+        if ($fullName === '') {
+            return [
+                'first_name' => null,
+                'middle_name' => null,
+                'last_name' => null,
+            ];
+        }
+
+        $parts = explode(' ', $fullName);
+        $firstName = array_shift($parts);
+        $lastName = count($parts) > 0 ? array_pop($parts) : null;
+        $middleName = count($parts) > 0 ? implode(' ', $parts) : null;
+
+        return [
+            'first_name' => $firstName,
+            'middle_name' => $middleName,
+            'last_name' => $lastName,
+        ];
+    }
+
+    public static function formatFullName(?string $firstName, ?string $middleName = null, ?string $lastName = null): ?string
+    {
+        $fullName = trim(implode(' ', array_filter([
+            $firstName,
+            $middleName,
+            $lastName,
+        ])));
+
+        return $fullName !== '' ? $fullName : null;
+    }
+
+    protected static function booted()
+    {
+        static::saving(function ($user) {
+            $nameFields = ['first_name', 'middle_name', 'last_name'];
+
+            if ($user->isDirty($nameFields)) {
+                $user->name = static::formatFullName(
+                    $user->first_name,
+                    $user->middle_name,
+                    $user->last_name
+                );
+
+                return;
+            }
+
+            if ($user->isDirty('name')) {
+                $parts = static::splitFullName($user->name);
+
+                $user->first_name = $parts['first_name'];
+                $user->middle_name = $parts['middle_name'];
+                $user->last_name = $parts['last_name'];
+            }
+        });
     }
 
     protected static function boot()
