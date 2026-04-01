@@ -4,9 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -84,6 +83,13 @@ class SocialController extends Controller
                 $email = $providerId . '@' . $provider . '.local';
             }
 
+            $name = $socialUser->getName()
+                ?? $socialUser->getNickname()
+                ?? Str::before($email, '@')
+                ?? 'User';
+
+            $nameParts = User::splitFullName($name);
+
             $avatarPath = null;
             if ($socialUser->getAvatar()) {
                 $avatarContents = file_get_contents($socialUser->getAvatar());
@@ -93,7 +99,9 @@ class SocialController extends Controller
             }
 
             $user = User::create([
-                'name'        => $socialUser->getName() ?? $socialUser->getNickname(),
+                'first_name'  => $nameParts['first_name'] ?? 'User',
+                'middle_name' => $nameParts['middle_name'],
+                'last_name'   => $nameParts['last_name'],
                 'email'       => $email,
                 'image'       => $avatarPath,
                 'provider'    => $provider,
@@ -152,14 +160,7 @@ class SocialController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
             'expires_in' => auth()->factory()->getTTL() * 60,
-
-            'user' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'image' => $user->image,
-                'email_verified' => !is_null($user->email_verified_at),
-                'role' => $user->getRoleNames()->first(),
-            ]
+            'user' => UserResource::make($user)->resolve(),
 
         ];
     }

@@ -25,19 +25,33 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'        => 'required|string|max:255',
+            'first_name'  => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'last_name'   => 'required|string|max:255',
             'email'       => 'required|email|unique:users,email',
             'password'    => 'required|min:8',
             'game_id'     => 'nullable|exists:games,id',
             'c_password'  => 'required|same:password',
-            'referral_id' => 'nullable|string'
+            'referral_id' => 'nullable|string',
+            'address'     => 'nullable|string|max:255',
+            'zip_code'    => 'nullable|string|max:20',
+            'state'       => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
             return $this->sendError('Validation Error.', $validator->errors(), 422);
         }
 
-        $data = $request->only(['name', 'email', 'password']);
+        $data = $request->only([
+            'first_name',
+            'middle_name',
+            'last_name',
+            'email',
+            'password',
+            'address',
+            'zip_code',
+            'state',
+        ]);
         $data['password'] = bcrypt($data['password']);
         $data['game_id'] = $request->game_id;
 

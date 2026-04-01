@@ -28,9 +28,16 @@ class ProfileController extends Controller
             $user->image = $imagePath;
         }
 
-        $user->name = $validated['name'];
-        $user->phone_number = $validated['phone_number'] ?? null;
-        $user->nationality = $validated['nationality'] ?? null;
+        $user->fill([
+            'first_name' => $validated['first_name'],
+            'middle_name' => $validated['middle_name'] ?? null,
+            'last_name' => $validated['last_name'],
+            'phone_number' => $validated['phone_number'] ?? null,
+            'nationality' => $validated['nationality'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'zip_code' => $validated['zip_code'] ?? null,
+            'state' => $validated['state'] ?? null,
+        ]);
 
         $user->save();
 

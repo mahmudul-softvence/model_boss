@@ -18,10 +18,16 @@ class UserResource extends JsonResource
 
         return [
             'id'    => $this->id,
-            'name'  => $this->name,
+            'name'  => $this->full_name ?? $this->name,
+            'first_name' => $this->first_name,
+            'middle_name' => $this->middle_name,
+            'last_name' => $this->last_name,
             'email' => $this->email,
             'phone_number' => $this->phone_number,
             'nationality' => $this->nationality,
+            'address' => $this->address,
+            'zip_code' => $this->zip_code,
+            'state' => $this->state,
             'image' => $this->image_url,
             'provider' => $this->provider,
             'verified_at' => !is_null($this->email_verified_at),
