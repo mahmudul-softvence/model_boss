@@ -54,6 +54,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('send-tip', [TipController::class, 'sendTip']);
 
     //Send Coin
+    Route::get('user-list', [TipController::class, 'userList']);
     Route::post('send-coin', [TipController::class, 'sendCoin']);
 
     Route::get('user-transactions', [WinnerController::class, 'userTransactions']);
