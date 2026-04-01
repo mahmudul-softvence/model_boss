@@ -161,4 +161,36 @@ class WinnerController extends Controller
         ], 200);
     }
 
+    public function adminTransactions(Request $request)
+    {
+        $perPage = $request->per_page ?? 10;
+        $search  = $request->search;
+
+        $transactions = CoinTransaction::with('user')
+            ->when($search, function ($query) use ($search) {
+                $query->where('type', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q) use ($search) {
+                        $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                    });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Transactions retrieved successfully',
+            'data'   => $transactions->items(),
+            'meta'   => [
+                'current_page' => $transactions->currentPage(),
+                'last_page'    => $transactions->lastPage(),
+                'per_page'     => $transactions->perPage(),
+                'total'        => $transactions->total(),
+                'prev'         => $transactions->currentPage() > 1,
+                'next'         => $transactions->hasMorePages(),
+            ],
+        ], 200);
+    }
+
 }

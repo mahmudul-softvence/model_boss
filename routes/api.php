@@ -106,6 +106,9 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::get('match-voting/{id}', [MatchForVotingController::class, 'edit']);
     Route::post('match-voting/{id}', [MatchForVotingController::class, 'update']);
     Route::delete('match-voting/{id}', [MatchForVotingController::class, 'destroy']);
+
+    Route::get('all-transaction', [WinnerController::class, 'adminTransactions']);
+
 });
 
 require __DIR__ . '/backend.php';
