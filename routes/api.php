@@ -107,7 +107,7 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::post('match-voting/{id}', [MatchForVotingController::class, 'update']);
     Route::delete('match-voting/{id}', [MatchForVotingController::class, 'destroy']);
 
-    Route::get('admin-transactions', [WinnerController::class, 'adminTransactions']);
+    Route::get('all-transaction', [WinnerController::class, 'adminTransactions']);
 
 });
 
