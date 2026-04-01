@@ -166,14 +166,17 @@ class WinnerController extends Controller
         $perPage = $request->per_page ?? 10;
         $search  = $request->search;
 
-        $transactions = CoinTransaction::with('user')
+        $transactions = CoinTransaction::with([
+                'user:id,name,email'
+            ])
             ->when($search, function ($query) use ($search) {
-                $query->where('type', 'like', "%{$search}%")
-                    ->orWhereHas('user', function ($q) use ($search) {
-                        $q->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('type', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%");
                     });
+                });
             })
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
