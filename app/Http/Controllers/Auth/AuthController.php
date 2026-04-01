@@ -36,6 +36,7 @@ class AuthController extends Controller
             'address'     => 'nullable|string|max:255',
             'zip_code'    => 'nullable|string|max:20',
             'state'       => 'nullable|string|max:255',
+            'social_verification_status' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -51,6 +52,7 @@ class AuthController extends Controller
             'address',
             'zip_code',
             'state',
+            'social_verification_status'
         ]);
         $data['password'] = bcrypt($data['password']);
         $data['game_id'] = $request->game_id;

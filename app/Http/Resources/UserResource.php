@@ -28,6 +28,7 @@ class UserResource extends JsonResource
             'address' => $this->address,
             'zip_code' => $this->zip_code,
             'state' => $this->state,
+            'social_verification_status' => $this->social_verification_status,
             'image' => $this->image_url,
             'provider' => $this->provider,
             'verified_at' => !is_null($this->email_verified_at),

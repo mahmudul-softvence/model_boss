@@ -38,6 +38,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'referral_user_id',
         'referral_no',
         'game_id',
+        'social_verification_status'
     ];
 
     protected $hidden = [

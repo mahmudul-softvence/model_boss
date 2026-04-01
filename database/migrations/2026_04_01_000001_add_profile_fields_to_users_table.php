@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('address')->nullable()->after('phone_number');
             $table->string('zip_code')->nullable()->after('address');
             $table->string('state')->nullable()->after('zip_code');
+            $table->boolean('social_verification_status')->nullable()->after('state')->default(false);
         });
 
         DB::table('users')
@@ -61,6 +62,7 @@ return new class extends Migration
                 'address',
                 'zip_code',
                 'state',
+                'social_verification_status'
             ]);
         });
     }

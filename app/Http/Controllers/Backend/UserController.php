@@ -71,6 +71,7 @@ class UserController extends Controller
             'zip_code'    => $validated['zip_code'] ?? null,
             'state'       => $validated['state'] ?? null,
             'referral_no' => Str::random(10),
+            'social_verification_status' => $validated['social_verification_status'] ?? null,
         ]);
 
         $user->markEmailAsVerified();
@@ -112,6 +113,7 @@ class UserController extends Controller
             'address' => $validated['address'] ?? null,
             'zip_code' => $validated['zip_code'] ?? null,
             'state' => $validated['state'] ?? null,
+            'social_verification_status' => $validated['social_verification_status'] ?? null,
         ]);
 
         if ($request->hasFile('image')) {
