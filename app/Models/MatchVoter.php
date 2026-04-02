@@ -12,6 +12,7 @@ class MatchVoter extends Model
     protected $fillable = [
         'user_id',
         'match_for_voting_id',
+        'total_vote',
     ];
 
     public function user()

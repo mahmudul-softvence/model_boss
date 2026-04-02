@@ -14,6 +14,8 @@ class MatchForVoting extends Model
         'player_one_id',
         'player_two_id',
         'total_vote',
+        'start_time',
+        'end_time',
     ];
 
     public function game()
