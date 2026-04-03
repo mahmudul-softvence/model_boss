@@ -166,6 +166,8 @@ class WinnerController extends Controller
         $perPage = $request->per_page ?? 10;
         $search  = $request->search;
 
+        $adminBalance = UserBalance::where('user_id', 1)->first();
+
         $transactions = CoinTransaction::with([
                 'user:id,name,email'
             ])
@@ -185,6 +187,8 @@ class WinnerController extends Controller
             'status' => true,
             'message' => 'Transactions retrieved successfully',
             'data'   => $transactions->items(),
+            'total_recharge' => $adminBalance ? $adminBalance->total_recharge : 0,
+            'total_earning' => $adminBalance ? $adminBalance->total_balance : 0,
             'meta'   => [
                 'current_page' => $transactions->currentPage(),
                 'last_page'    => $transactions->lastPage(),
