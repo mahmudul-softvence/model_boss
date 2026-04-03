@@ -439,7 +439,13 @@ class MatchController extends Controller
                     : null,
             ]
             : null;
+        $playerOneTotalSupporter = Support::where('match_id', $id)
+            ->where('supported_player_id', $match->player_one_id)
+            ->count();
 
+        $playerTwoTotalSupporter = Support::where('match_id', $id)
+            ->where('supported_player_id', $match->player_two_id)
+            ->count();
         return response()->json([
             'status'  => true,
             'message' => 'Match retrieved successfully',
@@ -447,7 +453,9 @@ class MatchController extends Controller
             'model_picture'   => $super->image ? asset('storage/' . $super->image) : null,
             'top_supporters' => $topSupporters,
             'player_one_top_supporter' => $playerOneTopSupporter,
+            'player_one_total_supporter' => $playerOneTotalSupporter,
             'player_two_top_supporter' => $playerTwoTopSupporter,
+            'player_two_total_supporter' => $playerTwoTotalSupporter,
         ]);
     }
 

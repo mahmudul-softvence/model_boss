@@ -153,6 +153,13 @@ class SupportController extends Controller
                     ]
                     : null;
 
+                $playerOneTotalSupporter = Support::where('match_id', $match->id)
+                    ->where('supported_player_id', $match->player_one_id)
+                    ->count();
+                $playerTwoTotalSupporter = Support::where('match_id', $match->id)
+                    ->where('supported_player_id', $match->player_two_id)
+                    ->count();
+
                 return [
                     'support'                    => $support,
                     'updated_balance'            => $balance->fresh()->total_balance,
@@ -161,7 +168,9 @@ class SupportController extends Controller
                     'match_player_two_total'     => $match->fresh()->player_two_total,
                     'top_supporters'             => $topSupporters,
                     'player_one_top_supporter'   => $playerOneTopSupporter,
+                    'player_one_total_supporter' => $playerOneTotalSupporter,
                     'player_two_top_supporter'   => $playerTwoTopSupporter,
+                    'player_two_total_supporter' => $playerTwoTotalSupporter,
                 ];
             });
 
