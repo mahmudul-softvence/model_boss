@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Models\CoinTransaction;
 use App\Models\MatchForVoting;
 use App\Models\MatchVoter;
 use App\Models\UserBalance;
@@ -216,6 +217,36 @@ class MatchForVotingController extends Controller
 
             $user_balance->decrement('total_balance', $request->total_vote);
 
+            $adminBalance = UserBalance::where('user_id', 1)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$adminBalance) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Admin balance not found'
+                ], 500);
+            }
+
+            $adminBalance->increment('total_balance', $request->total_vote);
+
+            CoinTransaction::create([
+                'user_id' => $userId,
+                'type' => 'vote',
+                'amount' => -$request->total_vote,
+                'balance_after' => $user_balance->fresh()->total_balance,
+                'reference' => 'Vote for match ID: ' . $match->id,
+            ]);
+
+            CoinTransaction::create([
+                'user_id' => 1,
+                'type' => 'vote',
+                'amount' => $request->total_vote,
+                'balance_after' => $adminBalance->fresh()->total_balance,
+                'reference' => 'Received vote from user ID: ' . $userId,
+            ]);
+
             DB::commit();
 
             return response()->json([
@@ -232,7 +263,8 @@ class MatchForVotingController extends Controller
 
             return response()->json([
                 'status' => false,
-                'message' => 'Something went wrong'
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
