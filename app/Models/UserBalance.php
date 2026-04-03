@@ -16,6 +16,7 @@ class UserBalance extends Model
         'total_withdraw',
         'total_balance',
         'total_bet',
+        'total_recharge',
     ];
 
     public function user()
