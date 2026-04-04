@@ -72,6 +72,7 @@ class UserController extends Controller
             'state'       => $validated['state'] ?? null,
             'referral_no' => Str::random(10),
             'social_verification_status' => $validated['social_verification_status'] ?? null,
+            'is_player'   => (bool) ($validated['is_player'] ?? false),
         ]);
 
         $user->markEmailAsVerified();
@@ -115,6 +116,10 @@ class UserController extends Controller
             'state' => $validated['state'] ?? null,
             'social_verification_status' => $validated['social_verification_status'] ?? null,
         ]);
+
+        if ($request->exists('is_player')) {
+            $user->is_player = (bool) $validated['is_player'];
+        }
 
         if ($request->hasFile('image')) {
 

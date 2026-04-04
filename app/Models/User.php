@@ -38,7 +38,8 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'referral_user_id',
         'referral_no',
         'game_id',
-        'social_verification_status'
+        'social_verification_status',
+        'is_player'
     ];
 
     protected $hidden = [
@@ -51,6 +52,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_player' => 'boolean',
         ];
     }
     protected $appends = ['image_url', 'full_name'];
