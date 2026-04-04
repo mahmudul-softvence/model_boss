@@ -1,18 +1,17 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Backend\CategoryController;
-use App\Http\Controllers\Backend\GameController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\Backend\CategoryController;
 use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\Backend\GameController;
 use App\Http\Controllers\Backend\MatchController;
-use App\Http\Controllers\Backend\SupportController;
-use App\Http\Controllers\Backend\WinnerController;
 use App\Http\Controllers\Backend\MatchForVotingController;
+use App\Http\Controllers\Backend\SupportController;
 use App\Http\Controllers\Backend\TipController;
+use App\Http\Controllers\Backend\WinnerController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/login', function () {
     return response()->json([
@@ -31,7 +30,7 @@ Route::group(['middleware' => 'api'], function () {
         ->middleware('signed')->name('verification.verify');
 
     Route::get('{provider}/redirect', [SocialController::class, 'redirect']);
-    Route::get('{provider}/callback', [SocialController::class, 'callback']);
+    Route::match(['GET', 'POST'], '{provider}/callback', [SocialController::class, 'callback']);
 
     Route::post('forgot_password', [ForgotPasswordController::class, 'forgot_password']);
     Route::post('verify_forgot_password', [ForgotPasswordController::class, 'verify_forgot_password']);
@@ -53,7 +52,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/support', [SupportController::class, 'store']);
     Route::post('send-tip', [TipController::class, 'sendTip']);
 
-    //Send Coin
+    // Send Coin
     Route::get('user-list', [TipController::class, 'userList']);
     Route::post('send-coin', [TipController::class, 'sendCoin']);
 
@@ -66,14 +65,14 @@ Route::middleware(['auth:api'])->group(function () {
 });
 
 Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
-    //Category
+    // Category
     Route::get('categories', [CategoryController::class, 'index']);
     Route::post('categories', [CategoryController::class, 'store']);
     Route::get('categories/{id}', [CategoryController::class, 'edit']);
     Route::post('categories/{id}', [CategoryController::class, 'update']);
     Route::delete('categories/{id}', [CategoryController::class, 'destroy']);
 
-    //Game
+    // Game
     Route::get('games', [GameController::class, 'index']);
     Route::post('games', [GameController::class, 'store']);
     Route::get('games/{id}', [GameController::class, 'edit']);
@@ -81,13 +80,13 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::delete('games/{id}', [GameController::class, 'destroy']);
     Route::get('all-games', [GameController::class, 'allGames']);
 
-    //Match
+    // Match
     Route::get('matches', [MatchController::class, 'index']);
     Route::post('matches', [MatchController::class, 'store']);
     Route::get('matches/{id}', [MatchController::class, 'edit']);
     Route::post('matches/{id}', [MatchController::class, 'update']);
     Route::delete('matches/{id}', [MatchController::class, 'destroy']);
-    //match confirmation
+    // match confirmation
     Route::post('match-confirm/{id}', [SupportController::class, 'confirm']);
 
     Route::get('match-players/{id}', [MatchController::class, 'players']);
@@ -100,7 +99,7 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::get('recent-streams', [DashboardController::class, 'recentStreams']);
     Route::get('running-matches', [DashboardController::class, 'runningMatches']);
 
-    //match voting
+    // match voting
     Route::get('match-voting/', [MatchForVotingController::class, 'index']);
     Route::post('match-voting/', [MatchForVotingController::class, 'store']);
     Route::get('match-voting/{id}', [MatchForVotingController::class, 'edit']);
@@ -108,5 +107,5 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::delete('match-voting/{id}', [MatchForVotingController::class, 'destroy']);
 });
 
-require __DIR__ . '/backend.php';
-require __DIR__ . '/frontend.php';
+require __DIR__.'/backend.php';
+require __DIR__.'/frontend.php';

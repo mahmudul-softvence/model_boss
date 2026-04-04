@@ -12,17 +12,16 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialController extends Controller
 {
+    private const SUPPORTED_PROVIDERS = ['google', 'facebook', 'apple'];
 
     /**
      * Get the social authentication redirect URL.
      *
-     * @param  string  $provider
      * @return \Illuminate\Http\JsonResponse
      */
-
     public function redirect(string $provider)
     {
-        if (!in_array($provider, ['google', 'facebook'])) {
+        if (! $this->supportsProvider($provider)) {
             return $this->sendError('Unsupported provider', [], 400);
         }
 
@@ -30,8 +29,12 @@ class SocialController extends Controller
 
         if ($provider === 'google') {
             $socialite->with([
-                'prompt' => 'select_account'
+                'prompt' => 'select_account',
             ]);
+        }
+
+        if ($provider === 'apple') {
+            $socialite->scopes(['name', 'email']);
         }
 
         return $this->sendResponse([
@@ -39,20 +42,21 @@ class SocialController extends Controller
         ]);
     }
 
-
     /**
      * Handle the social authentication callback.
      *
-     * @param  string  $provider
      * @return \Illuminate\Http\JsonResponse
      */
-
     public function callback(string $provider)
     {
+        if (! $this->supportsProvider($provider)) {
+            return $this->sendError('Unsupported provider', [], 400);
+        }
+
         $socialUser = Socialite::driver($provider)->stateless()->user();
 
         $providerId = $socialUser->getId();
-        $email      = $socialUser->getEmail();
+        $email = $socialUser->getEmail();
 
         $user = User::where('provider', $provider)
             ->where('provider_id', $providerId)
@@ -65,22 +69,22 @@ class SocialController extends Controller
                 $avatarPath = null;
                 if ($socialUser->getAvatar()) {
                     $avatarContents = file_get_contents($socialUser->getAvatar());
-                    $avatarName = 'users/images/' . Str::random(40) . '.jpg';
+                    $avatarName = 'users/images/'.Str::random(40).'.jpg';
                     Storage::disk('public')->put($avatarName, $avatarContents);
                     $avatarPath = $avatarName;
                 }
 
                 $user->update([
-                    'provider'    => $provider,
+                    'provider' => $provider,
                     'provider_id' => $providerId,
-                    'image'       => $avatarPath ?? $user->image,
+                    'image' => $avatarPath ?? $user->image,
                 ]);
             }
         }
 
         if (! $user) {
             if (! $email) {
-                $email = $providerId . '@' . $provider . '.local';
+                $email = $providerId.'@'.$provider.'.local';
             }
 
             $name = $socialUser->getName()
@@ -93,18 +97,18 @@ class SocialController extends Controller
             $avatarPath = null;
             if ($socialUser->getAvatar()) {
                 $avatarContents = file_get_contents($socialUser->getAvatar());
-                $avatarName = 'users/images/' . Str::random(40) . '.jpg';
+                $avatarName = 'users/images/'.Str::random(40).'.jpg';
                 Storage::disk('public')->put($avatarName, $avatarContents);
                 $avatarPath = $avatarName;
             }
 
             $user = User::create([
-                'first_name'  => $nameParts['first_name'] ?? 'User',
+                'first_name' => $nameParts['first_name'] ?? 'User',
                 'middle_name' => $nameParts['middle_name'],
-                'last_name'   => $nameParts['last_name'],
-                'email'       => $email,
-                'image'       => $avatarPath,
-                'provider'    => $provider,
+                'last_name' => $nameParts['last_name'],
+                'email' => $email,
+                'image' => $avatarPath,
+                'provider' => $provider,
                 'provider_id' => $providerId,
             ]);
 
@@ -119,18 +123,18 @@ class SocialController extends Controller
             $suspension = $user->suspension;
 
             $data = [
-                'success'   => false,
+                'success' => false,
                 'suspended' => true,
                 'permanent' => $suspension?->is_permanent ?? false,
-                'until'     => $suspension?->suspended_until,
-                'reason'    => $suspension?->reason,
-                'note'      => $suspension?->note,
+                'until' => $suspension?->suspended_until,
+                'reason' => $suspension?->reason,
+                'note' => $suspension?->note,
             ];
 
             $encodedData = base64_encode(json_encode($data));
 
             return redirect()->away(
-                config('app.frontend_url') . '/' . $provider . '/callback?data=' . $encodedData
+                config('app.frontend_url').'/'.$provider.'/callback?data='.$encodedData
             );
         }
 
@@ -141,21 +145,20 @@ class SocialController extends Controller
         $encodedData = base64_encode(json_encode($data));
 
         return redirect()->away(
-            config('app.frontend_url') . '/' . $provider . '/callback?data=' . $encodedData
+            config('app.frontend_url').'/'.$provider.'/callback?data='.$encodedData
         );
     }
-
-
 
     /**
      * Get the token array structure.
      *
-     * @param  string $token
+     * @param  string  $token
      * @return \Illuminate\Http\JsonResponse
      */
     protected function respondWithToken($token)
     {
         $user = auth()->user();
+
         return [
             'access_token' => $token,
             'token_type' => 'Bearer',
@@ -163,5 +166,10 @@ class SocialController extends Controller
             'user' => UserResource::make($user)->resolve(),
 
         ];
+    }
+
+    private function supportsProvider(string $provider): bool
+    {
+        return in_array($provider, self::SUPPORTED_PROVIDERS, true);
     }
 }
