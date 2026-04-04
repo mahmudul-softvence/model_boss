@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Traits\HasRoles;
 use App\Events\MatchCreated;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 use function Laravel\Prompts\select;
 
@@ -85,10 +86,11 @@ class MatchController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            // 'match_no'        => 'required|string|max:50|unique:game_matches,match_no',
             'game_id'            => 'required|exists:games,id',
             'player_one_id'      => 'required|exists:users,id',
+            'player_one_logo'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'player_two_id'      => 'required|exists:users,id|different:player_one_id',
+            'player_two_logo'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'players_bet_amount' => 'required|numeric|min:0',
             'type'               => 'required|string|max:50|in:upcoming',
             'match_date'         => 'required|date|after_or_equal:today',
@@ -109,6 +111,14 @@ class MatchController extends Controller
         }
 
         $data = $request->all();
+
+        if ($request->hasFile('player_one_logo')) {
+            $data['player_one_logo'] = $request->file('player_one_logo')->store('logos', 'public');
+        }
+
+        if ($request->hasFile('player_two_logo')) {
+            $data['player_two_logo'] = $request->file('player_two_logo')->store('logos', 'public');
+        }
 
         do {
             $matchNo = random_int(100000, 999999);
@@ -186,10 +196,11 @@ class MatchController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            // 'match_no'          => 'required|string|max:50|unique:game_matches,match_no,' . $match->id,
             'game_id'              => 'required|exists:games,id',
             'player_one_id'        => 'required|exists:users,id',
+            'player_one_logo'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'player_two_id'        => 'required|exists:users,id|different:player_one_id',
+            'player_two_logo'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'players_bet_amount'   => 'required|numeric|min:0',
             'type'                 => 'required|string|max:50',
             'match_date'           => 'required|date',
@@ -210,6 +221,31 @@ class MatchController extends Controller
         }
 
         $data = $request->all();
+
+        if ($request->hasFile('player_one_logo')) {
+
+            $oldPath = $match->getRawOriginal('player_one_logo');
+
+            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $data['player_one_logo'] = $request->file('player_one_logo')
+                ->store('logos', 'public');
+        }
+
+        if ($request->hasFile('player_two_logo')) {
+
+            $oldPath = $match->getRawOriginal('player_two_logo');
+
+            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $data['player_two_logo'] = $request->file('player_two_logo')
+                ->store('logos', 'public');
+        }
+
         $data['match_no'] = $match->match_no;
 
         if ($data['players_bet_amount'] != $match->player_one_bet) {
