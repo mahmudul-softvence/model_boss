@@ -283,6 +283,7 @@ class MatchController extends Controller
         ]);
     }
 
+
     public function destroy($id)
     {
         $match = GameMatch::find($id);
@@ -292,6 +293,18 @@ class MatchController extends Controller
                 'status'  => false,
                 'message' => 'Match not found',
             ], 404);
+        }
+
+        $playerOneLogo = $match->getRawOriginal('player_one_logo');
+
+        if ($playerOneLogo && Storage::disk('public')->exists($playerOneLogo)) {
+            Storage::disk('public')->delete($playerOneLogo);
+        }
+
+        $playerTwoLogo = $match->getRawOriginal('player_two_logo');
+
+        if ($playerTwoLogo && Storage::disk('public')->exists($playerTwoLogo)) {
+            Storage::disk('public')->delete($playerTwoLogo);
         }
 
         $match->delete();
