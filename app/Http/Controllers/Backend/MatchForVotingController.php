@@ -173,79 +173,131 @@ class MatchForVotingController extends Controller
         ]);
     }
 
+    // public function vote(Request $request)
+    // {
+    //     $request->validate([
+    //         'match_for_voting_id' => 'required|exists:match_for_votings,id',
+    //         'total_vote' => 'required|integer|min:1',
+    //     ]);
+
+    //     $userId = auth('api')->id();
+
+    //     DB::beginTransaction();
+
+    //     try {
+    //         $user_balance = UserBalance::where('user_id', $userId)
+    //             ->lockForUpdate()
+    //             ->first();
+
+    //         if (!$user_balance || $user_balance->total_balance < $request->total_vote) {
+    //             DB::rollBack();
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Insufficient balance'
+    //             ], 400);
+    //         }
+
+    //         $match = MatchForVoting::find($request->match_for_voting_id);
+
+    //         if (!$match || now()->lt($match->start_time) || now()->gt($match->end_time)) {
+    //             DB::rollBack();
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Voting is not active'
+    //             ], 400);
+    //         }
+
+    //         MatchVoter::create([
+    //             'user_id' => $userId,
+    //             'match_for_voting_id' => $match->id,
+    //             'total_vote' => $request->total_vote,
+    //         ]);
+
+    //         $match->increment('total_vote', $request->total_vote);
+
+    //         $user_balance->decrement('total_balance', $request->total_vote);
+
+    //         $adminBalance = UserBalance::where('user_id', 1)
+    //             ->lockForUpdate()
+    //             ->first();
+
+    //         if (!$adminBalance) {
+    //             DB::rollBack();
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Admin balance not found'
+    //             ], 500);
+    //         }
+
+    //         $adminBalance->increment('total_balance', $request->total_vote);
+
+    //         CoinTransaction::create([
+    //             'user_id' => $userId,
+    //             'type' => 'vote',
+    //             'amount' => -$request->total_vote,
+    //             'balance_after' => $user_balance->fresh()->total_balance,
+    //             'reference' => 'Vote for match ID: ' . $match->id,
+    //         ]);
+
+    //         CoinTransaction::create([
+    //             'user_id' => 1,
+    //             'type' => 'vote',
+    //             'amount' => $request->total_vote,
+    //             'balance_after' => $adminBalance->fresh()->total_balance,
+    //             'reference' => 'Received vote from user ID: ' . $userId,
+    //         ]);
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Vote submitted successfully',
+    //             'data' => [
+    //                 'match_id' => $match->id,
+    //                 'total_vote' => $match->total_vote
+    //             ]
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Something went wrong',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function vote(Request $request)
     {
         $request->validate([
             'match_for_voting_id' => 'required|exists:match_for_votings,id',
-            'total_vote' => 'required|integer|min:1',
         ]);
 
         $userId = auth('api')->id();
 
+        $alreadyVoted = MatchVoter::where('user_id', $userId)
+            ->where('match_for_voting_id', $request->match_for_voting_id)
+            ->exists();
+
+        if ($alreadyVoted) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You have already voted for this match'
+            ], 400);
+        }
+
         DB::beginTransaction();
 
         try {
-            $user_balance = UserBalance::where('user_id', $userId)
-                ->lockForUpdate()
-                ->first();
-
-            if (!$user_balance || $user_balance->total_balance < $request->total_vote) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Insufficient balance'
-                ], 400);
-            }
-
-            $match = MatchForVoting::find($request->match_for_voting_id);
-
-            if (!$match || now()->lt($match->start_time) || now()->gt($match->end_time)) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Voting is not active'
-                ], 400);
-            }
-
             MatchVoter::create([
                 'user_id' => $userId,
-                'match_for_voting_id' => $match->id,
-                'total_vote' => $request->total_vote,
+                'match_for_voting_id' => $request->match_for_voting_id,
             ]);
 
-            $match->increment('total_vote', $request->total_vote);
-
-            $user_balance->decrement('total_balance', $request->total_vote);
-
-            $adminBalance = UserBalance::where('user_id', 1)
-                ->lockForUpdate()
-                ->first();
-
-            if (!$adminBalance) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Admin balance not found'
-                ], 500);
-            }
-
-            $adminBalance->increment('total_balance', $request->total_vote);
-
-            CoinTransaction::create([
-                'user_id' => $userId,
-                'type' => 'vote',
-                'amount' => -$request->total_vote,
-                'balance_after' => $user_balance->fresh()->total_balance,
-                'reference' => 'Vote for match ID: ' . $match->id,
-            ]);
-
-            CoinTransaction::create([
-                'user_id' => 1,
-                'type' => 'vote',
-                'amount' => $request->total_vote,
-                'balance_after' => $adminBalance->fresh()->total_balance,
-                'reference' => 'Received vote from user ID: ' . $userId,
-            ]);
+            $match = MatchForVoting::find($request->match_for_voting_id);
+            $match->increment('total_vote');
 
             DB::commit();
 
@@ -257,14 +309,13 @@ class MatchForVotingController extends Controller
                     'total_vote' => $match->total_vote
                 ]
             ]);
-
         } catch (\Exception $e) {
+
             DB::rollBack();
 
             return response()->json([
                 'status' => false,
-                'message' => 'Something went wrong',
-                'error' => $e->getMessage()
+                'message' => 'Something went wrong'
             ], 500);
         }
     }
