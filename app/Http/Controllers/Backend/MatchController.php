@@ -100,6 +100,7 @@ class MatchController extends Controller
             'tiktok_link'        => 'nullable|url',
             'twitch_link'        => 'nullable|url',
             'rules'              => 'nullable|string',
+            'voting_time'        => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -210,6 +211,7 @@ class MatchController extends Controller
             'tiktok_link'          => 'nullable|url',
             'twitch_link'          => 'nullable|url',
             'rules'                => 'nullable|string',
+            'voting_time'          => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {

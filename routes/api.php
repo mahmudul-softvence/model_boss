@@ -62,6 +62,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('support-history', [SupportController::class, 'supportHistory']);
 
     Route::post('/vote', [MatchForVotingController::class, 'vote']);
+    Route::post('/vote-player/{match_id}', [MatchForVotingController::class, 'votePlayer']);
 });
 
 Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
@@ -88,6 +89,9 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::delete('matches/{id}', [MatchController::class, 'destroy']);
     // match confirmation
     Route::post('match-confirm/{id}', [SupportController::class, 'confirm']);
+    
+    //vote Start
+    Route::post('start-vote/{match_id}', [MatchForVotingController::class, 'startVote']);
 
     Route::get('match-players/{id}', [MatchController::class, 'players']);
 

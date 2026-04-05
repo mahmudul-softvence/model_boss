@@ -29,6 +29,8 @@ class GameMatch extends Model
         'match_date',
         'match_time',
         'rules',
+        'voting_time',
+        'vote_start_time',
     ];
 
     protected $casts = [
