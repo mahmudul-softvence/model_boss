@@ -265,4 +265,12 @@ class UserController extends Controller
 
         return $this->sendError('Role change not allowed for this user.');
     }
+
+
+    public function total_users()
+    {
+        $totalUsers = User::count();
+
+        return $this->sendResponse(['total_users' => $totalUsers], 'Total users retrieved successfully.');
+    }
 }

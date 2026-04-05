@@ -37,6 +37,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('withdraw/request', [StripeWithdrawController::class, 'request']);
 
     Route::get('show_artist_prifile/{id}', [ProfileController::class, 'show_artist_prifile']);
+    Route::get('show_artist_posts/{id}', [ProfileController::class, 'show_artist_posts']);
 });
 
 

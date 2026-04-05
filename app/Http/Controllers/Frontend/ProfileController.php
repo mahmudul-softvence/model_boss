@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Http\Resources\PostResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\UserBalance;
@@ -71,5 +72,16 @@ class ProfileController extends Controller
         ];
 
         return $this->sendResponse($data);
+    }
+
+    public function show_artist_posts($id)
+    {
+        $user = User::find($id);
+
+        $posts = $user->posts()->latest()->get();
+
+        return $this->sendResponse([
+            'posts' => PostResource::collection($posts),
+        ]);
     }
 }

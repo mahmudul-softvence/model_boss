@@ -7,10 +7,6 @@ use App\Http\Controllers\Backend\NewsController;
 use App\Http\Controllers\Backend\UserController;
 use App\Http\Controllers\Backend\WithdrawController;
 use App\Http\Controllers\Notifications\NotificationController;
-use App\Http\Resources\GalleryResource;
-use App\Models\Gallery;
-use Illuminate\Http\Request;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(function () {
@@ -27,6 +23,7 @@ Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(func
     Route::delete('users/{user}', [UserController::class, 'delete']);
     Route::post('users/unsuspend/{user}', [UserController::class, 'unsuspend']);
     Route::post('users/suspend/{user}', [UserController::class, 'suspend']);
+    Route::get('users/count/total', [UserController::class, 'total_users']);
 
     // Withdraw Manage
     Route::get('withdraws', [WithdrawController::class, 'index']);
