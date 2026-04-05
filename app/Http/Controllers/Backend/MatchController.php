@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Traits\HasRoles;
 use App\Events\MatchCreated;
+use App\Models\PlayerVote;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -418,6 +419,14 @@ class MatchController extends Controller
             'playerTwo:id,name,image',
         ])->find($id);
 
+        $playerOneVotes = PlayerVote::where('match_id', $match->id)
+            ->where('voted_player_id', $match->player_one_id)
+            ->sum('total_vote');
+
+        $playerTwoVotes = PlayerVote::where('match_id', $match->id)
+            ->where('voted_player_id', $match->player_two_id)
+            ->sum('total_vote');
+
         if (! $match) {
             return response()->json([
                 'status'  => false,
@@ -507,6 +516,8 @@ class MatchController extends Controller
             'player_one_total_supporter' => $playerOneTotalSupporter,
             'player_two_top_supporter' => $playerTwoTopSupporter,
             'player_two_total_supporter' => $playerTwoTotalSupporter,
+            'player_one_votes' => $playerOneVotes ? $playerOneVotes : 0,
+            'player_two_votes' => $playerTwoVotes ? $playerTwoVotes : 0,
         ]);
     }
 
