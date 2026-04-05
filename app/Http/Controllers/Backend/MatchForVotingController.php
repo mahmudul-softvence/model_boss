@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Events\VotingStarted;
 use App\Http\Controllers\Controller;
 use App\Models\CoinTransaction;
+use App\Models\GameMatch;
 use App\Models\MatchForVoting;
 use App\Models\MatchVoter;
+use App\Models\PlayerVote;
 use App\Models\UserBalance;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -177,8 +181,100 @@ class MatchForVotingController extends Controller
     {
         $request->validate([
             'match_for_voting_id' => 'required|exists:match_for_votings,id',
+        ]);
+
+        $userId = auth('api')->id();
+
+        $alreadyVoted = MatchVoter::where('user_id', $userId)
+            ->where('match_for_voting_id', $request->match_for_voting_id)
+            ->exists();
+
+        if ($alreadyVoted) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You have already voted for this match'
+            ], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            MatchVoter::create([
+                'user_id' => $userId,
+                'match_for_voting_id' => $request->match_for_voting_id,
+            ]);
+
+            $match = MatchForVoting::find($request->match_for_voting_id);
+            $match->increment('total_vote');
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Vote submitted successfully',
+                'data' => [
+                    'match_id' => $match->id,
+                    'total_vote' => $match->total_vote
+                ]
+            ]);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong'
+            ], 500);
+        }
+    }
+
+    public function todaysMatches()
+    {
+        $matches = MatchForVoting::with([
+            'game:id,name,image',
+            'playerOne:id,name,image',
+            'playerTwo:id,name,image',
+        ])->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Matches retrieved successfully',
+            'data' => $matches
+        ]);
+    }
+
+    public function votePlayer(Request $request, $match_id)
+    {
+        $request->validate([
+            'player_id' => 'required|integer',
             'total_vote' => 'required|integer|min:1',
         ]);
+
+        $match = GameMatch::with(['playerOne', 'playerTwo'])->find($match_id);
+
+        if (!$match || !in_array($request->player_id, [$match->player_one_id, $match->player_two_id])) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Player not found in this match'
+            ], 404);
+        }
+
+        if (!$match->vote_start_time) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Voting has not started yet'
+            ], 400);
+        }
+
+        $voteEndTime = Carbon::parse($match->vote_start_time)
+            ->addMinutes($match->voting_time);
+
+        if (now()->greaterThan($voteEndTime)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Voting time is over'
+            ], 400);
+        }
 
         $userId = auth('api')->id();
 
@@ -197,23 +293,12 @@ class MatchForVotingController extends Controller
                 ], 400);
             }
 
-            $match = MatchForVoting::find($request->match_for_voting_id);
-
-            if (!$match || now()->lt($match->start_time) || now()->gt($match->end_time)) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Voting is not active'
-                ], 400);
-            }
-
-            MatchVoter::create([
+            PlayerVote::create([
                 'user_id' => $userId,
-                'match_for_voting_id' => $match->id,
+                'voted_player_id' => $request->player_id,
+                'match_id' => $match_id,
                 'total_vote' => $request->total_vote,
             ]);
-
-            $match->increment('total_vote', $request->total_vote);
 
             $user_balance->decrement('total_balance', $request->total_vote);
 
@@ -249,12 +334,13 @@ class MatchForVotingController extends Controller
 
             DB::commit();
 
+            event(new VotingStarted($match->fresh()));
+
             return response()->json([
                 'status' => true,
                 'message' => 'Vote submitted successfully',
                 'data' => [
                     'match_id' => $match->id,
-                    'total_vote' => $match->total_vote
                 ]
             ]);
 
@@ -269,18 +355,39 @@ class MatchForVotingController extends Controller
         }
     }
 
-    public function todaysMatches()
-    {
-        $matches = MatchForVoting::with([
-            'game:id,name,image',
-            'playerOne:id,name,image',
-            'playerTwo:id,name,image',
-        ])->get();
+    public function startVote($match_id) {
+
+        $match = GameMatch::with(['playerOne', 'playerTwo'])->find($match_id);
+        if (!$match) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Match not found'
+            ], 404);
+        }
+
+        if ($match->vote_start_time !== null) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Voting already started for this match'
+            ], 400);
+        }
+
+        if ($match->voting_time === null) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Voting time not set for this match'
+            ], 400);
+        }
+
+        $match->vote_start_time = now();
+        $match->save();
+
+        event(new VotingStarted($match));
 
         return response()->json([
             'status' => true,
-            'message' => 'Matches retrieved successfully',
-            'data' => $matches
+            'message' => 'Voting started successfully',
         ]);
     }
+
 }

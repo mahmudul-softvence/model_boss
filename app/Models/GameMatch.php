@@ -11,9 +11,11 @@ class GameMatch extends Model
     protected $fillable = [
         'match_no',
         'player_one_id',
+        'player_one_logo',
         'player_one_bet',
         'player_one_total',
         'player_two_id',
+        'player_two_logo',
         'player_two_bet',
         'player_two_total',
         'game_id',
@@ -27,12 +29,24 @@ class GameMatch extends Model
         'match_date',
         'match_time',
         'rules',
+        'voting_time',
+        'vote_start_time',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function getPlayerOneLogoAttribute($value)
+    {
+        return $value ? asset('storage/' . $value) : null;
+    }
+
+    public function getPlayerTwoLogoAttribute($value)
+    {
+        return $value ? asset('storage/' . $value) : null;
+    }
 
     public function playerOne()
     {
