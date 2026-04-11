@@ -4,24 +4,38 @@ namespace App\Http\Controllers\Stripe;
 
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
+use App\Models\MoncashPayment;
 use App\Models\StripePayment;
-use App\Models\Withdrawal;
-use App\Services\StripeConnectService;
+use App\Services\MoncashService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Stripe\Account;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {
+    public function __construct(private readonly MoncashService $moncashService) {}
 
-    public function checkout(Request $request)
+    public function checkout(Request $request): JsonResponse
     {
         $request->validate([
-            'amount' => 'required|numeric',
+            'amount' => ['required', 'numeric', 'min:1'],
+            'payment_method' => ['nullable', 'string', Rule::in(['stripe', 'moncash'])],
         ]);
 
         $user = $request->user();
-        $amount = $request->amount;
+        $amount = (float) $request->input('amount');
+        $paymentMethod = strtolower((string) $request->input('payment_method', 'stripe'));
 
+        if ($paymentMethod === 'moncash') {
+            return $this->checkoutWithMoncash($user, $amount);
+        }
+
+        return $this->checkoutWithStripe($user, $amount);
+    }
+
+    protected function checkoutWithStripe($user, float $amount): JsonResponse
+    {
         $user->createOrGetStripeCustomer();
 
         $checkout = $user->checkoutCharge(
@@ -30,15 +44,15 @@ class CheckoutController extends Controller
             1,
             [
                 'success_url' => config('app.frontend_url') . '/payment-success',
-                'cancel_url'  => config('app.frontend_url') . '/payment-cancel',
+                'cancel_url' => config('app.frontend_url') . '/payment-cancel',
                 'metadata' => [
                     'user_id' => $user->id,
-                    'amount'  => $amount,
+                    'amount' => $amount,
                 ],
 
                 'invoice_creation' => [
                     'enabled' => true,
-                ]
+                ],
             ],
         );
 
@@ -47,13 +61,31 @@ class CheckoutController extends Controller
             'stripe_payment_id' => $checkout->id,
             'usd_amount' => $amount,
             'coin_amount' => $amount,
-            'status' => PaymentStatus::PENDING,
+            'status' => PaymentStatus::PENDING->value,
         ]);
 
-        $data = [
+        return $this->sendResponse([
             'url' => $checkout->url,
-        ];
+            'payment_method' => 'stripe',
+        ]);
+    }
 
-        return $this->sendResponse($data);
+    protected function checkoutWithMoncash($user, float $amount): JsonResponse
+    {
+        $orderId = (string) Str::uuid();
+        $checkout = $this->moncashService->createCheckout($amount, $orderId);
+
+        MoncashPayment::create([
+            'user_id' => $user->id,
+            'order_id' => $orderId,
+            'amount' => $amount,
+            'coin_amount' => $amount,
+            'status' => PaymentStatus::PENDING->value,
+        ]);
+
+        return $this->sendResponse([
+            'url' => $checkout['url'],
+            'payment_method' => 'moncash',
+        ]);
     }
 }

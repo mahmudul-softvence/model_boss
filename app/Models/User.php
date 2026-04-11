@@ -9,7 +9,6 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
@@ -17,7 +16,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 {
-    use HasFactory, Notifiable, HasRoles, Billable;
+    use Billable, HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
         'name',
@@ -39,7 +38,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'referral_no',
         'game_id',
         'social_verification_status',
-        'is_player'
+        'is_player',
     ];
 
     protected $hidden = [
@@ -55,6 +54,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'is_player' => 'boolean',
         ];
     }
+
     protected $appends = ['image_url', 'full_name'];
 
     public function userBalance()
@@ -70,6 +70,11 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     public function stripePayments()
     {
         return $this->hasMany(StripePayment::class, 'user_id');
+    }
+
+    public function moncashPayments()
+    {
+        return $this->hasMany(MoncashPayment::class, 'user_id');
     }
 
     public function coinTransactions()
@@ -104,12 +109,12 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     public function following()
     {
-        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'following_id')->withTimestamps();;
+        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'following_id')->withTimestamps();
     }
 
     public function followers()
     {
-        return $this->belongsToMany(User::class, 'followers', 'following_id', 'follower_id')->withTimestamps();;
+        return $this->belongsToMany(User::class, 'followers', 'following_id', 'follower_id')->withTimestamps();
     }
 
     public function isFollowing($userId)
@@ -117,17 +122,14 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         return $this->following()->where('following_id', $userId)->exists();
     }
 
-
     public function game()
     {
         return $this->belongsTo(Game::class);
     }
 
-
-
     public function sendEmailVerificationNotification()
     {
-        $this->notify(new VerifyEmailQueued());
+        $this->notify(new VerifyEmailQueued);
     }
 
     public function getJWTIdentifier()
@@ -142,12 +144,12 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     public function getImageUrlAttribute()
     {
-        if (!$this->image) {
+        if (! $this->image) {
             return null;
         }
 
         return $this->image
-            ? asset('storage/' . $this->image)
+            ? asset('storage/'.$this->image)
             : null;
     }
 
@@ -159,7 +161,6 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             $this->last_name
         );
     }
-
 
     public function isSuspended(): bool
     {

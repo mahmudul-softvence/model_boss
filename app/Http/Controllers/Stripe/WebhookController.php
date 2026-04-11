@@ -2,23 +2,25 @@
 
 namespace App\Http\Controllers\Stripe;
 
+use App\Actions\CreditPointPurchase;
 use App\Enums\PaymentStatus;
-use App\Enums\TransactionType;
 use App\Enums\WithdrawalStatus;
-use App\Models\CoinTransaction;
 use App\Models\StripePayment;
 use App\Models\User;
-use App\Models\UserBalance;
 use App\Models\Withdrawal;
 use App\Notifications\UserWithdrawalCompletedNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierController;
 use Stripe\StripeClient;
 
 class WebhookController extends CashierController
 {
+    public function __construct(private readonly CreditPointPurchase $creditPointPurchase)
+    {
+        parent::__construct();
+    }
+
     public function handleCheckoutSessionCompleted($payload)
     {
         $session = $payload['data']['object'];
@@ -38,7 +40,7 @@ class WebhookController extends CashierController
                 }
 
                 $invoicePdf = null;
-                if (!empty($session['invoice'])) {
+                if (! empty($session['invoice'])) {
                     $stripe = new StripeClient(config('cashier.secret'));
                     $invoice = $stripe->invoices->retrieve($session['invoice']);
                     $invoicePdf = $invoice->invoice_pdf;
@@ -57,44 +59,21 @@ class WebhookController extends CashierController
                 }
 
                 $payment->update([
-                    'status' => PaymentStatus::COMPLETED
+                    'status' => PaymentStatus::COMPLETED->value,
                 ]);
 
-                $balance = $user->userBalance()->lockForUpdate()->first();
-
-                if (!$balance) {
-                    $balance = $user->userBalance()->create(['total_balance' => 0]);
-                }
-
-                $balance->increment('total_balance', $amount);
-                $balance->increment('total_recharge', $amount);
-                $balance->refresh();
-
-                $adminBalance = UserBalance::where('user_id', 1)
-                    ->lockForUpdate()->first();
-                    
-                if (!$adminBalance) {
-                    $adminBalance = UserBalance::create([
-                        'user_id' => 1,
-                        'total_balance' => 0,
-                    ]);
-                }
-                $adminBalance->increment('total_recharge', $amount);
-
-
-                CoinTransaction::create([
-                    'user_id' => $user->id,
-                    'type' => TransactionType::RECHARGE,
-                    'amount' => $amount,
-                    'balance_after' => $balance->total_balance,
-                    'reference' => $session['id'],
-                    'invoice_pdf' => $invoicePdf
-                ]);
+                $this->creditPointPurchase->execute(
+                    $user,
+                    (float) $amount,
+                    $session['id'],
+                    $invoicePdf,
+                );
             });
 
             return response()->noContent();
         } catch (\Throwable $e) {
-            Log::error('Stripe webhook error: ' . $e->getMessage());
+            Log::error('Stripe webhook error: '.$e->getMessage());
+
             return response()->json(['error' => 'Webhook failed'], 500);
         }
     }
@@ -108,7 +87,6 @@ class WebhookController extends CashierController
         return response()->noContent();
     }
 
-
     public function handleCheckoutSessionExpired($payload)
     {
         $session = $payload['data']['object'];
@@ -118,7 +96,6 @@ class WebhookController extends CashierController
         return response()->noContent();
     }
 
-
     public function handleChargeFailed($payload)
     {
         $charge = $payload['data']['object'];
@@ -127,9 +104,6 @@ class WebhookController extends CashierController
 
         return response()->noContent();
     }
-
-
-
 
     public function handleTransferCreated($payload)
     {
@@ -141,7 +115,7 @@ class WebhookController extends CashierController
                 ->lockForUpdate()
                 ->first();
 
-            if (!$withdraw) {
+            if (! $withdraw) {
                 return;
             }
 
@@ -159,8 +133,6 @@ class WebhookController extends CashierController
         return response()->noContent();
     }
 
-
-
     public function handleTransferFailed($payload)
     {
         $transfer = $payload['data']['object'];
@@ -171,7 +143,7 @@ class WebhookController extends CashierController
                 ->lockForUpdate()
                 ->first();
 
-            if (!$withdraw) {
+            if (! $withdraw) {
                 return;
             }
 
@@ -191,21 +163,16 @@ class WebhookController extends CashierController
         return response()->noContent();
     }
 
-
-
     public function handleTransferReversed($payload)
     {
         return $this->handleTransferFailed($payload);
     }
 
-
-
-
     protected function markPaymentFailed(string $stripeId)
     {
         $payment = StripePayment::where('stripe_payment_id', $stripeId)->first();
 
-        if (!$payment) {
+        if (! $payment) {
             return;
         }
 
@@ -214,7 +181,7 @@ class WebhookController extends CashierController
         }
 
         $payment->update([
-            'status' => PaymentStatus::FAILED
+            'status' => PaymentStatus::FAILED->value,
         ]);
     }
 }
