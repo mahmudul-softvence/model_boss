@@ -84,4 +84,27 @@ class ProfileController extends Controller
             'posts' => PostResource::collection($posts),
         ]);
     }
+
+
+    public function see_follower()
+    {
+        $user = auth()->user();
+
+        $followers = $user->followers()->latest()->get();
+
+        return $this->sendResponse([
+            'followers' => UserResource::collection($followers),
+        ]);
+    }
+
+    public function see_following()
+    {
+        $user = auth()->user();
+
+        $following = $user->following()->latest()->get();
+
+        return $this->sendResponse([
+            'following' => UserResource::collection($following),
+        ]);
+    }
 }
