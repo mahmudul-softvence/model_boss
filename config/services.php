@@ -76,6 +76,15 @@ return [
         'api_key' => env('MONCASH_API_KEY'),
     ],
 
+    'netcash' => [
+        'mode' => env('NETCASH_MODE', 'sandbox'),
+        'gateway_url' => env('NETCASH_GATEWAY_URL', 'https://paynow.netcash.co.za/site/paynow.aspx'),
+        'trace_url' => env('NETCASH_TRACE_URL', 'https://ws.netcash.co.za/PayNow/TransactionStatus/Check'),
+        'service_key' => env('NETCASH_SERVICE_KEY'),
+        'vendor_key' => env('NETCASH_VENDOR_KEY', '24ade73c-98cf-47b3-99be-cc7b867b3080'),
+        'description' => env('NETCASH_PAYMENT_DESCRIPTION', 'Coin purchase'),
+    ],
+
     'twitch' => [
         'client_id' => env('TWITCH_CLIENT_ID'),
         'client_secret' => env('TWITCH_CLIENT_SECRET'),
