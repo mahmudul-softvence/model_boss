@@ -76,6 +76,11 @@ return [
         'api_key' => env('MONCASH_API_KEY'),
     ],
 
+    'bitpay' => [
+        'base_url' => env('BITPAY_BASE_URL', 'https://test.bitpay.com'),
+        'token' => env('BITPAY_TOKEN'),
+    ],
+
     'twitch' => [
         'client_id' => env('TWITCH_CLIENT_ID'),
         'client_secret' => env('TWITCH_CLIENT_SECRET'),
