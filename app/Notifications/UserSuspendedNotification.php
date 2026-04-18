@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class UserSuspendedNotification extends Notification  implements ShouldQueue
+class UserSuspendedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -29,7 +29,7 @@ class UserSuspendedNotification extends Notification  implements ShouldQueue
 
         $message = (new MailMessage)
             ->subject('Your Account Has Been Suspended')
-            ->greeting('Hello ' . $this->user->name . ',');
+            ->greeting('Hello '.$this->user->name.',');
 
         if ($suspension->is_permanent) {
 
@@ -38,20 +38,20 @@ class UserSuspendedNotification extends Notification  implements ShouldQueue
 
             if ($suspension->suspended_until) {
 
-                $days =  round(now()->floatDiffInDays($suspension->suspended_until));
+                $days = round(now()->floatDiffInDays($suspension->suspended_until));
 
                 $message->line("Your account has been suspended for {$days} days.")
-                    ->line('Suspension ends on: ' . $suspension->suspended_until->format('d M Y'));
+                    ->line('Suspension ends on: '.$suspension->suspended_until->format('d M Y'));
             } else {
 
                 $message->line('Your account has been temporarily suspended.');
             }
         }
 
-        $message->line('Reason: ' . $suspension->reason);
+        $message->line('Reason: '.$suspension->reason);
 
         if ($suspension->note) {
-            $message->line('Note: ' . $suspension->note);
+            $message->line('Note: '.$suspension->note);
         }
 
         $message->line('Please contact support if you think this is a mistake.')

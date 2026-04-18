@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Enums\LiveStatus;
 use App\Enums\ViewMode;
 use App\Models\CheckLiveStatus;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class LiveStatusChange extends Seeder
@@ -21,7 +20,7 @@ class LiveStatusChange extends Seeder
                 'platform_live_status' => LiveStatus::STOP->value,
                 'mode' => ViewMode::LANDSCAPE->value,
                 'live_started_at' => null,
-                'live_stopped_at' => now()
+                'live_stopped_at' => now(),
             ]
         );
     }

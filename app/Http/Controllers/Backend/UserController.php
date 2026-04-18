@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Backend;
 
-use App\Helpers\FileHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\SuspendUserRequest;
@@ -48,9 +47,7 @@ class UserController extends Controller
     public function store(StoreUserRequest $request)
     {
 
-
         $validated = $request->validated();
-
 
         $imagePath = null;
 
@@ -60,19 +57,19 @@ class UserController extends Controller
         }
 
         $user = User::create([
-            'first_name'  => $validated['first_name'],
+            'first_name' => $validated['first_name'],
             'middle_name' => $validated['middle_name'] ?? null,
-            'last_name'   => $validated['last_name'],
-            'email'       => $validated['email'],
-            'password'    => bcrypt($validated['password']),
-            'image'       => $imagePath,
-            'game_id'     => $validated['game_id'] ?? null,
-            'address'     => $validated['address'] ?? null,
-            'zip_code'    => $validated['zip_code'] ?? null,
-            'state'       => $validated['state'] ?? null,
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'password' => bcrypt($validated['password']),
+            'image' => $imagePath,
+            'game_id' => $validated['game_id'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'zip_code' => $validated['zip_code'] ?? null,
+            'state' => $validated['state'] ?? null,
             'referral_no' => Str::random(10),
             'social_verification_status' => $validated['social_verification_status'] ?? null,
-            'is_player'   => (bool) ($validated['is_player'] ?? false),
+            'is_player' => (bool) ($validated['is_player'] ?? false),
         ]);
 
         $user->markEmailAsVerified();
@@ -97,7 +94,6 @@ class UserController extends Controller
     /**
      * Update the specified resource in storage.
      */
-
     public function update(UpdateUserRequest $request, User $user)
     {
         if ($user->hasRole('super_admin')) {
@@ -140,11 +136,9 @@ class UserController extends Controller
         return $this->sendResponse(UserResource::make($user), 'User updated successfully.');
     }
 
-
     /**
      * Delete the specified resource in storage.
      */
-
     public function delete(User $user)
     {
         $user->userBalance()->delete();
@@ -153,8 +147,6 @@ class UserController extends Controller
 
         return $this->sendResponse(UserResource::make($user), 'User deleted successfully.');
     }
-
-
 
     /**
      * Remove the specified resource from storage.
@@ -167,7 +159,7 @@ class UserController extends Controller
 
         $data = [
             'reason' => $validated['reason_category'],
-            'note'   => $validated['note'] ?? null,
+            'note' => $validated['note'] ?? null,
         ];
 
         if ($duration === 'permanent') {
@@ -189,15 +181,12 @@ class UserController extends Controller
             $data
         );
 
-        if (!empty($validated['notify_email'])) {
+        if (! empty($validated['notify_email'])) {
             $user->notify(new UserSuspendedNotification($user));
         }
 
         return $this->sendResponse(null, 'User suspended successfully.');
     }
-
-
-
 
     public function unsuspend(Request $request, User $user)
     {
@@ -207,13 +196,12 @@ class UserController extends Controller
 
         $user->suspension()?->delete();
 
-        if (!empty($validated['notify_email'])) {
-            $user->notify(new UserUnsuspendedNotification());
+        if (! empty($validated['notify_email'])) {
+            $user->notify(new UserUnsuspendedNotification);
         }
 
         return $this->sendResponse(null, 'User unsuspended successfully.');
     }
-
 
     public function search()
     {
@@ -244,12 +232,11 @@ class UserController extends Controller
         return $this->sendResponse(UserResource::collection($users));
     }
 
-
     public function change_role(User $user)
     {
         $currentRole = $user->roles()->first();
 
-        if (!$currentRole) {
+        if (! $currentRole) {
             return $this->sendError('User has no role assigned.');
         }
 
@@ -260,12 +247,12 @@ class UserController extends Controller
         if ($currentRole->name === 'user') {
             $user->syncRoles('artist');
             $user->load('roles');
+
             return $this->sendResponse(UserResource::make($user), 'User role changed to artist successfully.');
         }
 
         return $this->sendError('Role change not allowed for this user.');
     }
-
 
     public function total_users()
     {

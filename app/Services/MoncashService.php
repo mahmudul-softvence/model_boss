@@ -149,13 +149,13 @@ class MoncashService
     protected function gatewayUrl(string $paymentToken): string
     {
         return rtrim($this->requiredConfig('services.moncash.gateway_base'), '/')
-            . '/Payment/Redirect?token='
-            . urlencode($paymentToken);
+            .'/Payment/Redirect?token='
+            .urlencode($paymentToken);
     }
 
     protected function apiUrl(string $path): string
     {
-        return rtrim($this->requiredConfig('services.moncash.base_url'), '/') . $path;
+        return rtrim($this->requiredConfig('services.moncash.base_url'), '/').$path;
     }
 
     protected function loadMoncashKeys(): array
@@ -169,7 +169,7 @@ class MoncashService
             $decodedApiKey !== false && $decodedApiKey !== '' ? $this->toPem($decodedApiKey, 'RSA PUBLIC KEY') : null,
             $decodedApiKey !== false && $decodedApiKey !== '' ? $this->toPem($decodedApiKey, 'PRIVATE KEY') : null,
             $decodedApiKey !== false && $decodedApiKey !== '' ? $this->toPem($decodedApiKey, 'RSA PRIVATE KEY') : null,
-        ], static fn(?string $candidateKey): bool => is_string($candidateKey) && trim($candidateKey) !== '');
+        ], static fn (?string $candidateKey): bool => is_string($candidateKey) && trim($candidateKey) !== '');
 
         $loadedKeys = [];
 
@@ -241,7 +241,7 @@ class MoncashService
 
     protected function accessTokenCacheKey(): string
     {
-        return 'moncash.access_token.' . md5(implode('|', [
+        return 'moncash.access_token.'.md5(implode('|', [
             $this->requiredConfig('services.moncash.base_url'),
             $this->requiredConfig('services.moncash.client_id'),
         ]));
@@ -250,7 +250,7 @@ class MoncashService
     protected function toPem(string $key, string $type): string
     {
         return "-----BEGIN {$type}-----\n"
-            . chunk_split(base64_encode($key), 64, "\n")
-            . "-----END {$type}-----";
+            .chunk_split(base64_encode($key), 64, "\n")
+            ."-----END {$type}-----";
     }
 }

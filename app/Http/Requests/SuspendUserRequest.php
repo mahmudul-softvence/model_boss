@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SuspendUserRequest extends FormRequest
@@ -17,15 +18,15 @@ class SuspendUserRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'duration'        => 'required|string',
+            'duration' => 'required|string',
             'reason_category' => 'required|string|max:255',
-            'note'            => 'nullable|string|max:200',
-            'notify_email'    => 'nullable|boolean'
+            'note' => 'nullable|string|max:200',
+            'notify_email' => 'nullable|boolean',
         ];
     }
 }

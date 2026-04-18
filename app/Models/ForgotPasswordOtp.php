@@ -8,7 +8,7 @@ class ForgotPasswordOtp extends Model
 {
     protected $fillable = [
         'email',
-        'otp'
+        'otp',
     ];
 
     protected $hidden = [

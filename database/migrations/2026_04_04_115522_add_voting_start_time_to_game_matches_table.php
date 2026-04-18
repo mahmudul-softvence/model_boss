@@ -19,7 +19,7 @@ return new class extends Migration
         Schema::table('game_matches', function (Blueprint $table) {
             $table->dropColumn([
                 'vote_start_time',
-                'voting_time'
+                'voting_time',
             ]);
         });
     }

@@ -24,7 +24,7 @@ class Game extends Model
         $imagePath = ltrim($value, '/');
         $imagePath = Str::startsWith($imagePath, 'storage/')
             ? $imagePath
-            : 'storage/' . $imagePath;
+            : 'storage/'.$imagePath;
 
         return url($imagePath);
     }

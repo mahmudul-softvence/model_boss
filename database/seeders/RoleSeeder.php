@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\UserBalance;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class RoleSeeder extends Seeder
 {
@@ -15,18 +15,17 @@ class RoleSeeder extends Seeder
     {
         foreach (UserRole::cases() as $role) {
             Role::firstOrCreate([
-                'name' => $role->value
+                'name' => $role->value,
             ]);
         }
-
 
         $adminEmail = 'admin@gmail.com';
         $admin = User::firstOrCreate(
             ['email' => $adminEmail],
             [
-                'name'     => 'Admin',
+                'name' => 'Admin',
                 'password' => Hash::make('12345678'),
-                'referral_no' => 'ahfjkh'
+                'referral_no' => 'ahfjkh',
             ]
         );
 

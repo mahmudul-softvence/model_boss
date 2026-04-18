@@ -5,9 +5,9 @@ namespace App\Notifications;
 use App\Models\Withdrawal;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Notification;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
 class UserWithdrawalDeclinedNotification extends Notification implements ShouldQueue
 {
@@ -16,8 +16,7 @@ class UserWithdrawalDeclinedNotification extends Notification implements ShouldQ
     protected $withdrawal;
 
     /**
-     * @param Withdrawal $withdrawal
-     * @param string $reason
+     * @param  string  $reason
      */
     public function __construct(Withdrawal $withdrawal)
     {
@@ -38,10 +37,10 @@ class UserWithdrawalDeclinedNotification extends Notification implements ShouldQ
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Withdrawal Request Declined - ' . $this->withdrawal->withdraw_no)
-            ->greeting('Hello ' . $notifiable->name . ',')
-            ->line('Your withdrawal request #' . $this->withdrawal->withdraw_no . ' has been declined.')
-            ->line('Amount: ' . $this->withdrawal->coin_amount . ' Coins')
+            ->subject('Withdrawal Request Declined - '.$this->withdrawal->withdraw_no)
+            ->greeting('Hello '.$notifiable->name.',')
+            ->line('Your withdrawal request #'.$this->withdrawal->withdraw_no.' has been declined.')
+            ->line('Amount: '.$this->withdrawal->coin_amount.' Coins')
             ->line('If you have any questions, please contact our support team.')
             ->line('Thank you.');
     }
@@ -57,7 +56,7 @@ class UserWithdrawalDeclinedNotification extends Notification implements ShouldQ
             'withdraw_no' => $this->withdrawal->withdraw_no,
             'coin_amount' => $this->withdrawal->coin_amount,
             'status' => 'declined',
-            'message' => 'Your withdrawal #' . $this->withdrawal->withdraw_no . ' was declined.',
+            'message' => 'Your withdrawal #'.$this->withdrawal->withdraw_no.' was declined.',
         ];
     }
 

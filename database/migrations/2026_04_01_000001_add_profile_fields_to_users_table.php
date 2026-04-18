@@ -62,7 +62,7 @@ return new class extends Migration
                 'address',
                 'zip_code',
                 'state',
-                'social_verification_status'
+                'social_verification_status',
             ]);
         });
     }

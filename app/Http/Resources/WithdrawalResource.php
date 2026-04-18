@@ -21,7 +21,7 @@ class WithdrawalResource extends JsonResource
             'usd_amount' => $this->usd_amount,
             'stripe_transfer_id' => $this->stripe_transfer_id,
             'status' => $this->status,
-            'created_at' => $this->created_at
+            'created_at' => $this->created_at,
         ];
     }
 }

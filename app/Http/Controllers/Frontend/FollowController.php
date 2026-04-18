@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FollowController extends Controller
@@ -37,7 +36,6 @@ class FollowController extends Controller
 
         return $this->sendResponse(UserResource::make($userToFollow), 'Followed successfully');
     }
-
 
     public function unfollow($id)
     {

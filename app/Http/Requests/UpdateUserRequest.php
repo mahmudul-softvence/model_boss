@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateUserRequest extends FormRequest
@@ -17,21 +18,21 @@ class UpdateUserRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'first_name'  => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'last_name'   => 'required|string|max:255',
-            'role'        => 'required|exists:roles,name',
-            'game_id'     => 'nullable|exists:games,id',
-            'image'       => 'nullable|image|max:3072',
-            'address'     => 'nullable|string|max:255',
-            'zip_code'    => 'nullable|string|max:20',
-            'state'       => 'nullable|string|max:255',
-            'is_player'   => 'sometimes|boolean',
+            'last_name' => 'required|string|max:255',
+            'role' => 'required|exists:roles,name',
+            'game_id' => 'nullable|exists:games,id',
+            'image' => 'nullable|image|max:3072',
+            'address' => 'nullable|string|max:255',
+            'zip_code' => 'nullable|string|max:20',
+            'state' => 'nullable|string|max:255',
+            'is_player' => 'sometimes|boolean',
         ];
     }
 

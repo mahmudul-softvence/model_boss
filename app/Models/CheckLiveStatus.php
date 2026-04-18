@@ -11,11 +11,11 @@ class CheckLiveStatus extends Model
         'platform_live_status',
         'mode',
         'live_started_at',
-        'live_stopped_at'
+        'live_stopped_at',
     ];
 
     protected $casts = [
         'live_started_at' => 'datetime',
-        'live_stopped_at' => 'datetime'
+        'live_stopped_at' => 'datetime',
     ];
 }

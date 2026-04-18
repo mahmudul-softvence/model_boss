@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Game;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class CategoryController extends Controller
 {
@@ -35,7 +35,7 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'  => 'required|string|max:255|unique:categories,name',
+            'name' => 'required|string|max:255|unique:categories,name',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
@@ -50,11 +50,11 @@ class CategoryController extends Controller
 
         if ($request->hasFile('image')) {
             $storedPath = $request->file('image')->store('categories', 'public');
-            $imagePath = 'storage/' . $storedPath;
+            $imagePath = 'storage/'.$storedPath;
         }
 
         $category = Category::create([
-            'name'  => $request->name,
+            'name' => $request->name,
             'image' => $imagePath,
         ]);
 
@@ -95,7 +95,7 @@ class CategoryController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'name'  => 'required|string|max:255|unique:categories,name,' . $category->id,
+            'name' => 'required|string|max:255|unique:categories,name,'.$category->id,
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
@@ -119,7 +119,7 @@ class CategoryController extends Controller
             }
 
             $storedPath = $request->file('image')->store('categories', 'public');
-            $category->image = 'storage/' . $storedPath;
+            $category->image = 'storage/'.$storedPath;
         }
 
         $category->name = $request->name;

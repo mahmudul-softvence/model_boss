@@ -8,36 +8,34 @@ use App\Http\Resources\UserResource;
 use App\Models\Referral;
 use App\Models\User;
 use App\Models\UserBalance;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
-
 
 class AuthController extends Controller
 {
     /**
      * Register a new user
      *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
-
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'first_name'  => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'last_name'   => 'required|string|max:255',
-            'email'       => 'required|email|unique:users,email',
-            'password'    => 'required|min:8',
-            'game_id'     => 'nullable|exists:games,id',
-            'c_password'  => 'required|same:password',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:8',
+            'game_id' => 'nullable|exists:games,id',
+            'c_password' => 'required|same:password',
             'referral_id' => 'nullable|string',
-            'address'     => 'nullable|string|max:255',
-            'zip_code'    => 'nullable|string|max:20',
-            'state'       => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
+            'zip_code' => 'nullable|string|max:20',
+            'state' => 'nullable|string|max:255',
             'social_verification_status' => 'nullable|boolean',
-            'is_player'   => 'sometimes|boolean',
+            'is_player' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -65,7 +63,7 @@ class AuthController extends Controller
 
             $referralUser = User::where('referral_no', $request->referral_id)->first();
 
-            if (!$referralUser) {
+            if (! $referralUser) {
                 return $this->sendError('Invalid referral code.', [], 422);
             }
 
@@ -79,8 +77,8 @@ class AuthController extends Controller
 
         if ($referralUser) {
             Referral::create([
-                'user_id'          => $referralUser->id,
-                'referral_user_id' => $user->id
+                'user_id' => $referralUser->id,
+                'referral_user_id' => $user->id,
             ]);
         }
 
@@ -91,7 +89,6 @@ class AuthController extends Controller
             'A verification email has been sent to your email.'
         );
     }
-
 
     public function login()
     {
@@ -111,14 +108,13 @@ class AuthController extends Controller
             $data = [
                 'suspended' => $user->isSuspended(),
                 'permanent' => $suspension?->is_permanent ?? false,
-                'until'     => $suspension?->suspended_until,
-                'reason'    => $suspension?->reason,
-                'note'      => $suspension?->note,
+                'until' => $suspension?->suspended_until,
+                'reason' => $suspension?->reason,
+                'note' => $suspension?->note,
             ];
 
             return $this->sendError('Your account is suspended.', $data, 403);
         }
-
 
         if (! $user->hasVerifiedEmail()) {
             $user->sendEmailVerificationNotification();
@@ -131,7 +127,6 @@ class AuthController extends Controller
 
         return $this->sendResponse($data, 'User login successfully.');
     }
-
 
     public function me()
     {
@@ -167,9 +162,10 @@ class AuthController extends Controller
             auth()->setToken($token)->authenticate();
 
             $success = $this->respondWithToken($token);
+
             return $this->sendResponse($success, 'Refresh token return successfully.');
         } catch (\Exception $e) {
-            return $this->sendError('Token cannot be refreshed' . $e, [], 401);
+            return $this->sendError('Token cannot be refreshed'.$e, [], 401);
         }
     }
 
@@ -177,21 +173,21 @@ class AuthController extends Controller
     {
         $user = User::find($id);
 
-        if (!$user) {
+        if (! $user) {
             return $this->sendError('User not found.');
         }
 
-        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
             return $this->sendError('Invalid verification link.', [], 403);
         }
 
-        if (!$user->hasVerifiedEmail()) {
+        if (! $user->hasVerifiedEmail()) {
             $user->markEmailAsVerified();
         }
 
         return redirect()->to(
-            rtrim(config('app.frontend_url'), '/') . '/' .
-                ltrim(config('app.frontend_login'), '/') .
+            rtrim(config('app.frontend_url'), '/').'/'.
+                ltrim(config('app.frontend_login'), '/').
                 '?email_verified=true'
         );
     }
@@ -200,7 +196,7 @@ class AuthController extends Controller
     {
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return $this->sendError('User not found.');
         }
 
@@ -216,12 +212,13 @@ class AuthController extends Controller
     protected function respondWithToken($token)
     {
         $user = auth()->user();
+
         return [
             'access_token' => $token,
             'token_type' => 'Bearer',
             'expires_in' => auth()->factory()->getTTL() * 60,
 
-            'user' => UserResource::make($user)
+            'user' => UserResource::make($user),
         ];
     }
 }

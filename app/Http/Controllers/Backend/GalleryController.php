@@ -14,6 +14,7 @@ class GalleryController extends Controller
 {
     /**
      * Display a listing of the gallery.
+     *
      * @param null
      */
     public function index()
@@ -25,7 +26,8 @@ class GalleryController extends Controller
 
     /**
      * Store a newly created gallery in storage.
-     * @param Request $request
+     *
+     * @param  Request  $request
      */
     public function store(StoreGalleryRequest $request)
     {
@@ -46,22 +48,19 @@ class GalleryController extends Controller
         return $this->sendResponse(GalleryResource::make($gallery), 'Gallery created successfully', 201);
     }
 
-
     /**
      * Display the specified gallery.
-     * @param Gallery $gallery
      */
     public function show(Gallery $gallery)
     {
-        return  $this->sendResponse(GalleryResource::make($gallery));
+        return $this->sendResponse(GalleryResource::make($gallery));
     }
 
     /**
      * Update the specified gallery in storage.
-     * @param Request $request
-     * @param Gallery $gallery
+     *
+     * @param  Request  $request
      */
-
     public function update(UpdateGalleryRequest $request, Gallery $gallery)
     {
         $validated = $request->validated();
@@ -91,13 +90,9 @@ class GalleryController extends Controller
         return $this->sendResponse(GalleryResource::make($gallery), 'Gallery updated successfully');
     }
 
-
-
     /**
      * Remove the specified gallery from storage.
-     * @param Gallery $gallery
      */
-
     public function destroy(Gallery $gallery)
     {
         if ($gallery->short_video) {

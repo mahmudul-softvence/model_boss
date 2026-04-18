@@ -16,10 +16,10 @@ class AdminSettingController extends Controller
         $user = auth()->user();
 
         $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|max:255|unique:users,email,' . $user->id,
-            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'phone'       => 'nullable|string|max:20',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,'.$user->id,
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'phone' => 'nullable|string|max:20',
             'nationality' => 'nullable|string|max:100',
         ]);
 
@@ -43,20 +43,19 @@ class AdminSettingController extends Controller
 
         $validated = $request->validate([
             'current_password' => 'required',
-            'password'         => 'required|min:6|confirmed',
+            'password' => 'required|min:6|confirmed',
         ]);
 
-        if (!Hash::check($validated['current_password'], $user->password)) {
+        if (! Hash::check($validated['current_password'], $user->password)) {
             return $this->sendResponse([], 'Invalid cradentials', 422);
         }
 
         $user->update([
-            'password' => Hash::make($validated['password'])
+            'password' => Hash::make($validated['password']),
         ]);
 
         return $this->sendResponse([], 'Password changed successfully');
     }
-
 
     public function auto_accept_withdraw(Request $request)
     {
@@ -70,8 +69,8 @@ class AdminSettingController extends Controller
         );
 
         $data = [
-            'key'   => 'auto_accept_withdrawals',
-            'value' => $request->value
+            'key' => 'auto_accept_withdrawals',
+            'value' => $request->value,
         ];
 
         return $this->sendResponse($data, 'Auto accept withdraw updated');
@@ -80,8 +79,8 @@ class AdminSettingController extends Controller
     public function get_auto_accept_withdraw()
     {
         $data = [
-            'key'   => 'auto_accept_withdrawals',
-            'value' => Setting::where('key', 'auto_accept_withdrawals')->first()->value
+            'key' => 'auto_accept_withdrawals',
+            'value' => Setting::where('key', 'auto_accept_withdrawals')->first()->value,
         ];
 
         return $this->sendResponse($data);

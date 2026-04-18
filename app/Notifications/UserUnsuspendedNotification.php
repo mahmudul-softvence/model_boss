@@ -25,7 +25,7 @@ class UserUnsuspendedNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Your Account Has Been Restored')
-            ->greeting('Hello ' . $notifiable->name . ',')
+            ->greeting('Hello '.$notifiable->name.',')
             ->line('Good news! Your account suspension has been lifted.')
             ->line('You now have full access to your account again.')
             ->action('Login to Your Account', 'http://localhost:3000/login')

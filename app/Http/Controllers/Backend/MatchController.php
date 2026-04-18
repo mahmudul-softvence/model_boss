@@ -2,20 +2,16 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Events\MatchCreated;
 use App\Http\Controllers\Controller;
 use App\Models\GameMatch;
+use App\Models\PlayerVote;
 use App\Models\Support;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use Spatie\Permission\Traits\HasRoles;
-use App\Events\MatchCreated;
-use App\Models\PlayerVote;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-
-use function Laravel\Prompts\select;
+use Illuminate\Support\Facades\Validator;
 
 class MatchController extends Controller
 {
@@ -41,7 +37,7 @@ class MatchController extends Controller
         if ($request->filled('player_id')) {
             $query->where(function ($q) use ($request) {
                 $q->where('player_one_id', $request->player_id)
-                ->orWhere('player_two_id', $request->player_id);
+                    ->orWhere('player_two_id', $request->player_id);
             });
         }
 
@@ -51,35 +47,32 @@ class MatchController extends Controller
             $query->where(function ($q) use ($search) {
 
                 $q->where('match_no', 'like', "%{$search}%")
-                ->orWhere('type', 'like', "%{$search}%")
-
-                ->orWhereHas('game', function ($gameQuery) use ($search) {
-                    $gameQuery->where('name', 'like', "%{$search}%");
-                })
-
-                ->orWhereHas('playerOne', function ($playerQuery) use ($search) {
-                    $playerQuery->where('name', 'like', "%{$search}%");
-                })
-
-                ->orWhereHas('playerTwo', function ($playerQuery) use ($search) {
-                    $playerQuery->where('name', 'like', "%{$search}%");
-                });
+                    ->orWhere('type', 'like', "%{$search}%")
+                    ->orWhereHas('game', function ($gameQuery) use ($search) {
+                        $gameQuery->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('playerOne', function ($playerQuery) use ($search) {
+                        $playerQuery->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('playerTwo', function ($playerQuery) use ($search) {
+                        $playerQuery->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
         $matches = $query->latest()->paginate($perPage);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Matches retrieved successfully',
-            'data'    => $matches->items(),
-            'meta'    => [
+            'data' => $matches->items(),
+            'meta' => [
                 'current_page' => $matches->currentPage(),
-                'last_page'    => $matches->lastPage(),
-                'per_page'     => $matches->perPage(),
-                'total'        => $matches->total(),
-                'prev'         => $matches->currentPage() > 1,
-                'next'         => $matches->hasMorePages(),
+                'last_page' => $matches->lastPage(),
+                'per_page' => $matches->perPage(),
+                'total' => $matches->total(),
+                'prev' => $matches->currentPage() > 1,
+                'next' => $matches->hasMorePages(),
             ],
         ]);
     }
@@ -87,28 +80,28 @@ class MatchController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'game_id'            => 'required|exists:games,id',
-            'player_one_id'      => 'required|exists:users,id',
-            'player_one_logo'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'player_two_id'      => 'required|exists:users,id|different:player_one_id',
-            'player_two_logo'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'game_id' => 'required|exists:games,id',
+            'player_one_id' => 'required|exists:users,id',
+            'player_one_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'player_two_id' => 'required|exists:users,id|different:player_one_id',
+            'player_two_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'players_bet_amount' => 'required|numeric|min:0',
-            'type'               => 'required|string|max:50|in:upcoming',
-            'match_date'         => 'required|date|after_or_equal:today',
-            'match_time'         => 'required|date_format:H:i',
-            'winner_percentage'  => 'nullable|in:0,1',
-            'loser_percentage'   => 'nullable|in:0,1',
-            'tiktok_link'        => 'nullable|url',
-            'twitch_link'        => 'nullable|url',
-            'rules'              => 'nullable|string',
-            'voting_time'        => 'nullable|integer|min:0',
+            'type' => 'required|string|max:50|in:upcoming',
+            'match_date' => 'required|date|after_or_equal:today',
+            'match_time' => 'required|date_format:H:i',
+            'winner_percentage' => 'nullable|in:0,1',
+            'loser_percentage' => 'nullable|in:0,1',
+            'tiktok_link' => 'nullable|url',
+            'twitch_link' => 'nullable|url',
+            'rules' => 'nullable|string',
+            'voting_time' => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Validation failed',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -137,14 +130,14 @@ class MatchController extends Controller
         $match->load([
             'game:id,name',
             'playerOne:id,name',
-            'playerTwo:id,name'
+            'playerTwo:id,name',
         ]);
 
-        $users = User::role(['user','artist'])->pluck('id')->toArray();
+        $users = User::role(['user', 'artist'])->pluck('id')->toArray();
 
         $players = [
             $data['player_one_id'],
-            $data['player_two_id']
+            $data['player_two_id'],
         ];
 
         broadcast(new MatchCreated(
@@ -154,12 +147,12 @@ class MatchController extends Controller
         ))->toOthers();
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Match created successfully',
-            'data'    => $match->load([
+            'data' => $match->load([
                 'game:id,name',
                 'playerOne:id,name',
-                'playerTwo:id,name'
+                'playerTwo:id,name',
             ]),
         ], 201);
     }
@@ -174,15 +167,15 @@ class MatchController extends Controller
 
         if (! $match) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Match not found',
             ], 404);
         }
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Match retrieved successfully',
-            'data'    => $match,
+            'data' => $match,
         ]);
     }
 
@@ -192,34 +185,34 @@ class MatchController extends Controller
 
         if (! $match) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Match not found',
             ], 404);
         }
 
         $validator = Validator::make($request->all(), [
-            'game_id'              => 'required|exists:games,id',
-            'player_one_id'        => 'required|exists:users,id',
-            'player_one_logo'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'player_two_id'        => 'required|exists:users,id|different:player_one_id',
-            'player_two_logo'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'players_bet_amount'   => 'required|numeric|min:0',
-            'type'                 => 'required|string|max:50',
-            'match_date'           => 'required|date',
-            'match_time'           => 'required|date_format:H:i',
-            'winner_percentage'    => 'nullable|in:0,1',
-            'loser_percentage'     => 'nullable|in:0,1',
-            'tiktok_link'          => 'nullable|url',
-            'twitch_link'          => 'nullable|url',
-            'rules'                => 'nullable|string',
-            'voting_time'          => 'nullable|integer|min:0',
+            'game_id' => 'required|exists:games,id',
+            'player_one_id' => 'required|exists:users,id',
+            'player_one_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'player_two_id' => 'required|exists:users,id|different:player_one_id',
+            'player_two_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'players_bet_amount' => 'required|numeric|min:0',
+            'type' => 'required|string|max:50',
+            'match_date' => 'required|date',
+            'match_time' => 'required|date_format:H:i',
+            'winner_percentage' => 'nullable|in:0,1',
+            'loser_percentage' => 'nullable|in:0,1',
+            'tiktok_link' => 'nullable|url',
+            'twitch_link' => 'nullable|url',
+            'rules' => 'nullable|string',
+            'voting_time' => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Validation failed',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -276,9 +269,9 @@ class MatchController extends Controller
         $match->update($data);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Match updated successfully',
-            'data'    => $match->load([
+            'data' => $match->load([
                 'game:id,name',
                 'playerOne:id,name',
                 'playerTwo:id,name',
@@ -286,14 +279,13 @@ class MatchController extends Controller
         ]);
     }
 
-
     public function destroy($id)
     {
         $match = GameMatch::find($id);
 
         if (! $match) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Match not found',
             ], 404);
         }
@@ -313,7 +305,7 @@ class MatchController extends Controller
         $match->delete();
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Match deleted successfully',
         ]);
     }
@@ -327,15 +319,15 @@ class MatchController extends Controller
 
         if (! $match) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Match not found',
             ], 404);
         }
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Players retrieved successfully',
-            'data'    => [
+            'data' => [
                 'player_one' => $match->playerOne,
                 'player_two' => $match->playerTwo,
             ],
@@ -356,63 +348,63 @@ class MatchController extends Controller
         $players = $query->get();
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'All players retrieved successfully',
-            'data'    => $players,
+            'data' => $players,
         ]);
     }
 
     // For landing page
     public function landing(Request $request)
     {
-        $filter  = $request->type ?? 'all';
+        $filter = $request->type ?? 'all';
         $perPage = $request->per_page ?? 10;
 
-        $super = User::where('id',1)->select('image')->first();
+        $super = User::where('id', 1)->select('image')->first();
 
         $matches = GameMatch::with([
             'game:id,name,image',
             'playerOne:id,name,image',
             'playerTwo:id,name,image',
         ])
-        ->when($filter === 'live', function ($query) {
-            $query->where('confirmation_status', 1)
-                ->where('type', 'live');
-        })
-        ->when($filter === 'past', function ($query) {
-            $query->where(function ($q) {
-                $q->where(function ($sub) {
-                    $sub->where('confirmation_status', 1)
-                        ->where('type', '!=', 'live');
-                })
-                ->orWhere('confirmation_status', 2);
-            });
-        })
-        ->when($filter === 'upcoming', function ($query) {
-            $query->where('confirmation_status', 0);
-        })
-        ->latest()
-        ->paginate($perPage);
+            ->when($filter === 'live', function ($query) {
+                $query->where('confirmation_status', 1)
+                    ->where('type', 'live');
+            })
+            ->when($filter === 'past', function ($query) {
+                $query->where(function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->where('confirmation_status', 1)
+                            ->where('type', '!=', 'live');
+                    })
+                        ->orWhere('confirmation_status', 2);
+                });
+            })
+            ->when($filter === 'upcoming', function ($query) {
+                $query->where('confirmation_status', 0);
+            })
+            ->latest()
+            ->paginate($perPage);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Matches retrieved successfully',
-            'data'    => $matches->items(),
-            'model_picture'   => $super->image ? asset('storage/' . $super->image) : null,
-            'meta'    => [
+            'data' => $matches->items(),
+            'model_picture' => $super->image ? asset('storage/'.$super->image) : null,
+            'meta' => [
                 'current_page' => $matches->currentPage(),
-                'last_page'    => $matches->lastPage(),
-                'per_page'     => $matches->perPage(),
-                'total'        => $matches->total(),
-                'prev'         => $matches->currentPage() > 1,
-                'next'         => $matches->hasMorePages(),
+                'last_page' => $matches->lastPage(),
+                'per_page' => $matches->perPage(),
+                'total' => $matches->total(),
+                'prev' => $matches->currentPage() > 1,
+                'next' => $matches->hasMorePages(),
             ],
         ]);
     }
 
     public function socketMatch($id)
     {
-        $super = User::where('id',1)->select('image')->first();
+        $super = User::where('id', 1)->select('image')->first();
         $match = GameMatch::with([
             'game:id,name,image',
             'playerOne:id,name,image',
@@ -429,7 +421,7 @@ class MatchController extends Controller
 
         if (! $match) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Match not found',
             ], 404);
         }
@@ -455,7 +447,7 @@ class MatchController extends Controller
                             'id' => $support->supporter->id,
                             'name' => $support->supporter->name,
                             'image' => $support->supporter->image
-                                ? asset('storage/' . $support->supporter->image)
+                                ? asset('storage/'.$support->supporter->image)
                                 : null,
                         ],
                     ];
@@ -477,7 +469,7 @@ class MatchController extends Controller
                 'id' => $playerOneSupport->supporter->id,
                 'name' => $playerOneSupport->supporter->name,
                 'image' => $playerOneSupport->supporter->image
-                    ? asset('storage/' . $playerOneSupport->supporter->image)
+                    ? asset('storage/'.$playerOneSupport->supporter->image)
                     : null,
             ]
             : null;
@@ -495,7 +487,7 @@ class MatchController extends Controller
                 'id' => $playerTwoSupport->supporter->id,
                 'name' => $playerTwoSupport->supporter->name,
                 'image' => $playerTwoSupport->supporter->image
-                    ? asset('storage/' . $playerTwoSupport->supporter->image)
+                    ? asset('storage/'.$playerTwoSupport->supporter->image)
                     : null,
             ]
             : null;
@@ -506,11 +498,12 @@ class MatchController extends Controller
         $playerTwoTotalSupporter = Support::where('match_id', $id)
             ->where('supported_player_id', $match->player_two_id)
             ->count();
+
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Match retrieved successfully',
-            'data'    => $match,
-            'model_picture'   => $super->image ? asset('storage/' . $super->image) : null,
+            'data' => $match,
+            'model_picture' => $super->image ? asset('storage/'.$super->image) : null,
             'top_supporters' => $topSupporters,
             'player_one_top_supporter' => $playerOneTopSupporter,
             'player_one_total_supporter' => $playerOneTotalSupporter,
@@ -520,6 +513,4 @@ class MatchController extends Controller
             'player_two_votes' => $playerTwoVotes ? $playerTwoVotes : 0,
         ]);
     }
-
-
 }

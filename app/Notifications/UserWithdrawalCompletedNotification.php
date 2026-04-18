@@ -5,9 +5,9 @@ namespace App\Notifications;
 use App\Models\Withdrawal;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Notification;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
 class UserWithdrawalCompletedNotification extends Notification implements ShouldQueue
 {
@@ -28,11 +28,11 @@ class UserWithdrawalCompletedNotification extends Notification implements Should
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Withdrawal Completed - ' . $this->withdrawal->withdraw_no)
+            ->subject('Withdrawal Completed - '.$this->withdrawal->withdraw_no)
             ->greeting('Hello!')
             ->line('Your withdrawal request has been successfully processed.')
-            ->line('Withdrawal No: ' . $this->withdrawal->withdraw_no)
-            ->line('Value: $' . $this->withdrawal->usd_amount)
+            ->line('Withdrawal No: '.$this->withdrawal->withdraw_no)
+            ->line('Value: $'.$this->withdrawal->usd_amount)
             ->line('Thank you.');
     }
 
@@ -43,7 +43,7 @@ class UserWithdrawalCompletedNotification extends Notification implements Should
             'withdraw_no' => $this->withdrawal->withdraw_no,
             'coin_amount' => $this->withdrawal->coin_amount,
             'usd_amount' => $this->withdrawal->usd_amount,
-            'message' => 'Your withdrawal #' . $this->withdrawal->withdraw_no . ' of ' . $this->withdrawal->coin_amount . ' coins is complete.',
+            'message' => 'Your withdrawal #'.$this->withdrawal->withdraw_no.' of '.$this->withdrawal->coin_amount.' coins is complete.',
         ];
     }
 

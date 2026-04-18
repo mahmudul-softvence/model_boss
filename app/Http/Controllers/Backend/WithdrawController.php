@@ -6,11 +6,9 @@ use App\Enums\TransactionType;
 use App\Enums\WithdrawalStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WithdrawalResource;
-use App\Models\User;
 use App\Models\Withdrawal;
 use App\Notifications\UserWithdrawalDeclinedNotification;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 use Stripe\Account;
 use Stripe\Stripe;
 use Stripe\Transfer;
@@ -22,9 +20,9 @@ class WithdrawController extends Controller
     {
         $limit = $request->query('limit', 10);
         $withdraw_req = Withdrawal::latest()->paginate($limit);
+
         return $this->sendResponse(WithdrawalResource::collection($withdraw_req));
     }
-
 
     public function accept($id)
     {
@@ -38,14 +36,13 @@ class WithdrawController extends Controller
                     ->lockForUpdate()
                     ->findOrFail($id);
 
-
                 if ($withdraw->status !== WithdrawalStatus::PENDING->value) {
                     throw new \Exception('Already processed.');
                 }
 
                 $user = $withdraw->user;
 
-                if (!$user->stripe_account_id) {
+                if (! $user->stripe_account_id) {
                     throw new \Exception('User Stripe not connected.');
                 }
 
@@ -53,13 +50,13 @@ class WithdrawController extends Controller
                     ->lockForUpdate()
                     ->first();
 
-                if (!$userBalance) {
+                if (! $userBalance) {
                     throw new \Exception('User balance not found.');
                 }
 
                 $account = Account::retrieve($user->stripe_account_id);
 
-                if (!$account->payouts_enabled) {
+                if (! $account->payouts_enabled) {
                     throw new \Exception('Stripe account not ready.');
                 }
 
@@ -67,12 +64,12 @@ class WithdrawController extends Controller
                     'amount' => (int) ($withdraw->usd_amount * 100),
                     'currency' => 'usd',
                     'destination' => $user->stripe_account_id,
-                    'description' => 'Withdrawal ' . $withdraw->withdraw_no,
+                    'description' => 'Withdrawal '.$withdraw->withdraw_no,
                 ]);
 
                 $withdraw->update([
                     'status' => WithdrawalStatus::ACCEPTED,
-                    'stripe_transfer_id' =>  $transfer->id
+                    'stripe_transfer_id' => $transfer->id,
                 ]);
 
                 $userBalance->increment('total_withdraw', $withdraw->coin_amount);
@@ -91,9 +88,6 @@ class WithdrawController extends Controller
             return $this->sendError($e->getMessage(), [], 400);
         }
     }
-
-
-
 
     public function declined($id)
     {
@@ -118,12 +112,11 @@ class WithdrawController extends Controller
                 );
 
                 $withdraw->update([
-                    'status' => WithdrawalStatus::DECLINED
+                    'status' => WithdrawalStatus::DECLINED,
                 ]);
 
                 $withdraw->user->notify(new UserWithdrawalDeclinedNotification($withdraw));
             });
-
 
             return $this->sendResponse([], 'Withdrawal declined and refunded.');
         } catch (\Exception $e) {

@@ -21,36 +21,35 @@ class HomeController extends Controller
     {
         $per_page = $request->query('per_page', 5);
         $featured_posts = News::latest()->paginate($per_page);
+
         return $this->sendResponse(NewsResource::collection($featured_posts));
     }
-
 
     public function get_featured_gallery(Request $request)
     {
         $per_page = $request->query('per_page', 5);
         $featured_gallery = Gallery::latest()->paginate($per_page);
+
         return $this->sendResponse(GalleryResource::collection($featured_gallery));
     }
-
 
     public function get_all_games()
     {
         $games = Game::latest()->get();
+
         return $this->sendResponse(GameResource::collection($games));
     }
-
 
     public function get_live_staus()
     {
         $live_status = CheckLiveStatus::get();
 
         $data = [
-            'live_status' => LiveStatusResource::collection($live_status)
+            'live_status' => LiveStatusResource::collection($live_status),
         ];
 
         return $this->sendResponse($data);
     }
-
 
     public function search_artist(Request $request)
     {
@@ -62,8 +61,8 @@ class HomeController extends Controller
 
         $artist = User::role('artist')
             ->where(function ($query) use ($search) {
-                $query->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%');
             })
             ->get();
 

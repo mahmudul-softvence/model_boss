@@ -40,12 +40,12 @@ class GameMatch extends Model
 
     public function getPlayerOneLogoAttribute($value)
     {
-        return $value ? asset('storage/' . $value) : null;
+        return $value ? asset('storage/'.$value) : null;
     }
 
     public function getPlayerTwoLogoAttribute($value)
     {
-        return $value ? asset('storage/' . $value) : null;
+        return $value ? asset('storage/'.$value) : null;
     }
 
     public function playerOne()

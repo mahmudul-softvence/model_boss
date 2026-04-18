@@ -3,19 +3,17 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
-use App\Models\GameMatch;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use App\Models\UserBalance;
-use App\Models\FinalSupport;
-use App\Models\CoinTransaction;
 use App\Jobs\PlatformFeeJob;
+use App\Models\CoinTransaction;
+use App\Models\FinalSupport;
+use App\Models\GameMatch;
+use App\Models\UserBalance;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class WinnerController extends Controller
 {
-
     public function winner(Request $request, $id)
     {
         try {
@@ -24,7 +22,7 @@ class WinnerController extends Controller
 
                 $match = GameMatch::lockForUpdate()->find($id);
 
-                if (!$match) {
+                if (! $match) {
                     throw new \RuntimeException('Match not found');
                 }
 
@@ -48,7 +46,7 @@ class WinnerController extends Controller
 
                 $match->update([
                     'winner_id' => $winnerId,
-                    'type'    => 'completed',
+                    'type' => 'completed',
                 ]);
 
                 $totalWin = $winnerId == $match->player_one_id
@@ -78,25 +76,25 @@ class WinnerController extends Controller
 
                     $userBalance = $balances->get($support->user_id);
 
-                    if (!$userBalance) {
+                    if (! $userBalance) {
                         continue;
                     }
 
                     if ($support->supported_player_id == $winnerId) {
 
                         $gross = $support->coin_amount * 2;
-                        $net   = $gross - ($gross * 0.15);
+                        $net = $gross - ($gross * 0.15);
 
                         $userBalance->total_balance += $net;
                         $userBalance->total_earning += $net;
                         $userBalance->save();
 
                         CoinTransaction::create([
-                            'user_id'       => $support->user_id,
-                            'type'          => 'win',
-                            'amount'        => $net,
+                            'user_id' => $support->user_id,
+                            'type' => 'win',
+                            'amount' => $net,
                             'balance_after' => $userBalance->total_balance,
-                            'reference'     => 'Match Win #' . $match->match_no,
+                            'reference' => 'Match Win #'.$match->match_no,
                         ]);
 
                         $support->update(['result' => 'win']);
@@ -104,11 +102,11 @@ class WinnerController extends Controller
                     } else {
 
                         CoinTransaction::create([
-                            'user_id'       => $support->user_id,
-                            'type'          => 'loss',
-                            'amount'        => $support->coin_amount,
+                            'user_id' => $support->user_id,
+                            'type' => 'loss',
+                            'amount' => $support->coin_amount,
                             'balance_after' => $userBalance->total_balance,
-                            'reference'     => 'Match Lose #' . $match->match_no,
+                            'reference' => 'Match Lose #'.$match->match_no,
                         ]);
 
                         $support->update(['result' => 'loss']);
@@ -117,22 +115,22 @@ class WinnerController extends Controller
             });
 
             return response()->json([
-                'status'  => true,
-                'message' => 'Winner declared and payouts processed successfully'
+                'status' => true,
+                'message' => 'Winner declared and payouts processed successfully',
             ], 200);
 
         } catch (\RuntimeException $e) {
 
             return response()->json([
-                'status'  => false,
-                'message' => $e->getMessage()
+                'status' => false,
+                'message' => $e->getMessage(),
             ], 400);
 
         } catch (\Throwable $e) {
 
             return response()->json([
-                'status'  => false,
-                'message' => 'Something went wrong.'
+                'status' => false,
+                'message' => 'Something went wrong.',
             ], 500);
         }
     }
@@ -149,14 +147,14 @@ class WinnerController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Transactions retrieved successfully',
-            'data'   => $transactions->items(),
-            'meta'   => [
+            'data' => $transactions->items(),
+            'meta' => [
                 'current_page' => $transactions->currentPage(),
-                'last_page'    => $transactions->lastPage(),
-                'per_page'     => $transactions->perPage(),
-                'total'        => $transactions->total(),
-                'prev'         => $transactions->currentPage() > 1,
-                'next'         => $transactions->hasMorePages(),
+                'last_page' => $transactions->lastPage(),
+                'per_page' => $transactions->perPage(),
+                'total' => $transactions->total(),
+                'prev' => $transactions->currentPage() > 1,
+                'next' => $transactions->hasMorePages(),
             ],
         ], 200);
     }
@@ -164,20 +162,20 @@ class WinnerController extends Controller
     public function adminTransactions(Request $request)
     {
         $perPage = $request->per_page ?? 10;
-        $search  = $request->search;
+        $search = $request->search;
 
         $adminBalance = UserBalance::where('user_id', 1)->first();
 
         $transactions = CoinTransaction::with([
-                'user:id,name,email'
-            ])
+            'user:id,name,email',
+        ])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('type', 'like', "%{$search}%")
-                    ->orWhereHas('user', function ($userQuery) use ($search) {
-                        $userQuery->where('name', 'like', "%{$search}%")
-                                    ->orWhere('email', 'like', "%{$search}%");
-                    });
+                        ->orWhereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        });
                 });
             })
             ->orderBy('created_at', 'desc')
@@ -186,18 +184,17 @@ class WinnerController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Transactions retrieved successfully',
-            'data'   => $transactions->items(),
+            'data' => $transactions->items(),
             'total_recharge' => $adminBalance ? $adminBalance->total_recharge : 0,
             'total_earning' => $adminBalance ? $adminBalance->total_balance : 0,
-            'meta'   => [
+            'meta' => [
                 'current_page' => $transactions->currentPage(),
-                'last_page'    => $transactions->lastPage(),
-                'per_page'     => $transactions->perPage(),
-                'total'        => $transactions->total(),
-                'prev'         => $transactions->currentPage() > 1,
-                'next'         => $transactions->hasMorePages(),
+                'last_page' => $transactions->lastPage(),
+                'per_page' => $transactions->perPage(),
+                'total' => $transactions->total(),
+                'prev' => $transactions->currentPage() > 1,
+                'next' => $transactions->hasMorePages(),
             ],
         ], 200);
     }
-
 }

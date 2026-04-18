@@ -16,7 +16,7 @@ class StripeConnectController extends Controller
 
         Stripe::setApiKey(config('services.stripe.secret'));
 
-        if (!$user->stripe_account_id) {
+        if (! $user->stripe_account_id) {
 
             $account = Account::create([
                 'type' => 'express',
@@ -29,18 +29,17 @@ class StripeConnectController extends Controller
 
         $link = AccountLink::create([
             'account' => $user->stripe_account_id,
-            'refresh_url' => config('app.frontend_url') . '/' . config('app.frontend_account_connect_failed'),
-            'return_url'  => config('app.frontend_url') . '/' . config('app.frontend_account_connect'),
+            'refresh_url' => config('app.frontend_url').'/'.config('app.frontend_account_connect_failed'),
+            'return_url' => config('app.frontend_url').'/'.config('app.frontend_account_connect'),
             'type' => 'account_onboarding',
         ]);
 
         $data = [
-            'url' => $link->url
+            'url' => $link->url,
         ];
 
         return $this->sendResponse($data);
     }
-
 
     public function status(Request $request)
     {
@@ -57,7 +56,7 @@ class StripeConnectController extends Controller
         }
 
         return response()->json([
-            'connected' => $account->payouts_enabled
+            'connected' => $account->payouts_enabled,
         ]);
     }
 }

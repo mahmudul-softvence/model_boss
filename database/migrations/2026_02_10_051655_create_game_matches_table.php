@@ -22,7 +22,7 @@ return new class extends Migration
 
             // enum type
             $table->enum('type', ['upcoming', 'live', 'completed'])
-                  ->default('upcoming');
+                ->default('upcoming');
 
             $table->timestamps();
         });

@@ -20,7 +20,7 @@ class LiveStatusResource extends JsonResource
             'platform_live_status' => $this->platform_live_status,
             'mode' => $this->mode,
             'live_started_at' => $this->live_started_at,
-            'live_stopped_at' => $this->live_stopped_at
+            'live_stopped_at' => $this->live_stopped_at,
         ];
     }
 }

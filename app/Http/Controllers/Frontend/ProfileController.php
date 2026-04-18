@@ -45,7 +45,6 @@ class ProfileController extends Controller
         return $this->sendResponse(UserResource::make($user));
     }
 
-
     public function show_artist_prifile($id)
     {
         $user = User::find($id);
@@ -57,7 +56,6 @@ class ProfileController extends Controller
         if (auth()->check()) {
             $isFollowed = auth()->user()->following()->where('following_id', $id)->exists();
         }
-
 
         $data = [
             'user' => UserResource::make($user),
@@ -84,7 +82,6 @@ class ProfileController extends Controller
             'posts' => PostResource::collection($posts),
         ]);
     }
-
 
     public function see_follower()
     {

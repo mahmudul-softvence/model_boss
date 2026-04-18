@@ -6,22 +6,20 @@ use App\Models\User;
 use App\Models\Withdrawal;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Notification;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
 class AdminWithdrawalNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     protected $withdraw;
+
     protected $user;
 
     /**
      * Create a new notification instance.
-     *
-     * @param Withdrawal $withdraw
-     * @param User $user
      */
     public function __construct(Withdrawal $withdraw, User $user)
     {
@@ -32,7 +30,7 @@ class AdminWithdrawalNotification extends Notification implements ShouldQueue
     /**
      * Get the notification's delivery channels.
      *
-     * @param mixed $notifiable
+     * @param  mixed  $notifiable
      * @return array
      */
     public function via($notifiable)
@@ -43,23 +41,23 @@ class AdminWithdrawalNotification extends Notification implements ShouldQueue
     /**
      * Mail representation of the notification.
      *
-     * @param mixed $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @param  mixed  $notifiable
+     * @return MailMessage
      */
     public function toMail($notifiable)
     {
         return (new MailMessage)
             ->subject('New Withdrawal Request')
             ->line('A new withdrawal request has been submitted.')
-            ->line('User: ' . $this->user->name)
-            ->line('Amount: ' . $this->withdraw->coin_amount)
+            ->line('User: '.$this->user->name)
+            ->line('Amount: '.$this->withdraw->coin_amount)
             ->line('Thank you.');
     }
 
     /**
      * Database representation of the notification.
      *
-     * @param mixed $notifiable
+     * @param  mixed  $notifiable
      * @return array
      */
     public function toDatabase($notifiable)
@@ -80,8 +78,8 @@ class AdminWithdrawalNotification extends Notification implements ShouldQueue
     /**
      * Broadcast representation of the notification.
      *
-     * @param mixed $notifiable
-     * @return \Illuminate\Notifications\Messages\BroadcastMessage
+     * @param  mixed  $notifiable
+     * @return BroadcastMessage
      */
     public function toBroadcast($notifiable)
     {

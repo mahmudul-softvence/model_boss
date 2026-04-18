@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Backend;
 use App\Http\Controllers\Controller;
 use App\Models\Game;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class GameController extends Controller
 {
@@ -36,16 +36,16 @@ class GameController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'        => 'required|string|max:255|unique:games,name',
+            'name' => 'required|string|max:255|unique:games,name',
             'category_id' => 'required|exists:categories,id',
-            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Validation failed',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -53,19 +53,19 @@ class GameController extends Controller
 
         if ($request->hasFile('image')) {
             $storedPath = $request->file('image')->store('games', 'public');
-            $imagePath = 'storage/' . $storedPath;
+            $imagePath = 'storage/'.$storedPath;
         }
 
         $game = Game::create([
-            'name'        => $request->name,
+            'name' => $request->name,
             'category_id' => $request->category_id,
-            'image'       => $imagePath,
+            'image' => $imagePath,
         ]);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Game created successfully',
-            'data'    => $game->load('category:id,name'),
+            'data' => $game->load('category:id,name'),
         ], 201);
     }
 
@@ -77,15 +77,15 @@ class GameController extends Controller
 
         if (! $game) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Game not found',
             ], 404);
         }
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Game retrieved successfully',
-            'data'    => $game,
+            'data' => $game,
         ]);
     }
 
@@ -95,22 +95,22 @@ class GameController extends Controller
 
         if (! $game) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Game not found',
             ], 404);
         }
 
         $validator = Validator::make($request->all(), [
-            'name'        => 'required|string|max:255|unique:games,name,' . $game->id,
+            'name' => 'required|string|max:255|unique:games,name,'.$game->id,
             'category_id' => 'required|exists:categories,id',
-            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Validation failed',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -127,17 +127,17 @@ class GameController extends Controller
             }
 
             $storedPath = $request->file('image')->store('games', 'public');
-            $game->image = 'storage/' . $storedPath;
+            $game->image = 'storage/'.$storedPath;
         }
 
-        $game->name        = $request->name;
+        $game->name = $request->name;
         $game->category_id = $request->category_id;
         $game->save();
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Game updated successfully',
-            'data'    => $game->load('category:id,name'),
+            'data' => $game->load('category:id,name'),
         ]);
     }
 
@@ -147,14 +147,14 @@ class GameController extends Controller
 
         if (! $game) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Game not found',
             ], 404);
         }
 
         if ($game->match()->exists()) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'Game cannot be deleted because it is used by one or more matches',
             ], 409);
         }
@@ -172,7 +172,7 @@ class GameController extends Controller
         $game->delete();
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Game deleted successfully',
         ]);
     }
@@ -190,15 +190,15 @@ class GameController extends Controller
 
         if ($games->isEmpty()) {
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'No games found',
             ], 404);
         }
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'All games retrieved successfully',
-            'data'    => $games,
+            'data' => $games,
         ]);
     }
 
@@ -212,18 +212,17 @@ class GameController extends Controller
             ->paginate($perPage);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Games retrieved successfully',
-            'data'    => $games->items(),
-            'meta'    => [
+            'data' => $games->items(),
+            'meta' => [
                 'current_page' => $games->currentPage(),
-                'last_page'    => $games->lastPage(),
-                'per_page'     => $games->perPage(),
-                'total'        => $games->total(),
-                'prev'         => $games->currentPage() > 1,
-                'next'         => $games->hasMorePages(),
+                'last_page' => $games->lastPage(),
+                'per_page' => $games->perPage(),
+                'total' => $games->total(),
+                'prev' => $games->currentPage() > 1,
+                'next' => $games->hasMorePages(),
             ],
         ]);
     }
-
 }

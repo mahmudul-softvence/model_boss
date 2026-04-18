@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -17,7 +18,7 @@ class SocialController extends Controller
     /**
      * Get the social authentication redirect URL.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function redirect(string $provider)
     {
@@ -45,7 +46,7 @@ class SocialController extends Controller
     /**
      * Handle the social authentication callback.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function callback(string $provider)
     {
@@ -69,7 +70,7 @@ class SocialController extends Controller
                 $avatarPath = null;
                 if ($socialUser->getAvatar()) {
                     $avatarContents = file_get_contents($socialUser->getAvatar());
-                    $avatarName = 'users/images/' . Str::random(40) . '.jpg';
+                    $avatarName = 'users/images/'.Str::random(40).'.jpg';
                     Storage::disk('public')->put($avatarName, $avatarContents);
                     $avatarPath = $avatarName;
                 }
@@ -84,7 +85,7 @@ class SocialController extends Controller
 
         if (! $user) {
             if (! $email) {
-                $email = $providerId . '@' . $provider . '.local';
+                $email = $providerId.'@'.$provider.'.local';
             }
 
             $name = $socialUser->getName()
@@ -97,7 +98,7 @@ class SocialController extends Controller
             $avatarPath = null;
             if ($socialUser->getAvatar()) {
                 $avatarContents = file_get_contents($socialUser->getAvatar());
-                $avatarName = 'users/images/' . Str::random(40) . '.jpg';
+                $avatarName = 'users/images/'.Str::random(40).'.jpg';
                 Storage::disk('public')->put($avatarName, $avatarContents);
                 $avatarPath = $avatarName;
             }
@@ -134,7 +135,7 @@ class SocialController extends Controller
             $encodedData = base64_encode(json_encode($data));
 
             return redirect()->away(
-                config('app.frontend_url') . '/' . $provider . '/callback?data=' . $encodedData
+                config('app.frontend_url').'/'.$provider.'/callback?data='.$encodedData
             );
         }
 
@@ -145,7 +146,7 @@ class SocialController extends Controller
         $encodedData = base64_encode(json_encode($data));
 
         return redirect()->away(
-            config('app.frontend_url') . '/' . $provider . '/callback?data=' . $encodedData
+            config('app.frontend_url').'/'.$provider.'/callback?data='.$encodedData
         );
     }
 
@@ -153,7 +154,7 @@ class SocialController extends Controller
      * Get the token array structure.
      *
      * @param  string  $token
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     protected function respondWithToken($token)
     {

@@ -24,12 +24,12 @@ class ForgotPasswordController extends Controller
             $email = $validated['email'];
 
             $token = Str::random(64);
-            $otp   = random_int(100000, 999999);
+            $otp = random_int(100000, 999999);
 
             DB::table('password_reset_tokens')->updateOrInsert(
                 ['email' => $email],
                 [
-                    'token'      => $token,
+                    'token' => $token,
                     'created_at' => now(),
                 ]
             );
@@ -57,7 +57,7 @@ class ForgotPasswordController extends Controller
     {
         $validated = $request->validate([
             'email' => ['required', 'email', 'exists:users,email'],
-            'otp'   => ['required', 'digits:6'],
+            'otp' => ['required', 'digits:6'],
         ]);
 
         $forgotOtp = ForgotPasswordOtp::where('email', $validated['email'])->first();
@@ -76,14 +76,13 @@ class ForgotPasswordController extends Controller
         return $this->sendResponse([], 'OTP verified successfully');
     }
 
-
     public function reset_password(Request $request)
     {
         $validated = $request->validate([
-            'email'                 => ['required', 'email'],
-            'token'                 => ['required', 'string'],
-            'new_password'          => ['required', 'string'],
-            'confirm_new_password'  => ['required', 'same:new_password'],
+            'email' => ['required', 'email'],
+            'token' => ['required', 'string'],
+            'new_password' => ['required', 'string'],
+            'confirm_new_password' => ['required', 'same:new_password'],
         ]);
 
         try {

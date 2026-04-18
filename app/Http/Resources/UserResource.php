@@ -17,8 +17,8 @@ class UserResource extends JsonResource
         $suspension = $this->suspension;
 
         return [
-            'id'    => $this->id,
-            'name'  => $this->full_name ?? $this->name,
+            'id' => $this->id,
+            'name' => $this->full_name ?? $this->name,
             'first_name' => $this->first_name,
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
@@ -32,14 +32,14 @@ class UserResource extends JsonResource
             'is_player' => (bool) $this->is_player,
             'image' => $this->image_url,
             'provider' => $this->provider,
-            'verified_at' => !is_null($this->email_verified_at),
+            'verified_at' => ! is_null($this->email_verified_at),
 
             'suspended_until' => $suspension?->suspended_until,
             'is_permanent_suspended' => $suspension?->is_permanent ?? false,
             'suspension_reason' => $suspension?->reason,
             'note' => $suspension?->note,
             'total_post' => $this->posts()->count(),
-            'role'  => $this->getRoleNames()->first(),
+            'role' => $this->getRoleNames()->first(),
             'referral_no' => $this->referral_no,
             'game' => $this->game ? GameResource::make($this->game) : null,
             'followers_count' => $this->followers_count,

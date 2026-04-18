@@ -2,13 +2,15 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class TwitchService
 {
     protected $clientId;
+
     protected $clientSecret;
+
     protected $username;
 
     public function __construct()
@@ -41,20 +43,20 @@ class TwitchService
 
         $response = Http::withHeaders([
             'Client-ID' => $this->clientId,
-            'Authorization' => 'Bearer ' . $token,
+            'Authorization' => 'Bearer '.$token,
         ])->get('https://api.twitch.tv/helix/streams', [
             'user_login' => $this->username,
         ]);
 
         $data = $response->json()['data'];
 
-        return !empty($data)
+        return ! empty($data)
             ? [
                 'is_live' => true,
-                'stream' => $data[0]
+                'stream' => $data[0],
             ]
             : [
-                'is_live' => false
+                'is_live' => false,
             ];
     }
 }

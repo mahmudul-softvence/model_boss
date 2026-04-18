@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\UserBalance;
 use App\Models\CoinTransaction;
 use App\Models\Tip;
 use App\Models\User;
+use App\Models\UserBalance;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TipController extends Controller
@@ -16,17 +16,17 @@ class TipController extends Controller
     {
         $request->validate([
             'receiver_id' => 'required|exists:users,id',
-            'tip_amount'       => 'required|numeric|min:1',
+            'tip_amount' => 'required|numeric|min:1',
         ]);
 
-        $senderId   = auth('api')->id();
+        $senderId = auth('api')->id();
         $receiverId = $request->receiver_id;
-        $amount     = $request->tip_amount;
+        $amount = $request->tip_amount;
 
         if ($senderId == $receiverId) {
             return response()->json([
-                'status'  => false,
-                'message' => 'You cannot tip yourself.'
+                'status' => false,
+                'message' => 'You cannot tip yourself.',
             ], 422);
         }
 
@@ -47,17 +47,17 @@ class TipController extends Controller
                 $senderBalance->save();
 
                 CoinTransaction::create([
-                    'user_id'       => $senderId,
-                    'type'          => 'tip',
-                    'amount'        => -$amount,
+                    'user_id' => $senderId,
+                    'type' => 'tip',
+                    'amount' => -$amount,
                     'balance_after' => $senderBalance->total_balance,
-                    'reference'     => 'Tip sent to user #' . $receiverId,
+                    'reference' => 'Tip sent to user #'.$receiverId,
                 ]);
 
                 if ($receiverId != 1) {
 
                     $receiverShare = $amount * 0.5;
-                    $adminShare    = $amount * 0.5;
+                    $adminShare = $amount * 0.5;
 
                     $receiverBalance = UserBalance::where('user_id', $receiverId)
                         ->lockForUpdate()
@@ -72,24 +72,23 @@ class TipController extends Controller
                     $receiverBalance->save();
 
                     CoinTransaction::create([
-                        'user_id'       => $receiverId,
-                        'type'          => 'tip',
-                        'amount'        => $receiverShare,
+                        'user_id' => $receiverId,
+                        'type' => 'tip',
+                        'amount' => $receiverShare,
                         'balance_after' => $receiverBalance->total_balance,
-                        'reference'     => 'Tip received from user #' . $senderId,
+                        'reference' => 'Tip received from user #'.$senderId,
                     ]);
 
                     $adminBalance->total_balance += $adminShare;
                     $adminBalance->total_tip_received += $adminShare;
                     $adminBalance->save();
                     CoinTransaction::create([
-                        'user_id'       => 1,
-                        'type'          => 'tip',
-                        'amount'        => $adminShare,
+                        'user_id' => 1,
+                        'type' => 'tip',
+                        'amount' => $adminShare,
                         'balance_after' => $adminBalance->total_balance,
-                        'reference'     => 'Admin share from tip sent by user #' . $senderId,
+                        'reference' => 'Admin share from tip sent by user #'.$senderId,
                     ]);
-
                 } else {
 
                     $adminBalance = UserBalance::where('user_id', 1)
@@ -100,38 +99,36 @@ class TipController extends Controller
                     $adminBalance->total_tip_received += $amount;
                     $adminBalance->save();
                     CoinTransaction::create([
-                        'user_id'       => 1,
-                        'type'          => 'tip',
-                        'amount'        => $amount,
+                        'user_id' => 1,
+                        'type' => 'tip',
+                        'amount' => $amount,
                         'balance_after' => $adminBalance->total_balance,
-                        'reference'     => 'Tip received from user #' . $senderId,
+                        'reference' => 'Tip received from user #'.$senderId,
                     ]);
                 }
 
                 Tip::create([
-                    'send_user_id'     => $senderId,
+                    'send_user_id' => $senderId,
                     'received_user_id' => $receiverId,
-                    'tip_amount'       => $amount,
+                    'tip_amount' => $amount,
                 ]);
             });
 
             return response()->json([
-                'status'  => true,
-                'message' => 'Tip sent successfully.'
+                'status' => true,
+                'message' => 'Tip sent successfully.',
             ]);
-
         } catch (\RuntimeException $e) {
 
             return response()->json([
-                'status'  => false,
-                'message' => $e->getMessage()
+                'status' => false,
+                'message' => $e->getMessage(),
             ], 400);
-
         } catch (\Throwable $e) {
 
             return response()->json([
-                'status'  => false,
-                'message' => 'Something went wrong.'
+                'status' => false,
+                'message' => 'Something went wrong.',
             ], 500);
         }
     }
@@ -140,17 +137,17 @@ class TipController extends Controller
     {
         $request->validate([
             'receiver_id' => 'required|exists:users,id',
-            'amount'      => 'required|numeric|min:1',
+            'amount' => 'required|numeric|min:1',
         ]);
 
-        $senderId   = auth('api')->id();
+        $senderId = auth('api')->id();
         $receiverId = $request->receiver_id;
-        $amount     = $request->amount;
+        $amount = $request->amount;
 
         if ($senderId == $receiverId) {
             return response()->json([
-                'status'  => false,
-                'message' => 'You cannot send coins to yourself.'
+                'status' => false,
+                'message' => 'You cannot send coins to yourself.',
             ], 422);
         }
 
@@ -159,8 +156,8 @@ class TipController extends Controller
 
         if ($receiverAmount <= 0) {
             return response()->json([
-                'status'  => false,
-                'message' => 'Amount is too small after fee deduction.'
+                'status' => false,
+                'message' => 'Amount is too small after fee deduction.',
             ], 422);
         }
 
@@ -180,11 +177,11 @@ class TipController extends Controller
                 $senderBalance->save();
 
                 CoinTransaction::create([
-                    'user_id'       => $senderId,
-                    'type'          => 'send-coin',
-                    'amount'        => -$amount,
+                    'user_id' => $senderId,
+                    'type' => 'send-coin',
+                    'amount' => -$amount,
                     'balance_after' => $senderBalance->total_balance,
-                    'reference'     => 'Sent coins to user #' . $receiverId,
+                    'reference' => 'Sent coins to user #'.$receiverId,
                 ]);
 
                 $receiverBalance = UserBalance::where('user_id', $receiverId)
@@ -195,11 +192,11 @@ class TipController extends Controller
                 $receiverBalance->save();
 
                 CoinTransaction::create([
-                    'user_id'       => $receiverId,
-                    'type'          => 'receive-coin',
-                    'amount'        => $receiverAmount,
+                    'user_id' => $receiverId,
+                    'type' => 'receive-coin',
+                    'amount' => $receiverAmount,
                     'balance_after' => $receiverBalance->total_balance,
-                    'reference'     => 'Received coins (after fee) from user #' . $senderId,
+                    'reference' => 'Received coins (after fee) from user #'.$senderId,
                 ]);
 
                 $adminBalance = UserBalance::where('user_id', 1)
@@ -210,31 +207,29 @@ class TipController extends Controller
                 $adminBalance->save();
 
                 CoinTransaction::create([
-                    'user_id'       => 1,
-                    'type'          => 'Send-coin fee',
-                    'amount'        => $fee,
+                    'user_id' => 1,
+                    'type' => 'Send-coin fee',
+                    'amount' => $fee,
                     'balance_after' => $adminBalance->total_balance,
-                    'reference'     => 'Fee from send coin by user #' . $senderId,
+                    'reference' => 'Fee from send coin by user #'.$senderId,
                 ]);
             });
 
             return response()->json([
-                'status'  => true,
-                'message' => 'Coins sent successfully.'
+                'status' => true,
+                'message' => 'Coins sent successfully.',
             ]);
-
         } catch (\RuntimeException $e) {
 
             return response()->json([
-                'status'  => false,
-                'message' => $e->getMessage()
+                'status' => false,
+                'message' => $e->getMessage(),
             ], 400);
-
         } catch (\Throwable $e) {
 
             return response()->json([
-                'status'  => false,
-                'message' => 'Something went wrong.'
+                'status' => false,
+                'message' => 'Something went wrong.',
             ], 500);
         }
     }
@@ -267,7 +262,7 @@ class TipController extends Controller
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             })
             ->select('id', 'name', 'email')
@@ -278,8 +273,7 @@ class TipController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Users retrieved successfully.',
-            'data'   => $users
+            'data' => $users,
         ]);
     }
-
 }

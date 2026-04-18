@@ -20,7 +20,7 @@ class GalleryResource extends JsonResource
             'short_video_thumb' => $this->image_url,
             'description' => $this->description,
             'is_featured' => $this->is_featured,
-            'created_at' => $this->created_at->toDateTimeString()
+            'created_at' => $this->created_at->toDateTimeString(),
         ];
     }
 }

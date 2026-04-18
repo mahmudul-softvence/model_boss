@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::table('user_balances', function (Blueprint $table) {
             $table->decimal('total_bet', 15, 2)
-                  ->default(0)
-                  ->after('total_balance');
+                ->default(0)
+                ->after('total_balance');
         });
     }
 
@@ -22,4 +22,3 @@ return new class extends Migration
         });
     }
 };
-

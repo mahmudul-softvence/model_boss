@@ -61,16 +61,16 @@ class MatchForVotingController extends Controller
         $matches = $query->latest()->paginate($perPage);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Match voting list retrieved successfully',
-            'data'    => $matches->items(),
-            'meta'    => [
+            'data' => $matches->items(),
+            'meta' => [
                 'current_page' => $matches->currentPage(),
-                'last_page'    => $matches->lastPage(),
-                'per_page'     => $matches->perPage(),
-                'total'        => $matches->total(),
-                'prev'         => $matches->currentPage() > 1,
-                'next'         => $matches->hasMorePages(),
+                'last_page' => $matches->lastPage(),
+                'per_page' => $matches->perPage(),
+                'total' => $matches->total(),
+                'prev' => $matches->currentPage() > 1,
+                'next' => $matches->hasMorePages(),
             ],
         ]);
     }
@@ -98,7 +98,7 @@ class MatchForVotingController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Match voting created successfully',
-            'data' => $match
+            'data' => $match,
         ]);
     }
 
@@ -111,16 +111,16 @@ class MatchForVotingController extends Controller
         ])
             ->find($id);
 
-        if (!$match) {
+        if (! $match) {
             return response()->json([
                 'success' => false,
-                'message' => 'Match not found'
+                'message' => 'Match not found',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $match
+            'data' => $match,
         ]);
     }
 
@@ -128,10 +128,10 @@ class MatchForVotingController extends Controller
     {
         $match = MatchForVoting::find($id);
 
-        if (!$match) {
+        if (! $match) {
             return response()->json([
                 'success' => false,
-                'message' => 'Match not found'
+                'message' => 'Match not found',
             ], 404);
         }
 
@@ -148,13 +148,13 @@ class MatchForVotingController extends Controller
             'player_one_id',
             'player_two_id',
             'start_time',
-            'end_time'
+            'end_time',
         ]));
 
         return response()->json([
             'success' => true,
             'message' => 'Match updated successfully',
-            'data' => $match
+            'data' => $match,
         ]);
     }
 
@@ -162,10 +162,10 @@ class MatchForVotingController extends Controller
     {
         $match = MatchForVoting::find($id);
 
-        if (!$match) {
+        if (! $match) {
             return response()->json([
                 'success' => false,
-                'message' => 'Match not found'
+                'message' => 'Match not found',
             ], 404);
         }
 
@@ -173,7 +173,7 @@ class MatchForVotingController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Match deleted successfully'
+            'message' => 'Match deleted successfully',
         ]);
     }
 
@@ -192,7 +192,7 @@ class MatchForVotingController extends Controller
         if ($alreadyVoted) {
             return response()->json([
                 'status' => false,
-                'message' => 'You have already voted for this match'
+                'message' => 'You have already voted for this match',
             ], 400);
         }
 
@@ -214,8 +214,8 @@ class MatchForVotingController extends Controller
                 'message' => 'Vote submitted successfully',
                 'data' => [
                     'match_id' => $match->id,
-                    'total_vote' => $match->total_vote
-                ]
+                    'total_vote' => $match->total_vote,
+                ],
             ]);
         } catch (\Exception $e) {
 
@@ -223,7 +223,7 @@ class MatchForVotingController extends Controller
 
             return response()->json([
                 'status' => false,
-                'message' => 'Something went wrong'
+                'message' => 'Something went wrong',
             ], 500);
         }
     }
@@ -239,7 +239,7 @@ class MatchForVotingController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Matches retrieved successfully',
-            'data' => $matches
+            'data' => $matches,
         ]);
     }
 
@@ -252,17 +252,17 @@ class MatchForVotingController extends Controller
 
         $match = GameMatch::with(['playerOne', 'playerTwo'])->find($match_id);
 
-        if (!$match || !in_array($request->player_id, [$match->player_one_id, $match->player_two_id])) {
+        if (! $match || ! in_array($request->player_id, [$match->player_one_id, $match->player_two_id])) {
             return response()->json([
                 'status' => false,
-                'message' => 'Player not found in this match'
+                'message' => 'Player not found in this match',
             ], 404);
         }
 
-        if (!$match->vote_start_time) {
+        if (! $match->vote_start_time) {
             return response()->json([
                 'status' => false,
-                'message' => 'Voting has not started yet'
+                'message' => 'Voting has not started yet',
             ], 400);
         }
 
@@ -272,7 +272,7 @@ class MatchForVotingController extends Controller
         if (now()->greaterThan($voteEndTime)) {
             return response()->json([
                 'status' => false,
-                'message' => 'Voting time is over'
+                'message' => 'Voting time is over',
             ], 400);
         }
 
@@ -285,11 +285,12 @@ class MatchForVotingController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            if (!$user_balance || $user_balance->total_balance < $request->total_vote) {
+            if (! $user_balance || $user_balance->total_balance < $request->total_vote) {
                 DB::rollBack();
+
                 return response()->json([
                     'status' => false,
-                    'message' => 'Insufficient balance'
+                    'message' => 'Insufficient balance',
                 ], 400);
             }
 
@@ -306,11 +307,12 @@ class MatchForVotingController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            if (!$adminBalance) {
+            if (! $adminBalance) {
                 DB::rollBack();
+
                 return response()->json([
                     'status' => false,
-                    'message' => 'Admin balance not found'
+                    'message' => 'Admin balance not found',
                 ], 500);
             }
 
@@ -321,7 +323,7 @@ class MatchForVotingController extends Controller
                 'type' => 'vote',
                 'amount' => -$request->total_vote,
                 'balance_after' => $user_balance->fresh()->total_balance,
-                'reference' => 'Vote for match ID: ' . $match->id,
+                'reference' => 'Vote for match ID: '.$match->id,
             ]);
 
             CoinTransaction::create([
@@ -329,7 +331,7 @@ class MatchForVotingController extends Controller
                 'type' => 'vote',
                 'amount' => $request->total_vote,
                 'balance_after' => $adminBalance->fresh()->total_balance,
-                'reference' => 'Received vote from user ID: ' . $userId,
+                'reference' => 'Received vote from user ID: '.$userId,
             ]);
 
             DB::commit();
@@ -341,7 +343,7 @@ class MatchForVotingController extends Controller
                 'message' => 'Vote submitted successfully',
                 'data' => [
                     'match_id' => $match->id,
-                ]
+                ],
             ]);
 
         } catch (\Exception $e) {
@@ -350,32 +352,33 @@ class MatchForVotingController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Something went wrong',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
-    public function startVote($match_id) {
+    public function startVote($match_id)
+    {
 
         $match = GameMatch::with(['playerOne', 'playerTwo'])->find($match_id);
-        if (!$match) {
+        if (! $match) {
             return response()->json([
                 'status' => false,
-                'message' => 'Match not found'
+                'message' => 'Match not found',
             ], 404);
         }
 
         if ($match->vote_start_time !== null) {
             return response()->json([
                 'status' => false,
-                'message' => 'Voting already started for this match'
+                'message' => 'Voting already started for this match',
             ], 400);
         }
 
         if ($match->voting_time === null) {
             return response()->json([
                 'status' => false,
-                'message' => 'Voting time not set for this match'
+                'message' => 'Voting time not set for this match',
             ], 400);
         }
 
@@ -389,5 +392,4 @@ class MatchForVotingController extends Controller
             'message' => 'Voting started successfully',
         ]);
     }
-
 }

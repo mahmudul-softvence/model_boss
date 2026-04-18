@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::table('game_matches', function (Blueprint $table) {
             $table->tinyInteger('confirmation_status')
-                  ->default(0)
-                  ->after('twitch_link');
+                ->default(0)
+                ->after('twitch_link');
         });
     }
 

@@ -27,7 +27,7 @@ return new class extends Migration
             $table->dropColumn([
                 'reference_status',
                 'referral_user_id',
-                'referral_no'
+                'referral_no',
             ]);
         });
     }

@@ -15,12 +15,12 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('user_id')
-                  ->references('id')->on('users')
-                  ->cascadeOnDelete();
+                ->references('id')->on('users')
+                ->cascadeOnDelete();
 
             $table->foreign('match_for_voting_id')
-                  ->references('id')->on('match_for_votings')
-                  ->cascadeOnDelete();
+                ->references('id')->on('match_for_votings')
+                ->cascadeOnDelete();
 
             $table->unique(['user_id', 'match_for_voting_id']);
         });
