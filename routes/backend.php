@@ -44,7 +44,6 @@ Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(func
     Route::post('news/{news}', [NewsController::class, 'update']);
     Route::delete('news/{news}', [NewsController::class, 'destroy']);
 
-
     // Admin Profile Change
 
     Route::put('settings', [AdminSettingController::class, 'update']);
@@ -52,7 +51,6 @@ Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(func
     Route::get('settings/auto_accept_withdraw', [AdminSettingController::class, 'get_auto_accept_withdraw']);
     Route::put('settings/auto_accept_withdraw', [AdminSettingController::class, 'auto_accept_withdraw']);
 });
-
 
 Route::middleware('auth:api')->group(function () {
     Route::get('notifications', [NotificationController::class, 'notifications']);

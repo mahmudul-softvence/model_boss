@@ -89,8 +89,8 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::delete('matches/{id}', [MatchController::class, 'destroy']);
     // match confirmation
     Route::post('match-confirm/{id}', [SupportController::class, 'confirm']);
-    
-    //vote Start
+
+    // vote Start
     Route::post('start-vote/{match_id}', [MatchForVotingController::class, 'startVote']);
 
     Route::get('match-players/{id}', [MatchController::class, 'players']);
