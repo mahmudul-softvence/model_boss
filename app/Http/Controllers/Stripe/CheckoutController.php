@@ -6,8 +6,10 @@ use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\BitpayPayment;
 use App\Models\MoncashPayment;
+use App\Models\PaypalPayment;
 use App\Services\BitpayService;
 use App\Services\MoncashService;
+use App\Services\PaypalService;
 use App\Services\StripeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +21,7 @@ class CheckoutController extends Controller
     public function __construct(
         private readonly MoncashService $moncashService,
         private readonly BitpayService $bitpayService,
+        private readonly PaypalService $paypalService,
         private readonly StripeService $stripeService,
     ) {}
 
@@ -26,7 +29,7 @@ class CheckoutController extends Controller
     {
         $request->validate([
             'amount' => ['required', 'numeric', 'min:1'],
-            'payment_method' => ['nullable', 'string', Rule::in(['stripe', 'moncash', 'bitpay'])],
+            'payment_method' => ['nullable', 'string', Rule::in(['stripe', 'moncash', 'bitpay', 'paypal'])],
         ]);
 
         $user = $request->user();
@@ -39,6 +42,10 @@ class CheckoutController extends Controller
 
         if ($paymentMethod === 'bitpay') {
             return $this->checkoutWithBitpay($user, $amount);
+        }
+
+        if ($paymentMethod === 'paypal') {
+            return $this->checkoutWithPaypal($user, $amount);
         }
 
         return $this->checkoutWithStripe($user, $amount);
@@ -90,6 +97,26 @@ class CheckoutController extends Controller
         return $this->sendResponse([
             'url' => $checkout['url'],
             'payment_method' => 'bitpay',
+        ]);
+    }
+
+    protected function checkoutWithPaypal($user, float $amount): JsonResponse
+    {
+        $orderId = (string) Str::uuid();
+        $checkout = $this->paypalService->createCheckout($user, $amount, $orderId);
+
+        PaypalPayment::create([
+            'user_id' => $user->id,
+            'order_id' => $orderId,
+            'paypal_order_id' => $checkout['paypal_order_id'],
+            'amount' => $amount,
+            'coin_amount' => $amount,
+            'status' => PaymentStatus::PENDING->value,
+        ]);
+
+        return $this->sendResponse([
+            'url' => $checkout['url'],
+            'payment_method' => 'paypal',
         ]);
     }
 }

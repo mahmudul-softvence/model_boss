@@ -77,6 +77,11 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         return $this->hasMany(MoncashPayment::class, 'user_id');
     }
 
+    public function paypalPayments()
+    {
+        return $this->hasMany(PaypalPayment::class, 'user_id');
+    }
+
     public function coinTransactions()
     {
         return $this->hasMany(CoinTransaction::class, 'user_id');
