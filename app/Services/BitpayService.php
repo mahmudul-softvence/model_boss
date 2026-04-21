@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -10,11 +11,10 @@ class BitpayService
 {
     public function createCheckout(float $amount, string $orderId): array
     {
-        $token = $this->requiredConfig('services.bitpay.token');
-
-        $response = $this->apiRequest()
+        $response = $this->ensureSuccessfulResponse($this->apiRequest()
             ->post($this->apiUrl('/invoices'), [
-                'price' => $amount,
+                'token' => $this->requiredConfig('services.bitpay.token'),
+                'price' => $this->normalizeAmount($amount),
                 'currency' => 'USD',
                 'orderId' => $orderId,
                 'notificationURL' => $this->webhookUrl(),
@@ -22,13 +22,8 @@ class BitpayService
                 'fullNotifications' => true,
                 'extendedNotifications' => true,
             ])
-            ->throw();
-
-        $data = $response->json('data');
-
-        if (! is_array($data)) {
-            throw new RuntimeException('BitPay did not return invoice data.');
-        }
+        );
+        $data = $this->extractInvoiceData($response);
 
         $invoiceId = $data['id'] ?? null;
         $invoiceUrl = $data['url'] ?? null;
@@ -45,17 +40,13 @@ class BitpayService
 
     public function retrieveInvoice(string $invoiceId): array
     {
-        $response = $this->apiRequest()
-            ->get($this->apiUrl("/invoices/{$invoiceId}"))
-            ->throw();
+        $response = $this->ensureSuccessfulResponse($this->apiRequest()
+            ->get($this->apiUrl("/invoices/{$invoiceId}"), [
+                'token' => $this->requiredConfig('services.bitpay.token'),
+            ])
+        );
 
-        $data = $response->json('data');
-
-        if (! is_array($data)) {
-            throw new RuntimeException('BitPay did not return invoice data.');
-        }
-
-        return $data;
+        return $this->extractInvoiceData($response);
     }
 
     public function getInvoiceStatus(string $invoiceId): string
@@ -83,26 +74,84 @@ class BitpayService
     {
         return Http::acceptJson()
             ->contentType('application/json')
+            ->withHeaders([
+                'X-Accept-Version' => '2.0.0',
+            ])
             ->connectTimeout(10)
             ->timeout(15)
-            ->retry(2, 200)
-            ->withToken($this->requiredConfig('services.bitpay.token'));
+            ->retry(2, 200);
     }
 
     protected function apiUrl(string $path): string
     {
-        return rtrim($this->requiredConfig('services.bitpay.base_url'), '/').'/api'.$path;
+        return rtrim($this->requiredConfig('services.bitpay.base_url'), '/').$path;
     }
 
     protected function webhookUrl(): string
     {
-        return route('bitpay.webhook');
+        $configuredUrl = config('services.bitpay.webhook_url');
+        $webhookUrl = is_string($configuredUrl) && trim($configuredUrl) !== ''
+            ? trim($configuredUrl)
+            : route('bitpay.webhook');
+
+        if (! str_starts_with(strtolower($webhookUrl), 'https://')) {
+            throw new RuntimeException('BitPay webhook URL must use HTTPS. Set APP_URL or BITPAY_WEBHOOK_URL to a public HTTPS URL.');
+        }
+
+        return $webhookUrl;
     }
 
     protected function frontendRedirectUrl(string $provider): string
     {
-        return rtrim((string) config('app.frontend_url'), '/')
+        return rtrim($this->requiredConfig('app.frontend_url'), '/')
             .'/payment-success?provider='.$provider;
+    }
+
+    protected function ensureSuccessfulResponse(Response $response): Response
+    {
+        if ($response->successful()) {
+            return $response;
+        }
+
+        $message = $this->extractErrorMessage($response);
+
+        throw new RuntimeException('BitPay request failed: '.$message);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function extractInvoiceData(Response $response): array
+    {
+        $data = $response->json('data');
+
+        if (! is_array($data)) {
+            throw new RuntimeException('BitPay did not return invoice data.');
+        }
+
+        return $data;
+    }
+
+    protected function extractErrorMessage(Response $response): string
+    {
+        $errorMessage = data_get($response->json(), 'error.message');
+
+        if (is_string($errorMessage) && trim($errorMessage) !== '') {
+            return trim($errorMessage);
+        }
+
+        $body = trim($response->body());
+
+        if ($body !== '') {
+            return $body;
+        }
+
+        return 'Unexpected response from BitPay.';
+    }
+
+    protected function normalizeAmount(float $amount): float
+    {
+        return round($amount, 2);
     }
 
     protected function requiredConfig(string $key): string
