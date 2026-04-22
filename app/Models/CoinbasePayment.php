@@ -5,12 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class BitpayPayment extends Model
+class CoinbasePayment extends Model
 {
     protected $fillable = [
         'user_id',
         'order_id',
-        'bitpay_invoice_id',
+        'coinbase_charge_id',
         'amount',
         'coin_amount',
         'payer',

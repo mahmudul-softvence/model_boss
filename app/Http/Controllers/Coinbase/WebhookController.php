@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\Bitpay;
+namespace App\Http\Controllers\Coinbase;
 
 use App\Actions\CreditPointPurchase;
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
-use App\Models\BitpayPayment;
+use App\Models\CoinbasePayment;
 use App\Models\User;
-use App\Services\BitpayService;
+use App\Services\CoinbaseService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -16,43 +16,46 @@ use Illuminate\Support\Facades\Log;
 class WebhookController extends Controller
 {
     public function __construct(
-        private readonly BitpayService $bitpayService,
+        private readonly CoinbaseService $coinbaseService,
         private readonly CreditPointPurchase $creditPointPurchase,
     ) {}
 
     public function handleWebhook(Request $request): Response
     {
-        $invoiceId = trim((string) ($request->input('invoiceId') ?? $request->input('id') ?? ''));
-        $status = $request->input('status');
+        $chargeId = trim((string) ($request->input('event.data.id') ?? $request->input('id') ?? ''));
+        $eventType = trim((string) ($request->input('event.type') ?? ''));
 
-        if (! $invoiceId) {
+        if ($chargeId === '') {
             return response('', 400);
         }
 
-        Log::info('BitPay webhook received', [
-            'invoiceId' => $invoiceId,
-            'status' => $status,
+        Log::info('Coinbase webhook received', [
+            'charge_id' => $chargeId,
+            'event_type' => $eventType,
         ]);
 
         try {
-            $invoice = $this->bitpayService->retrieveInvoice($invoiceId);
+            $charge = $this->coinbaseService->retrieveCharge($chargeId);
 
-            return $this->processPayment($invoice, $invoiceId);
-        } catch (\Throwable $e) {
-            Log::error('BitPay webhook error: '.$e->getMessage(), [
-                'invoiceId' => $invoiceId,
+            return $this->processPayment($charge, $chargeId);
+        } catch (\Throwable $exception) {
+            Log::error('Coinbase webhook error: '.$exception->getMessage(), [
+                'charge_id' => $chargeId,
             ]);
 
             return response('', 500);
         }
     }
 
-    protected function processPayment(array $invoice, string $invoiceId): Response
+    /**
+     * @param  array<string, mixed>  $charge
+     */
+    protected function processPayment(array $charge, string $chargeId): Response
     {
-        $payment = BitpayPayment::where('bitpay_invoice_id', $invoiceId)->first();
+        $payment = CoinbasePayment::where('coinbase_charge_id', $chargeId)->first();
 
         if (! $payment) {
-            Log::warning('BitPay payment not found', ['invoiceId' => $invoiceId]);
+            Log::warning('Coinbase payment not found', ['charge_id' => $chargeId]);
 
             return response('', 404);
         }
@@ -61,23 +64,19 @@ class WebhookController extends Controller
             return response('', 200);
         }
 
-        $isCompleted = $this->bitpayService->isPaymentCompleted($invoice);
-        $isFailed = $this->bitpayService->isPaymentFailed($invoice);
-
-        if ($isFailed) {
+        if ($this->coinbaseService->isPaymentFailed($charge)) {
             $payment->update(['status' => PaymentStatus::FAILED->value]);
 
             return response('', 200);
         }
 
-        if (! $isCompleted) {
+        if (! $this->coinbaseService->isPaymentCompleted($charge)) {
             return response('', 200);
         }
 
-        DB::transaction(function () use ($payment, $invoice) {
+        DB::transaction(function () use ($payment) {
             $payment->update([
                 'status' => PaymentStatus::COMPLETED->value,
-                'payer' => $invoice['buyer']['email'] ?? null,
             ]);
 
             $user = User::findOrFail($payment->user_id);
@@ -85,7 +84,7 @@ class WebhookController extends Controller
             $this->creditPointPurchase->execute(
                 $user,
                 (float) $payment->coin_amount,
-                $payment->bitpay_invoice_id,
+                $payment->coinbase_charge_id,
             );
         });
 

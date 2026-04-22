@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Bitpay\WebhookController as BitpayWebhookController;
+use App\Http\Controllers\Coinbase\WebhookController as CoinbaseWebhookController;
 use App\Http\Controllers\Moncash\CallbackController;
 use App\Http\Controllers\Paypal\CallbackController as PaypalCallbackController;
 use App\Http\Controllers\Stripe\WebhookController as StripeWebhookController;
@@ -26,5 +26,5 @@ Route::get('paypal/return', [PaypalCallbackController::class, 'handleReturn'])
 Route::get('paypal/cancel', [PaypalCallbackController::class, 'handleCancel'])
     ->name('paypal.cancel');
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
-Route::post('bitpay/webhook', [BitpayWebhookController::class, 'handleWebhook'])
-    ->name('bitpay.webhook');
+Route::post('coinbase/webhook', [CoinbaseWebhookController::class, 'handleWebhook'])
+    ->name('coinbase.webhook');

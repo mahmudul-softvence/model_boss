@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Stripe;
 
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
-use App\Models\BitpayPayment;
+use App\Models\CoinbasePayment;
 use App\Models\MoncashPayment;
 use App\Models\PaypalPayment;
-use App\Services\BitpayService;
+use App\Services\CoinbaseService;
 use App\Services\MoncashService;
 use App\Services\PaypalService;
 use App\Services\StripeService;
@@ -20,7 +20,7 @@ class CheckoutController extends Controller
 {
     public function __construct(
         private readonly MoncashService $moncashService,
-        private readonly BitpayService $bitpayService,
+        private readonly CoinbaseService $coinbaseService,
         private readonly PaypalService $paypalService,
         private readonly StripeService $stripeService,
     ) {}
@@ -29,7 +29,7 @@ class CheckoutController extends Controller
     {
         $request->validate([
             'amount' => ['required', 'numeric', 'min:1'],
-            'payment_method' => ['nullable', 'string', Rule::in(['stripe', 'moncash', 'bitpay', 'paypal'])],
+            'payment_method' => ['nullable', 'string', Rule::in(['stripe', 'moncash', 'coinbase', 'paypal'])],
         ]);
 
         $user = $request->user();
@@ -40,8 +40,8 @@ class CheckoutController extends Controller
             return $this->checkoutWithMoncash($user, $amount);
         }
 
-        if ($paymentMethod === 'bitpay') {
-            return $this->checkoutWithBitpay($user, $amount);
+        if ($paymentMethod === 'coinbase') {
+            return $this->checkoutWithCoinbase($user, $amount);
         }
 
         if ($paymentMethod === 'paypal') {
@@ -80,26 +80,6 @@ class CheckoutController extends Controller
         ]);
     }
 
-    protected function checkoutWithBitpay($user, float $amount): JsonResponse
-    {
-        $orderId = (string) Str::uuid();
-        $checkout = $this->bitpayService->createCheckout($amount, $orderId);
-
-        BitpayPayment::create([
-            'user_id' => $user->id,
-            'order_id' => $orderId,
-            'bitpay_invoice_id' => $checkout['invoice_id'],
-            'amount' => $amount,
-            'coin_amount' => $amount,
-            'status' => PaymentStatus::PENDING->value,
-        ]);
-
-        return $this->sendResponse([
-            'url' => $checkout['url'],
-            'payment_method' => 'bitpay',
-        ]);
-    }
-
     protected function checkoutWithPaypal($user, float $amount): JsonResponse
     {
         $orderId = (string) Str::uuid();
@@ -117,6 +97,26 @@ class CheckoutController extends Controller
         return $this->sendResponse([
             'url' => $checkout['url'],
             'payment_method' => 'paypal',
+        ]);
+    }
+
+    protected function checkoutWithCoinbase($user, float $amount): JsonResponse
+    {
+        $orderId = (string) Str::uuid();
+        $checkout = $this->coinbaseService->createCheckout($amount, $orderId);
+
+        CoinbasePayment::create([
+            'user_id' => $user->id,
+            'order_id' => $orderId,
+            'coinbase_charge_id' => $checkout['charge_id'],
+            'amount' => $amount,
+            'coin_amount' => $amount,
+            'status' => PaymentStatus::PENDING->value,
+        ]);
+
+        return $this->sendResponse([
+            'url' => $checkout['url'],
+            'payment_method' => 'coinbase',
         ]);
     }
 }
