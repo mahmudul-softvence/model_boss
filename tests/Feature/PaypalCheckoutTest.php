@@ -140,6 +140,11 @@ class PaypalCheckoutTest extends TestCase
 
         $response->assertRedirect('https://frontend.test/payment-success?provider=paypal');
 
+        Http::assertSent(function (HttpRequest $request): bool {
+            return $request->url() === 'https://api-m.sandbox.paypal.test/v2/checkout/orders/PAYPAL-ORDER-2002/capture'
+                && $request->body() === '{}';
+        });
+
         $this->assertDatabaseHas('paypal_payments', [
             'order_id' => 'order-2002',
             'paypal_order_id' => 'PAYPAL-ORDER-2002',

@@ -47,6 +47,7 @@ class PaypalService
                 'PayPal-Request-Id' => 'capture-'.$paypalOrderId,
                 'Prefer' => 'return=representation',
             ])
+            ->withBody('{}', 'application/json')
             ->post($this->apiUrl("/v2/checkout/orders/{$paypalOrderId}/capture"))
             ->throw()
             ->json();
