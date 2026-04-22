@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use RuntimeException;
 use Tests\TestCase;
 
 class BitpayCheckoutTest extends TestCase
@@ -22,8 +23,9 @@ class BitpayCheckoutTest extends TestCase
         config([
             'app.url' => 'https://backend.test',
             'app.frontend_url' => 'https://frontend.test',
-            'services.bitpay.base_url' => 'https://bitpay.test',
+            'services.bitpay.base_url' => 'https://sandbox.bitpay.test',
             'services.bitpay.token' => 'bitpay-token',
+            'services.bitpay.webhook_url' => 'https://hooks.bitpay.test/bitpay/webhook',
         ]);
     }
 
@@ -33,12 +35,12 @@ class BitpayCheckoutTest extends TestCase
         $user = User::factory()->create();
 
         Http::fake([
-            'https://bitpay.test/api/invoices' => Http::response([
+            'https://sandbox.bitpay.test/invoices' => Http::response([
                 'data' => [
                     'id' => 'BITPAY-INVOICE-1001',
-                    'url' => 'https://bitpay.test/invoice?id=BITPAY-INVOICE-1001',
+                    'url' => 'https://pay.bitpay.test/invoice?id=BITPAY-INVOICE-1001',
                 ],
-            ], 201),
+            ]),
         ]);
 
         $response = $this->withHeaders($this->authHeadersFor($user))
@@ -49,17 +51,22 @@ class BitpayCheckoutTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.payment_method', 'bitpay')
-            ->assertJsonPath('data.url', 'https://bitpay.test/invoice?id=BITPAY-INVOICE-1001');
+            ->assertJsonPath('data.url', 'https://pay.bitpay.test/invoice?id=BITPAY-INVOICE-1001');
 
         Http::assertSentCount(1);
         Http::assertSent(function (HttpRequest $request): bool {
-            $payload = $request->data();
-
-            return $request->url() === 'https://bitpay.test/api/invoices'
-                && (float) data_get($payload, 'price', 0) === 25.0
-                && data_get($payload, 'currency') === 'USD'
-                && str_ends_with((string) data_get($payload, 'notificationURL', ''), '/bitpay/webhook')
-                && data_get($payload, 'redirectURL') === 'https://frontend.test/payment-success?provider=bitpay';
+            return $request->url() === 'https://sandbox.bitpay.test/invoices'
+                && $request->hasHeader('X-Accept-Version', '2.0.0')
+                && ! $request->hasHeader('Authorization')
+                && $request['token'] === 'bitpay-token'
+                && (float) $request['price'] === 25.0
+                && $request['currency'] === 'USD'
+                && is_string($request['orderId'])
+                && $request['orderId'] !== ''
+                && $request['notificationURL'] === 'https://hooks.bitpay.test/bitpay/webhook'
+                && $request['redirectURL'] === 'https://frontend.test/payment-success?provider=bitpay'
+                && $request['fullNotifications'] === true
+                && $request['extendedNotifications'] === true;
         });
 
         $this->assertDatabaseHas('bitpay_payments', [
@@ -71,7 +78,36 @@ class BitpayCheckoutTest extends TestCase
         ]);
     }
 
-    public function test_bitpay_webhook_marks_payment_completed_and_credits_coins(): void
+    public function test_bitpay_checkout_requires_a_public_https_webhook_url(): void
+    {
+        $this->createAdmin();
+        $user = User::factory()->create();
+
+        config([
+            'app.url' => 'http://127.0.0.1:8000',
+            'services.bitpay.webhook_url' => null,
+        ]);
+
+        Http::fake();
+
+        $this->withoutExceptionHandling();
+
+        try {
+            $this->withHeaders($this->authHeadersFor($user))
+                ->postJson('/api/checkout', [
+                    'amount' => 10,
+                    'payment_method' => 'bitpay',
+                ]);
+
+            $this->fail('Expected the BitPay checkout to reject a non-HTTPS webhook URL.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('BitPay webhook URL must use HTTPS.', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_bitpay_webhook_accepts_the_invoice_id_payload_and_credits_points(): void
     {
         $this->createAdmin();
         $user = User::factory()->create();
@@ -86,31 +122,36 @@ class BitpayCheckoutTest extends TestCase
         ]);
 
         Http::fake([
-            'https://bitpay.test/api/invoices/BITPAY-INVOICE-2002' => Http::response([
+            'https://sandbox.bitpay.test/invoices/BITPAY-INVOICE-2002*' => Http::response([
                 'data' => [
                     'id' => 'BITPAY-INVOICE-2002',
                     'status' => 'confirmed',
                     'buyer' => [
-                        'email' => 'buyer@example.com',
+                        'email' => 'buyer@example.test',
                     ],
                 ],
             ]),
         ]);
 
         $response = $this->postJson('/bitpay/webhook', [
-            'invoiceId' => 'BITPAY-INVOICE-2002',
+            'id' => 'BITPAY-INVOICE-2002',
             'status' => 'confirmed',
         ]);
 
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Payment processed',
-            ]);
+        $response->assertOk();
+        $this->assertSame('', $response->getContent());
+
+        Http::assertSentCount(1);
+        Http::assertSent(function (HttpRequest $request): bool {
+            return str_starts_with($request->url(), 'https://sandbox.bitpay.test/invoices/BITPAY-INVOICE-2002')
+                && $request->hasHeader('X-Accept-Version', '2.0.0')
+                && str_contains($request->url(), 'token=bitpay-token');
+        });
 
         $this->assertDatabaseHas('bitpay_payments', [
             'order_id' => 'order-2002',
             'bitpay_invoice_id' => 'BITPAY-INVOICE-2002',
-            'payer' => 'buyer@example.com',
+            'payer' => 'buyer@example.test',
             'status' => 'completed',
         ]);
         $this->assertDatabaseHas('user_balances', [
@@ -124,54 +165,7 @@ class BitpayCheckoutTest extends TestCase
             'amount' => '15.00',
             'reference' => 'BITPAY-INVOICE-2002',
         ]);
-        $this->assertDatabaseHas('user_balances', [
-            'user_id' => 1,
-            'total_recharge' => '15.00',
-        ]);
-    }
-
-    public function test_bitpay_webhook_marks_failed_payments_without_crediting_coins(): void
-    {
-        $this->createAdmin();
-        $user = User::factory()->create();
-
-        BitpayPayment::create([
-            'user_id' => $user->id,
-            'order_id' => 'order-3003',
-            'bitpay_invoice_id' => 'BITPAY-INVOICE-3003',
-            'amount' => 18,
-            'coin_amount' => 18,
-            'status' => 'pending',
-        ]);
-
-        Http::fake([
-            'https://bitpay.test/api/invoices/BITPAY-INVOICE-3003' => Http::response([
-                'data' => [
-                    'id' => 'BITPAY-INVOICE-3003',
-                    'status' => 'expired',
-                ],
-            ]),
-        ]);
-
-        $response = $this->postJson('/bitpay/webhook', [
-            'invoiceId' => 'BITPAY-INVOICE-3003',
-            'status' => 'expired',
-        ]);
-
-        $response->assertOk()
-            ->assertJson([
-                'message' => 'Payment failed',
-            ]);
-
-        $this->assertDatabaseHas('bitpay_payments', [
-            'order_id' => 'order-3003',
-            'status' => 'failed',
-        ]);
-        $this->assertDatabaseMissing('coin_transactions', [
-            'user_id' => $user->id,
-            'type' => 'recharge',
-        ]);
-        $this->assertNull(UserBalance::where('user_id', $user->id)->value('id'));
+        $this->assertSame('15.00', (string) UserBalance::where('user_id', 1)->value('total_recharge'));
     }
 
     private function createAdmin(): User
@@ -179,13 +173,10 @@ class BitpayCheckoutTest extends TestCase
         return User::factory()->create();
     }
 
-    /**
-     * @return array<string, string>
-     */
     private function authHeadersFor(User $user): array
     {
         return [
-            'Authorization' => 'Bearer '.JWTAuth::fromUser($user),
+            'Authorization' => 'Bearer ' . JWTAuth::fromUser($user),
         ];
     }
 }

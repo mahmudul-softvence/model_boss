@@ -79,6 +79,7 @@ return [
     'bitpay' => [
         'base_url' => env('BITPAY_BASE_URL', 'https://test.bitpay.com'),
         'token' => env('BITPAY_TOKEN'),
+        'webhook_url' => env('BITPAY_WEBHOOK_URL'),
     ],
 
     'paypal' => [

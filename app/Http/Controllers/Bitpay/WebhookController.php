@@ -8,8 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\BitpayPayment;
 use App\Models\User;
 use App\Services\BitpayService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -20,13 +20,13 @@ class WebhookController extends Controller
         private readonly CreditPointPurchase $creditPointPurchase,
     ) {}
 
-    public function handleWebhook(Request $request): JsonResponse
+    public function handleWebhook(Request $request): Response
     {
-        $invoiceId = $request->input('invoiceId');
+        $invoiceId = trim((string) ($request->input('invoiceId') ?? $request->input('id') ?? ''));
         $status = $request->input('status');
 
         if (! $invoiceId) {
-            return response()->json(['error' => 'Missing invoiceId'], 400);
+            return response('', 400);
         }
 
         Log::info('BitPay webhook received', [
@@ -43,22 +43,22 @@ class WebhookController extends Controller
                 'invoiceId' => $invoiceId,
             ]);
 
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response('', 500);
         }
     }
 
-    protected function processPayment(array $invoice, string $invoiceId): JsonResponse
+    protected function processPayment(array $invoice, string $invoiceId): Response
     {
         $payment = BitpayPayment::where('bitpay_invoice_id', $invoiceId)->first();
 
         if (! $payment) {
             Log::warning('BitPay payment not found', ['invoiceId' => $invoiceId]);
 
-            return response()->json(['error' => 'Payment not found'], 404);
+            return response('', 404);
         }
 
         if ($payment->status === PaymentStatus::COMPLETED->value) {
-            return response()->json(['message' => 'Already processed']);
+            return response('', 200);
         }
 
         $isCompleted = $this->bitpayService->isPaymentCompleted($invoice);
@@ -67,11 +67,11 @@ class WebhookController extends Controller
         if ($isFailed) {
             $payment->update(['status' => PaymentStatus::FAILED->value]);
 
-            return response()->json(['message' => 'Payment failed']);
+            return response('', 200);
         }
 
         if (! $isCompleted) {
-            return response()->json(['message' => 'Payment not ready']);
+            return response('', 200);
         }
 
         DB::transaction(function () use ($payment, $invoice) {
@@ -89,6 +89,6 @@ class WebhookController extends Controller
             );
         });
 
-        return response()->json(['message' => 'Payment processed']);
+        return response('', 200);
     }
 }
