@@ -115,7 +115,7 @@ class CallbackController extends Controller
                 'provider' => 'paypal',
             ]));
         } catch (\Throwable $e) {
-            Log::error('PayPal callback error: '.$e->getMessage(), [
+            Log::error('PayPal callback error: ' . $e->getMessage(), [
                 'token' => $paypalOrderId,
             ]);
 
@@ -166,9 +166,9 @@ class CallbackController extends Controller
     protected function frontendRedirectUrl(string $path, array $parameters = []): string
     {
         return rtrim((string) config('app.frontend_url'), '/')
-            .'/'
-            .ltrim($path, '/')
-            .(empty($parameters) ? '' : '?'.http_build_query($parameters));
+            . '/'
+            . ltrim($path, '/')
+            . (empty($parameters) ? '' : '?' . http_build_query($parameters));
     }
 
     protected function amountInCents(float|string $amount): int
@@ -211,7 +211,7 @@ class CallbackController extends Controller
             'capture_id' => is_string($captureId) && trim($captureId) !== '' ? trim($captureId) : null,
             'payer' => is_string($payer) && trim($payer) !== '' ? trim($payer) : null,
             'status' => $status,
-        ], static fn (mixed $value): bool => $value !== null);
+        ], static fn(mixed $value): bool => $value !== null);
 
         if ($attributes !== []) {
             $payment->update($attributes);
