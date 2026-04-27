@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Bitpay;
+namespace App\Http\Controllers\Withdraw\Paypal;
 
 use App\Enums\WithdrawalStatus;
 use App\Http\Controllers\Controller;
@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
-class BitpayWithdrawController extends Controller
+class PaypalWithdrawController extends Controller
 {
     public function request(Request $request)
     {
@@ -21,8 +21,8 @@ class BitpayWithdrawController extends Controller
 
         $user = $request->user();
 
-        if (! $user->bitpay_wallet) {
-            return $this->sendError('BitPay wallet not connected.', [], 400);
+        if (! $user->paypal_email) {
+            return $this->sendError('PayPal account not connected.', [], 400);
         }
 
         if ($request->coin_amount < 10) {
@@ -43,8 +43,8 @@ class BitpayWithdrawController extends Controller
 
                 $withdraw = Withdrawal::create([
                     'user_id' => $user->id,
-                    'payment_method' => 'bitpay',
-                    'payout_account' => $user->bitpay_wallet,
+                    'payment_method' => 'paypal',
+                    'payout_account' => $user->paypal_email,
                     'withdraw_no' => 'WD'.now()->timestamp.rand(100, 999),
                     'coin_amount' => $request->coin_amount,
                     'usd_amount' => $request->coin_amount,

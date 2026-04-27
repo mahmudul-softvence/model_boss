@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Coinbase;
+namespace App\Http\Controllers\Payment\Coinbase;
 
 use App\Actions\CreditPointPurchase;
 use App\Enums\PaymentStatus;

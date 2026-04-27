@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Moncash;
+namespace App\Http\Controllers\Withdraw\Moncash;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

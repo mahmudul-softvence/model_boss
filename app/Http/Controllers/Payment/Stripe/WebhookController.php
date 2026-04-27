@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Stripe;
+namespace App\Http\Controllers\Payment\Stripe;
 
 use App\Actions\CreditPointPurchase;
 use App\Enums\PaymentStatus;

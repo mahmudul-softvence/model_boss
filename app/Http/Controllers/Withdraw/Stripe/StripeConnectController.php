@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Stripe;
+namespace App\Http\Controllers\Withdraw\Stripe;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

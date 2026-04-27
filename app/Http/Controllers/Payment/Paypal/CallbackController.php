@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Paypal;
+namespace App\Http\Controllers\Payment\Paypal;
 
 use App\Actions\CreditPointPurchase;
 use App\Enums\PaymentStatus;
@@ -115,7 +115,7 @@ class CallbackController extends Controller
                 'provider' => 'paypal',
             ]));
         } catch (\Throwable $e) {
-            Log::error('PayPal callback error: ' . $e->getMessage(), [
+            Log::error('PayPal callback error: '.$e->getMessage(), [
                 'token' => $paypalOrderId,
             ]);
 

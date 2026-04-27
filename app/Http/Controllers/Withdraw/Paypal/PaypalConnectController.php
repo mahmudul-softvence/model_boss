@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Paypal;
+namespace App\Http\Controllers\Withdraw\Paypal;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

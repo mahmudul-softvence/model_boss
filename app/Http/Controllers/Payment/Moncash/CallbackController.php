@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Moncash;
+namespace App\Http\Controllers\Payment\Moncash;
 
 use App\Actions\CreditPointPurchase;
 use App\Enums\PaymentStatus;

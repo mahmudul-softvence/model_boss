@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Bitpay;
+namespace App\Http\Controllers\Withdraw\Bitpay;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;

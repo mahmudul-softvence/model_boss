@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Stripe;
+namespace App\Http\Controllers\Withdraw\Stripe;
 
 use App\Enums\TransactionType;
 use App\Enums\WithdrawalStatus;

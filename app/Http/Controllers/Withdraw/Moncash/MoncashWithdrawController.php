@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Moncash;
+namespace App\Http\Controllers\Withdraw\Moncash;
 
 use App\Enums\WithdrawalStatus;
 use App\Http\Controllers\Controller;

@@ -1,19 +1,19 @@
 <?php
 
-use App\Http\Controllers\Bitpay\BitpayConnectController;
-use App\Http\Controllers\Bitpay\BitpayWithdrawController;
 use App\Http\Controllers\Frontend\FollowController;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\PostController;
 use App\Http\Controllers\Frontend\ProfileController;
 use App\Http\Controllers\Frontend\TwitchController;
-use App\Http\Controllers\Moncash\MoncashConnectController;
-use App\Http\Controllers\Moncash\MoncashWithdrawController;
-use App\Http\Controllers\Paypal\PaypalConnectController;
-use App\Http\Controllers\Paypal\PaypalWithdrawController;
-use App\Http\Controllers\Stripe\CheckoutController;
-use App\Http\Controllers\Stripe\StripeConnectController;
-use App\Http\Controllers\Stripe\StripeWithdrawController;
+use App\Http\Controllers\Payment\Stripe\CheckoutController;
+use App\Http\Controllers\Withdraw\Bitpay\BitpayConnectController;
+use App\Http\Controllers\Withdraw\Bitpay\BitpayWithdrawController;
+use App\Http\Controllers\Withdraw\Moncash\MoncashConnectController;
+use App\Http\Controllers\Withdraw\Moncash\MoncashWithdrawController;
+use App\Http\Controllers\Withdraw\Paypal\PaypalConnectController;
+use App\Http\Controllers\Withdraw\Paypal\PaypalWithdrawController;
+use App\Http\Controllers\Withdraw\Stripe\StripeConnectController;
+use App\Http\Controllers\Withdraw\Stripe\StripeWithdrawController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:api'])->group(function () {
