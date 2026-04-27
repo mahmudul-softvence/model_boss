@@ -426,6 +426,46 @@ class MatchController extends Controller
             ], 404);
         }
 
+        $topVoters = [];
+
+        if ($match->vote_start_time) {
+
+            $topUsers = PlayerVote::selectRaw('user_id, SUM(total_vote) as total_votes')
+                ->where('match_id', $match->id)
+                ->groupBy('user_id')
+                ->orderByDesc('total_votes')
+                ->limit(10)
+                ->get();
+
+            $votes = PlayerVote::with('user:id,name,image')
+                ->where('match_id', $match->id)
+                ->whereIn('user_id', $topUsers->pluck('user_id'))
+                ->get()
+                ->groupBy('user_id');
+
+            $topVoters = $topUsers->values()->map(function ($row, $index) use ($votes) {
+
+                $userVotes = $votes[$row->user_id] ?? collect();
+                $sortedVotes = $userVotes->sortByDesc('total_vote')->values();
+                $first = $sortedVotes->first();
+
+                return [
+                    'user_id' => $row->user_id,
+                    'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                    'total_votes' => (int) $row->total_votes,
+                    'vote_breakdown' => $sortedVotes
+                        ->pluck('total_vote')
+                        ->implode(', '),
+
+                    'user' => [
+                        'id' => $first?->user->id,
+                        'name' => $first?->user->name,
+                        'image' => optional($first?->user)->image_url,
+                    ],
+                ];
+            });
+        }
+
         $getTopSupporters = function ($matchId, $limit = 10) {
             return Support::with('supporter')
                 ->where('match_id', $matchId)
@@ -505,6 +545,7 @@ class MatchController extends Controller
             'data' => $match,
             'model_picture' => $super->image ? asset('storage/'.$super->image) : null,
             'top_supporters' => $topSupporters,
+            'top_voters' => $topVoters,
             'player_one_top_supporter' => $playerOneTopSupporter,
             'player_one_total_supporter' => $playerOneTotalSupporter,
             'player_two_top_supporter' => $playerTwoTopSupporter,

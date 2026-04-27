@@ -12,4 +12,10 @@ class PlayerVote extends Model
         'match_id',
         'total_vote',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+    
 }

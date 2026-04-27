@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Events\MatchVoteUpdated;
 use App\Events\VotingStarted;
 use App\Http\Controllers\Controller;
 use App\Models\CoinTransaction;
@@ -9,6 +10,7 @@ use App\Models\GameMatch;
 use App\Models\MatchForVoting;
 use App\Models\MatchVoter;
 use App\Models\PlayerVote;
+use App\Models\User;
 use App\Models\UserBalance;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -336,14 +338,94 @@ class MatchForVotingController extends Controller
 
             DB::commit();
 
-            event(new VotingStarted($match->fresh()));
+            $match = $match->fresh()->load(['playerOne', 'playerTwo']);
+
+
+            $playerVotes = PlayerVote::selectRaw('voted_player_id, SUM(total_vote) as total')
+                ->where('match_id', $match->id)
+                ->groupBy('voted_player_id')
+                ->pluck('total', 'voted_player_id');
+
+            $playerOneVotes = $playerVotes[$match->player_one_id] ?? 0;
+            $playerTwoVotes = $playerVotes[$match->player_two_id] ?? 0;
+
+            $topUsers = PlayerVote::selectRaw('user_id, SUM(total_vote) as total_votes')
+                ->where('match_id', $match->id)
+                ->groupBy('user_id')
+                ->orderByDesc('total_votes')
+                ->limit(10)
+                ->pluck('total_votes', 'user_id');
+
+            $users = User::whereIn('id', $topUsers->keys())
+                ->get()
+                ->keyBy('id');
+
+            $topVotersRaw = PlayerVote::selectRaw('user_id, SUM(total_vote) as total_votes')
+                ->where('match_id', $match->id)
+                ->groupBy('user_id')
+                ->orderByDesc('total_votes')
+                ->limit(10)
+                ->get();
+
+            $votes = PlayerVote::with('user:id,name,image')
+                ->where('match_id', $match->id)
+                ->whereIn('user_id', $topVotersRaw->pluck('user_id'))
+                ->get()
+                ->groupBy('user_id');
+            $topVoters = $topVotersRaw->values()->map(function ($row, $index) use ($votes) {
+
+                $userVotes = $votes[$row->user_id] ?? collect();
+                $sortedVotes = $userVotes->sortByDesc('total_vote')->values();
+                $first = $sortedVotes->first();
+
+                return [
+                    'user_id' => $row->user_id,
+                    'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                    'total_votes' => (int) $row->total_votes,
+
+                    'vote_breakdown' => $sortedVotes
+                        ->pluck('total_vote')
+                        ->implode(', '),
+
+                    'user' => [
+                        'id' => $first?->user->id,
+                        'name' => $first?->user->name,
+                        'image' => optional($first?->user)->image_url,
+                    ],
+                ];
+            });
+
+            event(new MatchVoteUpdated([
+                'match_id' => $match->id,
+                'match_no' => $match->match_no,
+
+                'player_one' => [
+                    'id' => $match->playerOne->id,
+                    'name' => $match->playerOne->name,
+                    'image' => $match->playerOne->image_url,
+                    'total_votes' => $playerOneVotes,
+                ],
+
+                'player_two' => [
+                    'id' => $match->playerTwo->id,
+                    'name' => $match->playerTwo->name,
+                    'image' => $match->playerTwo->image_url,
+                    'total_votes' => $playerTwoVotes,
+                ],
+
+                'top_voters' => $topVoters,
+
+                'vote_start_time' => $match->vote_start_time,
+                'voting_time' => $match->voting_time,
+            ]));
 
             return response()->json([
                 'status' => true,
                 'message' => 'Vote submitted successfully',
                 'data' => [
                     'match_id' => $match->id,
-                ],
+                    'top_voters' => $topVoters,
+                ]
             ]);
 
         } catch (\Exception $e) {
