@@ -12,6 +12,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use App\Models\GameMatch;
 use App\Models\PlayerVote;
+use Illuminate\Support\Facades\Log;
 
 class MatchVoteUpdated implements ShouldBroadcastNow
 {
@@ -22,6 +23,11 @@ class MatchVoteUpdated implements ShouldBroadcastNow
     public function __construct(array $data)
     {
         $this->data = $data;
+
+        // Log::info('MatchVoteUpdated Event Constructed', [
+        //     'match_id' => $data['match_id'] ?? null,
+        //     'payload' => $data,
+        // ]);
     }
 
     public function broadcastOn()
@@ -36,6 +42,11 @@ class MatchVoteUpdated implements ShouldBroadcastNow
 
     public function broadcastWith()
     {
+        // Log::info('MatchVoteUpdated Broadcasting Data', [
+        //     'channel' => 'match.' . $this->data['match_id'],
+        //     'data' => $this->data,
+        // ]);
+
         return $this->data;
     }
 }

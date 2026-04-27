@@ -295,20 +295,12 @@ class MatchForVotingController extends Controller
                 ], 400);
             }
 
-            $existingVote = PlayerVote::where('user_id', $userId)
-                ->where('match_id', $match_id)
-                ->first();
-
-            if ($existingVote) {
-                $existingVote->increment('total_vote', $request->total_vote);
-            } else {
-                PlayerVote::create([
-                    'user_id' => $userId,
-                    'voted_player_id' => $request->player_id,
-                    'match_id' => $match_id,
-                    'total_vote' => $request->total_vote,
-                ]);
-            }
+            PlayerVote::create([
+                'user_id' => $userId,
+                'voted_player_id' => $request->player_id,
+                'match_id' => $match_id,
+                'total_vote' => $request->total_vote,
+            ]);
 
             $user_balance->decrement('total_balance', $request->total_vote);
 
@@ -366,23 +358,39 @@ class MatchForVotingController extends Controller
                 ->get()
                 ->keyBy('id');
 
-            $topVoters = collect($topUsers)->map(function ($total, $userId) use ($users) {
+            $topVotersRaw = PlayerVote::selectRaw('user_id, SUM(total_vote) as total_votes')
+                ->where('match_id', $match->id)
+                ->groupBy('user_id')
+                ->orderByDesc('total_votes')
+                ->limit(10)
+                ->get();
 
-                $user = $users[$userId] ?? null;
+            $votes = PlayerVote::with('user:id,name,image')
+                ->where('match_id', $match->id)
+                ->whereIn('user_id', $topVotersRaw->pluck('user_id'))
+                ->get()
+                ->groupBy('user_id');
+            $topVoters = $topVotersRaw->values()->map(function ($row, $index) use ($votes) {
+
+                $userVotes = $votes[$row->user_id] ?? collect();
+                $sortedVotes = $userVotes->sortByDesc('total_vote')->values();
+                $first = $sortedVotes->first();
 
                 return [
-                    'user_id' => $userId,
-                    'total_votes' => $total,
+                    'user_id' => $row->user_id,
+                    'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                    'total_votes' => (int) $row->total_votes,
+
+                    'vote_breakdown' => $sortedVotes
+                        ->pluck('total_vote')
+                        ->implode(', '),
+
                     'user' => [
-                        'id' => $user?->id,
-                        'name' => $user?->name,
-                        'image' => $user?->image_url,
+                        'id' => $first?->user->id,
+                        'name' => $first?->user->name,
+                        'image' => optional($first?->user)->image_url,
                     ],
                 ];
-            })->values()->map(function ($item, $index) {
-
-                $item['serial_no'] = str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-                return $item;
             });
 
             event(new MatchVoteUpdated([
