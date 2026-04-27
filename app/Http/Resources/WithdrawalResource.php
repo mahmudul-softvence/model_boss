@@ -17,6 +17,8 @@ class WithdrawalResource extends JsonResource
         return [
             'id' => $this->id,
             'withdraw_no' => $this->withdraw_no,
+            'payment_method' => $this->payment_method,
+            'payout_account' => $this->payout_account,
             'coin_amount' => $this->coin_amount,
             'usd_amount' => $this->usd_amount,
             'stripe_transfer_id' => $this->stripe_transfer_id,
