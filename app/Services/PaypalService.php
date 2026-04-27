@@ -40,6 +40,36 @@ class PaypalService
         ];
     }
 
+    public function sendPayout(string $receiverEmail, float $amount, string $reference): string
+    {
+        $response = $this->apiRequest()
+            ->post($this->apiUrl('/v1/payments/payouts'), [
+                'sender_batch_header' => [
+                    'sender_batch_id' => $reference,
+                    'email_subject' => 'You have a payout from '.config('app.name'),
+                ],
+                'items' => [[
+                    'recipient_type' => 'EMAIL',
+                    'receiver' => $receiverEmail,
+                    'amount' => [
+                        'value' => $this->normalizeAmount($amount),
+                        'currency' => 'USD',
+                    ],
+                    'note' => 'Withdrawal '.$reference,
+                    'sender_item_id' => $reference,
+                ]],
+            ])
+            ->throw();
+
+        $batchId = $response->json('batch_header.payout_batch_id');
+
+        if (! is_string($batchId) || trim($batchId) === '') {
+            throw new RuntimeException('PayPal did not return a payout batch ID.');
+        }
+
+        return trim($batchId);
+    }
+
     public function captureApprovedOrder(string $paypalOrderId): array
     {
         return $this->apiRequest()

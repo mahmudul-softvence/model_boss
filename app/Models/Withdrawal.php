@@ -16,6 +16,7 @@ class Withdrawal extends Model
         'coin_amount',
         'usd_amount',
         'stripe_transfer_id',
+        'paypal_payout_id',
         'status',
     ];
 

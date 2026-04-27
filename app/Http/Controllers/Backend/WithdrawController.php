@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\WithdrawalResource;
 use App\Models\Withdrawal;
 use App\Notifications\UserWithdrawalDeclinedNotification;
+use App\Services\PaypalService;
 use Illuminate\Support\Facades\DB;
 use Stripe\Account;
 use Stripe\Stripe;
@@ -76,6 +77,28 @@ class WithdrawController extends Controller
                         'amount' => $withdraw->coin_amount,
                         'balance_after' => $userBalance->total_balance,
                         'reference' => $transfer->id,
+                    ]);
+                } elseif ($withdraw->payment_method === 'paypal') {
+                    if (! $user->paypal_email) {
+                        throw new \Exception('User PayPal not connected.');
+                    }
+
+                    $batchId = app(PaypalService::class)->sendPayout(
+                        $user->paypal_email,
+                        (float) $withdraw->usd_amount,
+                        $withdraw->withdraw_no,
+                    );
+
+                    $withdraw->update([
+                        'status' => WithdrawalStatus::ACCEPTED,
+                        'paypal_payout_id' => $batchId,
+                    ]);
+
+                    $user->coinTransactions()->create([
+                        'type' => TransactionType::WITHDRAW,
+                        'amount' => $withdraw->coin_amount,
+                        'balance_after' => $userBalance->total_balance,
+                        'reference' => $batchId,
                     ]);
                 } else {
                     $withdraw->update([
