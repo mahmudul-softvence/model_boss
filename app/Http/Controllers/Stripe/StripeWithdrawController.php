@@ -68,6 +68,8 @@ class StripeWithdrawController extends Controller
 
                     $withdraw = Withdrawal::create([
                         'user_id' => $user->id,
+                        'payment_method' => 'stripe',
+                        'payout_account' => $user->stripe_account_id,
                         'withdraw_no' => 'WD'.now()->timestamp.rand(100, 999),
                         'coin_amount' => $request->coin_amount,
                         'usd_amount' => $request->coin_amount,
@@ -113,6 +115,8 @@ class StripeWithdrawController extends Controller
 
                     $withdraw = Withdrawal::create([
                         'user_id' => $user->id,
+                        'payment_method' => 'stripe',
+                        'payout_account' => $user->stripe_account_id,
                         'withdraw_no' => 'WD'.now()->timestamp.rand(100, 999),
                         'coin_amount' => $request->coin_amount,
                         'usd_amount' => $usd,
