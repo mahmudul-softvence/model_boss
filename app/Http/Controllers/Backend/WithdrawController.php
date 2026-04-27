@@ -26,12 +26,8 @@ class WithdrawController extends Controller
 
     public function accept($id)
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
-
         try {
-
             DB::transaction(function () use ($id) {
-
                 $withdraw = Withdrawal::with('user')
                     ->lockForUpdate()
                     ->findOrFail($id);
@@ -42,10 +38,6 @@ class WithdrawController extends Controller
 
                 $user = $withdraw->user;
 
-                if (! $user->stripe_account_id) {
-                    throw new \Exception('User Stripe not connected.');
-                }
-
                 $userBalance = $user->userBalance()
                     ->lockForUpdate()
                     ->first();
@@ -54,37 +46,55 @@ class WithdrawController extends Controller
                     throw new \Exception('User balance not found.');
                 }
 
-                $account = Account::retrieve($user->stripe_account_id);
+                if ($withdraw->payment_method === 'stripe') {
+                    Stripe::setApiKey(config('services.stripe.secret'));
 
-                if (! $account->payouts_enabled) {
-                    throw new \Exception('Stripe account not ready.');
+                    if (! $user->stripe_account_id) {
+                        throw new \Exception('User Stripe not connected.');
+                    }
+
+                    $account = Account::retrieve($user->stripe_account_id);
+
+                    if (! $account->payouts_enabled) {
+                        throw new \Exception('Stripe account not ready.');
+                    }
+
+                    $transfer = Transfer::create([
+                        'amount' => (int) ($withdraw->usd_amount * 100),
+                        'currency' => 'usd',
+                        'destination' => $user->stripe_account_id,
+                        'description' => 'Withdrawal '.$withdraw->withdraw_no,
+                    ]);
+
+                    $withdraw->update([
+                        'status' => WithdrawalStatus::ACCEPTED,
+                        'stripe_transfer_id' => $transfer->id,
+                    ]);
+
+                    $user->coinTransactions()->create([
+                        'type' => TransactionType::WITHDRAW,
+                        'amount' => $withdraw->coin_amount,
+                        'balance_after' => $userBalance->total_balance,
+                        'reference' => $transfer->id,
+                    ]);
+                } else {
+                    $withdraw->update([
+                        'status' => WithdrawalStatus::ACCEPTED,
+                    ]);
+
+                    $user->coinTransactions()->create([
+                        'type' => TransactionType::WITHDRAW,
+                        'amount' => $withdraw->coin_amount,
+                        'balance_after' => $userBalance->total_balance,
+                        'reference' => $withdraw->withdraw_no,
+                    ]);
                 }
 
-                $transfer = Transfer::create([
-                    'amount' => (int) ($withdraw->usd_amount * 100),
-                    'currency' => 'usd',
-                    'destination' => $user->stripe_account_id,
-                    'description' => 'Withdrawal '.$withdraw->withdraw_no,
-                ]);
-
-                $withdraw->update([
-                    'status' => WithdrawalStatus::ACCEPTED,
-                    'stripe_transfer_id' => $transfer->id,
-                ]);
-
                 $userBalance->increment('total_withdraw', $withdraw->coin_amount);
-
-                $user->coinTransactions()->create([
-                    'type' => TransactionType::WITHDRAW,
-                    'amount' => $withdraw->coin_amount,
-                    'balance_after' => $userBalance->total_balance,
-                    'reference' => $transfer->id,
-                ]);
             });
 
             return $this->sendResponse([], 'Withdrawal accepted successfully.');
         } catch (\Exception $e) {
-
             return $this->sendError($e->getMessage(), [], 400);
         }
     }
