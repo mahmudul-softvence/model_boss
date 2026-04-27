@@ -233,15 +233,19 @@ class SupportController extends Controller
                         $remainingAmounts[$support->id] = $support->coin_amount;
                     }
 
-                    if ($p1_total != $p2_total) {
+                    if ($p1_total >= $p2_total) {
+                        $bigger_player_id = $match->player_one_id;
+                        $bigger_total     = $p1_total;
+                        $smaller_total    = $p2_total;
+                    } else {
+                        $bigger_player_id = $match->player_two_id;
+                        $bigger_total     = $p2_total;
+                        $smaller_total    = $p1_total;
+                    }
 
-                        $bigger_player_id = $p1_total > $p2_total
-                            ? $match->player_one_id
-                            : $match->player_two_id;
+                    $excess = $bigger_total - $smaller_total;
 
-                        $bigger_total  = max($p1_total, $p2_total);
-                        $smaller_total = min($p1_total, $p2_total);
-                        $excess        = $bigger_total - $smaller_total;
+                    if ($excess > 0) {
 
                         $bigger_supports = $supports
                             ->where('supported_player_id', $bigger_player_id)
@@ -272,13 +276,13 @@ class SupportController extends Controller
 
                             $excess -= $refund_amount;
                         }
-
-                        $match->update([
-                            'player_one_total' => $smaller_total,
-                            'player_two_total' => $smaller_total,
-                            'type'             => 'live',
-                        ]);
                     }
+
+                    $match->update([
+                        'player_one_total' => $smaller_total,
+                        'player_two_total' => $smaller_total,
+                        'type'             => 'live',
+                    ]);
 
                     foreach ($supports as $support) {
 
