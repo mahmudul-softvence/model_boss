@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Events\MatchVoteUpdated;
 use App\Events\VotingStarted;
 use App\Http\Controllers\Controller;
 use App\Models\CoinTransaction;
@@ -9,6 +10,7 @@ use App\Models\GameMatch;
 use App\Models\MatchForVoting;
 use App\Models\MatchVoter;
 use App\Models\PlayerVote;
+use App\Models\User;
 use App\Models\UserBalance;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -293,12 +295,20 @@ class MatchForVotingController extends Controller
                 ], 400);
             }
 
-            PlayerVote::create([
-                'user_id' => $userId,
-                'voted_player_id' => $request->player_id,
-                'match_id' => $match_id,
-                'total_vote' => $request->total_vote,
-            ]);
+            $existingVote = PlayerVote::where('user_id', $userId)
+                ->where('match_id', $match_id)
+                ->first();
+
+            if ($existingVote) {
+                $existingVote->increment('total_vote', $request->total_vote);
+            } else {
+                PlayerVote::create([
+                    'user_id' => $userId,
+                    'voted_player_id' => $request->player_id,
+                    'match_id' => $match_id,
+                    'total_vote' => $request->total_vote,
+                ]);
+            }
 
             $user_balance->decrement('total_balance', $request->total_vote);
 
@@ -334,13 +344,77 @@ class MatchForVotingController extends Controller
 
             DB::commit();
 
-            event(new VotingStarted($match->fresh()));
+            $match = $match->fresh()->load(['playerOne', 'playerTwo']);
+
+
+            $playerVotes = PlayerVote::selectRaw('voted_player_id, SUM(total_vote) as total')
+                ->where('match_id', $match->id)
+                ->groupBy('voted_player_id')
+                ->pluck('total', 'voted_player_id');
+
+            $playerOneVotes = $playerVotes[$match->player_one_id] ?? 0;
+            $playerTwoVotes = $playerVotes[$match->player_two_id] ?? 0;
+
+            $topUsers = PlayerVote::selectRaw('user_id, SUM(total_vote) as total_votes')
+                ->where('match_id', $match->id)
+                ->groupBy('user_id')
+                ->orderByDesc('total_votes')
+                ->limit(10)
+                ->pluck('total_votes', 'user_id');
+
+            $users = User::whereIn('id', $topUsers->keys())
+                ->get()
+                ->keyBy('id');
+
+            $topVoters = collect($topUsers)->map(function ($total, $userId) use ($users) {
+
+                $user = $users[$userId] ?? null;
+
+                return [
+                    'user_id' => $userId,
+                    'total_votes' => $total,
+                    'user' => [
+                        'id' => $user?->id,
+                        'name' => $user?->name,
+                        'image' => $user?->image_url,
+                    ],
+                ];
+            })->values()->map(function ($item, $index) {
+
+                $item['serial_no'] = str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                return $item;
+            });
+
+            event(new MatchVoteUpdated([
+                'match_id' => $match->id,
+                'match_no' => $match->match_no,
+
+                'player_one' => [
+                    'id' => $match->playerOne->id,
+                    'name' => $match->playerOne->name,
+                    'image' => $match->playerOne->image_url,
+                    'total_votes' => $playerOneVotes,
+                ],
+
+                'player_two' => [
+                    'id' => $match->playerTwo->id,
+                    'name' => $match->playerTwo->name,
+                    'image' => $match->playerTwo->image_url,
+                    'total_votes' => $playerTwoVotes,
+                ],
+
+                'top_voters' => $topVoters,
+
+                'vote_start_time' => $match->vote_start_time,
+                'voting_time' => $match->voting_time,
+            ]));
 
             return response()->json([
                 'status' => true,
                 'message' => 'Vote submitted successfully',
                 'data' => [
                     'match_id' => $match->id,
+                    'top_voters' => $topVoters,
                 ]
             ]);
 
