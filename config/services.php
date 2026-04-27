@@ -76,9 +76,9 @@ return [
         'api_key' => env('MONCASH_API_KEY'),
     ],
 
-    'coinbase' => [
-        'base_url' => env('COINBASE_COMMERCE_BASE_URL', 'https://api.commerce.coinbase.com'),
-        'api_key' => env('COINBASE_COMMERCE_API_KEY'),
+    'bitpay' => [
+        'base_url' => env('BITPAY_BASE_URL', 'https://bitpay.com'),
+        'token' => env('BITPAY_TOKEN'),
     ],
 
     'paypal' => [

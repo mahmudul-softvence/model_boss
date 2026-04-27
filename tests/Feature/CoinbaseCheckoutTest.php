@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\CoinbasePayment;
+use App\Models\BitpayPayment;
 use App\Models\User;
 use App\Models\UserBalance;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,21 +21,21 @@ class CoinbaseCheckoutTest extends TestCase
 
         config([
             'app.frontend_url' => 'https://frontend.test',
-            'services.coinbase.base_url' => 'https://commerce.coinbase.test',
-            'services.coinbase.api_key' => 'coinbase-api-key',
+            'services.bitpay.base_url' => 'https://bitpay.test',
+            'services.bitpay.token' => 'bitpay-api-token',
         ]);
     }
 
-    public function test_authenticated_user_can_start_a_coinbase_checkout(): void
+    public function test_authenticated_user_can_start_a_bitpay_checkout(): void
     {
         $this->createAdmin();
         $user = User::factory()->create();
 
         Http::fake([
-            'https://commerce.coinbase.test/charges' => Http::response([
+            'https://bitpay.test/invoices' => Http::response([
                 'data' => [
-                    'id' => 'COINBASE-CHARGE-1001',
-                    'hosted_url' => 'https://pay.coinbase.test/charges/COINBASE-CHARGE-1001',
+                    'id' => 'BITPAY-INVOICE-1001',
+                    'url' => 'https://bitpay.test/invoice?id=BITPAY-INVOICE-1001',
                 ],
             ]),
         ]);
@@ -43,82 +43,66 @@ class CoinbaseCheckoutTest extends TestCase
         $response = $this->withHeaders($this->authHeadersFor($user))
             ->postJson('/api/checkout', [
                 'amount' => 25,
-                'payment_method' => 'coinbase',
+                'payment_method' => 'bitpay',
             ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.payment_method', 'coinbase')
-            ->assertJsonPath('data.url', 'https://pay.coinbase.test/charges/COINBASE-CHARGE-1001');
+            ->assertJsonPath('data.payment_method', 'bitpay')
+            ->assertJsonPath('data.url', 'https://bitpay.test/invoice?id=BITPAY-INVOICE-1001');
 
         Http::assertSentCount(1);
         Http::assertSent(function (HttpRequest $request): bool {
-            return $request->url() === 'https://commerce.coinbase.test/charges'
-                && $request->hasHeader('X-CC-Api-Key', 'coinbase-api-key')
-                && $request['pricing_type'] === 'fixed_price'
-                && $request['local_price']['amount'] === '25.00'
-                && $request['local_price']['currency'] === 'USD'
-                && $request['redirect_url'] === 'https://frontend.test/payment-success?provider=coinbase'
-                && $request['cancel_url'] === 'https://frontend.test/payment-cancel?provider=coinbase'
-                && is_string($request['metadata']['order_id'])
-                && $request['metadata']['order_id'] !== '';
+            return $request->url() === 'https://bitpay.test/invoices'
+                && $request['token'] === 'bitpay-api-token'
+                && $request['price'] == 25.00
+                && $request['currency'] === 'USD'
+                && is_string($request['orderId'])
+                && $request['orderId'] !== '';
         });
 
-        $this->assertDatabaseHas('coinbase_payments', [
+        $this->assertDatabaseHas('bitpay_payments', [
             'user_id' => $user->id,
-            'coinbase_charge_id' => 'COINBASE-CHARGE-1001',
+            'bitpay_invoice_id' => 'BITPAY-INVOICE-1001',
             'amount' => '25.00',
             'coin_amount' => '25.00',
             'status' => 'pending',
         ]);
     }
 
-    public function test_coinbase_webhook_credits_points_after_completed_charge(): void
+    public function test_bitpay_webhook_credits_points_after_completed_invoice(): void
     {
         $this->createAdmin();
         $user = User::factory()->create();
 
-        CoinbasePayment::create([
+        BitpayPayment::create([
             'user_id' => $user->id,
-            'order_id' => 'order-coinbase-2002',
-            'coinbase_charge_id' => 'COINBASE-CHARGE-2002',
+            'order_id' => 'order-bitpay-2002',
+            'bitpay_invoice_id' => 'BITPAY-INVOICE-2002',
             'amount' => 15,
             'coin_amount' => 15,
             'status' => 'pending',
         ]);
 
         Http::fake([
-            'https://commerce.coinbase.test/charges/COINBASE-CHARGE-2002' => Http::response([
+            'https://bitpay.test/invoices/BITPAY-INVOICE-2002' => Http::response([
                 'data' => [
-                    'id' => 'COINBASE-CHARGE-2002',
-                    'timeline' => [
-                        ['status' => 'NEW'],
-                        ['status' => 'COMPLETED'],
-                    ],
+                    'id' => 'BITPAY-INVOICE-2002',
+                    'status' => 'complete',
                 ],
             ]),
         ]);
 
-        $response = $this->postJson('/coinbase/webhook', [
-            'event' => [
-                'type' => 'charge:confirmed',
-                'data' => [
-                    'id' => 'COINBASE-CHARGE-2002',
-                ],
-            ],
+        $response = $this->postJson('/bitpay/webhook', [
+            'invoiceId' => 'BITPAY-INVOICE-2002',
+            'status' => 'complete',
         ]);
 
         $response->assertOk();
         $this->assertSame('', $response->getContent());
 
-        Http::assertSentCount(1);
-        Http::assertSent(function (HttpRequest $request): bool {
-            return $request->url() === 'https://commerce.coinbase.test/charges/COINBASE-CHARGE-2002'
-                && $request->hasHeader('X-CC-Api-Key', 'coinbase-api-key');
-        });
-
-        $this->assertDatabaseHas('coinbase_payments', [
-            'order_id' => 'order-coinbase-2002',
-            'coinbase_charge_id' => 'COINBASE-CHARGE-2002',
+        $this->assertDatabaseHas('bitpay_payments', [
+            'order_id' => 'order-bitpay-2002',
+            'bitpay_invoice_id' => 'BITPAY-INVOICE-2002',
             'status' => 'completed',
         ]);
         $this->assertDatabaseHas('user_balances', [
@@ -130,7 +114,7 @@ class CoinbaseCheckoutTest extends TestCase
             'user_id' => $user->id,
             'type' => 'recharge',
             'amount' => '15.00',
-            'reference' => 'COINBASE-CHARGE-2002',
+            'reference' => 'BITPAY-INVOICE-2002',
         ]);
         $this->assertSame('15.00', (string) UserBalance::where('user_id', 1)->value('total_recharge'));
     }

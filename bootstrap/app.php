@@ -29,7 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'stripe/*',
             'moncash/*',
-            'coinbase/webhook',
+            'bitpay/webhook',
+            'paypal/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
