@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Withdraw\Stripe;
 
+use App\Enums\WithdrawalStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Withdrawal;
 use Illuminate\Http\Request;
 use Stripe\Account;
 use Stripe\AccountLink;
@@ -39,6 +41,26 @@ class StripeConnectController extends Controller
         ];
 
         return $this->sendResponse($data);
+    }
+
+    public function disconnect(Request $request)
+    {
+        $user = $request->user();
+
+        $hasPending = Withdrawal::where('user_id', $user->id)
+            ->where('payment_method', 'stripe')
+            ->where('status', WithdrawalStatus::PENDING->value)
+            ->exists();
+
+        if ($hasPending) {
+            return $this->sendError('Cannot disconnect while a withdrawal is pending.', 422);
+        }
+
+        $user->stripe_account_id = null;
+        $user->stripe_onboarding_complete = false;
+        $user->save();
+
+        return $this->sendResponse(['connected' => false]);
     }
 
     public function status(Request $request)
