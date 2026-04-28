@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('game_matches', function (Blueprint $table) {
             $table->dateTime('vote_start_time')->nullable()->after('match_time');
-            $table->integer('voting_time')->nullable()->after('vote_start_time');
+            $table->dateTime('voting_time')->nullable()->after('vote_start_time');
         });
     }
 
