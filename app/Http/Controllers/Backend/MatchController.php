@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class MatchController extends Controller
 {
@@ -94,7 +95,7 @@ class MatchController extends Controller
             'tiktok_link' => 'nullable|url',
             'twitch_link' => 'nullable|url',
             'rules' => 'nullable|string',
-            'voting_time' => 'nullable|integer|min:0',
+            'voting_time' => 'nullable|date|after_or_equal:now',
         ]);
 
         if ($validator->fails()) {
@@ -124,6 +125,10 @@ class MatchController extends Controller
         $data['player_two_bet'] = $data['players_bet_amount'];
         $data['player_one_total'] = $data['players_bet_amount'];
         $data['player_two_total'] = $data['players_bet_amount'];
+
+        if ($request->filled('voting_time')) {
+            $data['voting_time'] = Carbon::parse($request->voting_time);
+        }
 
         $match = GameMatch::create($data);
 
@@ -205,7 +210,7 @@ class MatchController extends Controller
             'tiktok_link' => 'nullable|url',
             'twitch_link' => 'nullable|url',
             'rules' => 'nullable|string',
-            'voting_time' => 'nullable|integer|min:0',
+            'voting_time' => 'nullable|date|after_or_equal:now',
         ]);
 
         if ($validator->fails()) {
@@ -264,6 +269,12 @@ class MatchController extends Controller
                     ($match->player_two_total - $match->player_two_bet)
                     + $data['players_bet_amount'];
             }
+        }
+
+        if ($request->has('voting_time')) {
+            $data['voting_time'] = $request->voting_time
+                ? Carbon::parse($request->voting_time)
+                : null;
         }
 
         $match->update($data);
