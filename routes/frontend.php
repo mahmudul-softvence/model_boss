@@ -36,21 +36,25 @@ Route::middleware(['auth:api'])->group(function () {
 
     // Stripe payout account
     Route::post('stripe/connect', [StripeConnectController::class, 'connect']);
+    Route::delete('stripe/disconnect', [StripeConnectController::class, 'disconnect']);
     Route::get('stripe/status', [StripeConnectController::class, 'status']);
     Route::post('stripe/withdraw', [StripeWithdrawController::class, 'request']);
 
     // PayPal payout account
     Route::post('paypal/connect', [PaypalConnectController::class, 'connect']);
+    Route::delete('paypal/disconnect', [PaypalConnectController::class, 'disconnect']);
     Route::get('paypal/status', [PaypalConnectController::class, 'status']);
     Route::post('paypal/withdraw', [PaypalWithdrawController::class, 'request']);
 
     // BitPay payout account
     Route::post('bitpay/connect', [BitpayConnectController::class, 'connect']);
+    Route::delete('bitpay/disconnect', [BitpayConnectController::class, 'disconnect']);
     Route::get('bitpay/status', [BitpayConnectController::class, 'status']);
     Route::post('bitpay/withdraw', [BitpayWithdrawController::class, 'request']);
 
     // MonCash payout account
     Route::post('moncash/connect', [MoncashConnectController::class, 'connect']);
+    Route::delete('moncash/disconnect', [MoncashConnectController::class, 'disconnect']);
     Route::get('moncash/status', [MoncashConnectController::class, 'status']);
     Route::post('moncash/withdraw', [MoncashWithdrawController::class, 'request']);
 
