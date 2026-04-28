@@ -36,6 +36,7 @@ class GameMatch extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'voting_time' => 'datetime',
     ];
 
     public function getPlayerOneLogoAttribute($value)

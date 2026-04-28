@@ -464,6 +464,13 @@ class MatchForVotingController extends Controller
             ], 400);
         }
 
+        if ($match->voting_time <= now()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Voting time already expired',
+            ], 400);
+        }
+
         $match->vote_start_time = now();
         $match->save();
 
