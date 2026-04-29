@@ -268,8 +268,7 @@ class MatchForVotingController extends Controller
             ], 400);
         }
 
-        $voteEndTime = Carbon::parse($match->vote_start_time)
-            ->addMinutes($match->voting_time);
+        $voteEndTime = Carbon::parse($match->voting_time);
 
         if (now()->greaterThan($voteEndTime)) {
             return response()->json([
