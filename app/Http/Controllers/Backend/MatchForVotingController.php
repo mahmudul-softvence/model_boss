@@ -252,6 +252,9 @@ class MatchForVotingController extends Controller
             'total_vote' => 'required|integer|min:1',
         ]);
 
+        $totalVote = $request->input('total_vote');
+        $halfVote = $totalVote / 2;
+
         $match = GameMatch::with(['playerOne', 'playerTwo'])->find($match_id);
 
         if (! $match || ! in_array($request->player_id, [$match->player_one_id, $match->player_two_id])) {
@@ -286,7 +289,7 @@ class MatchForVotingController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            if (! $user_balance || $user_balance->total_balance < $request->total_vote) {
+            if (! $user_balance || $user_balance->total_balance < $halfVote) {
                 DB::rollBack();
 
                 return response()->json([
@@ -299,10 +302,10 @@ class MatchForVotingController extends Controller
                 'user_id' => $userId,
                 'voted_player_id' => $request->player_id,
                 'match_id' => $match_id,
-                'total_vote' => $request->total_vote,
+                'total_vote' => $totalVote,
             ]);
 
-            $user_balance->decrement('total_balance', $request->total_vote);
+            $user_balance->decrement('total_balance', $halfVote);
 
             $adminBalance = UserBalance::where('user_id', 1)
                 ->lockForUpdate()
@@ -317,12 +320,12 @@ class MatchForVotingController extends Controller
                 ], 500);
             }
 
-            $adminBalance->increment('total_balance', $request->total_vote);
+            $adminBalance->increment('total_balance', $halfVote);
 
             CoinTransaction::create([
                 'user_id' => $userId,
                 'type' => 'vote',
-                'amount' => -$request->total_vote,
+                'amount' => -$halfVote,
                 'balance_after' => $user_balance->fresh()->total_balance,
                 'reference' => 'Vote for match ID: '.$match->id,
             ]);
@@ -330,7 +333,7 @@ class MatchForVotingController extends Controller
             CoinTransaction::create([
                 'user_id' => 1,
                 'type' => 'vote',
-                'amount' => $request->total_vote,
+                'amount' => $halfVote,
                 'balance_after' => $adminBalance->fresh()->total_balance,
                 'reference' => 'Received vote from user ID: '.$userId,
             ]);
