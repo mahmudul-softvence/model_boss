@@ -494,19 +494,12 @@ class MatchController extends Controller
     public function socketMatch($id)
     {
         $super = User::where('id', 1)->select('image')->first();
+
         $match = GameMatch::with([
             'game:id,name,image',
-            'playerOne:id,name,image',
-            'playerTwo:id,name,image',
+            'playerOne:id,artist_name,first_name,image',
+            'playerTwo:id,artist_name,first_name,image',
         ])->find($id);
-
-        $playerOneVotes = PlayerVote::where('match_id', $match->id)
-            ->where('voted_player_id', $match->player_one_id)
-            ->sum('total_vote');
-
-        $playerTwoVotes = PlayerVote::where('match_id', $match->id)
-            ->where('voted_player_id', $match->player_two_id)
-            ->sum('total_vote');
 
         if (! $match) {
             return response()->json([
@@ -514,6 +507,14 @@ class MatchController extends Controller
                 'message' => 'Match not found',
             ], 404);
         }
+
+        $votes = PlayerVote::where('match_id', $match->id)
+            ->select('voted_player_id', DB::raw('SUM(total_vote) as total'))
+            ->groupBy('voted_player_id')
+            ->pluck('total', 'voted_player_id');
+
+        $playerOneVotes = $votes[$match->player_one_id] ?? 0;
+        $playerTwoVotes = $votes[$match->player_two_id] ?? 0;
 
         $topVoters = [];
 
@@ -526,37 +527,35 @@ class MatchController extends Controller
                 ->limit(10)
                 ->get();
 
-            $votes = PlayerVote::with('user:id,name,image')
+            $voteDetails = PlayerVote::with('user:id,artist_name,first_name,image')
                 ->where('match_id', $match->id)
                 ->whereIn('user_id', $topUsers->pluck('user_id'))
                 ->get()
                 ->groupBy('user_id');
 
-            $topVoters = $topUsers->values()->map(function ($row, $index) use ($votes) {
+            $topVoters = $topUsers->map(function ($row, $index) use ($voteDetails) {
 
-                $userVotes = $votes[$row->user_id] ?? collect();
-                $sortedVotes = $userVotes->sortByDesc('total_vote')->values();
-                $first = $sortedVotes->first();
+                $userVotes = $voteDetails[$row->user_id] ?? collect();
+                $first = $userVotes->first();
+
+                $user = $first?->user;
 
                 return [
                     'user_id' => $row->user_id,
                     'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
                     'total_votes' => (int) $row->total_votes,
-                    'vote_breakdown' => $sortedVotes
-                        ->pluck('total_vote')
-                        ->implode(', '),
-
-                    'user' => [
-                        'id' => $first?->user->id,
-                        'name' => $first?->user->name,
-                        'image' => optional($first?->user)->image_url,
-                    ],
+                    'vote_breakdown' => $userVotes->pluck('total_vote')->implode(', '),
+                    'user' => $user ? [
+                        'id' => $user->id,
+                        'name' => $user->artist_name ?: $user->first_name,
+                        'image' => $user->image ? asset('storage/'.$user->image) : null,
+                    ] : null,
                 ];
             });
         }
 
         $getTopSupporters = function ($matchId, $limit = 10) {
-            return Support::with('supporter')
+            return Support::with('supporter:id,artist_name,first_name,image')
                 ->where('match_id', $matchId)
                 ->select(
                     'user_id',
@@ -568,24 +567,24 @@ class MatchController extends Controller
                 ->limit($limit)
                 ->get()
                 ->map(function ($support, $index) {
+                    $u = $support->supporter;
+
                     return [
                         'user_id' => $support->user_id,
                         'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
                         'supported_amounts' => $support->supported_amounts,
-                        'supporter' => [
-                            'id' => $support->supporter->id,
-                            'name' => $support->supporter->name,
-                            'image' => $support->supporter->image
-                                ? asset('storage/'.$support->supporter->image)
-                                : null,
-                        ],
+                        'supporter' => $u ? [
+                            'id' => $u->id,
+                            'name' => $u->artist_name ?: $u->first_name,
+                            'image' => $u->image ? asset('storage/'.$u->image) : null,
+                        ] : null,
                     ];
                 });
         };
 
         $topSupporters = $getTopSupporters($id);
 
-        $playerOneSupport = Support::with('supporter')
+        $playerOneSupport = Support::with('supporter:id,artist_name,first_name,image')
             ->where('match_id', $id)
             ->where('supported_player_id', $match->player_one_id)
             ->select('user_id', DB::raw('SUM(coin_amount) as total_amount'))
@@ -593,17 +592,15 @@ class MatchController extends Controller
             ->orderByDesc('total_amount')
             ->first();
 
-        $playerOneTopSupporter = $playerOneSupport && $playerOneSupport->supporter
-            ? [
-                'id' => $playerOneSupport->supporter->id,
-                'name' => $playerOneSupport->supporter->name,
-                'image' => $playerOneSupport->supporter->image
-                    ? asset('storage/'.$playerOneSupport->supporter->image)
-                    : null,
-            ]
-            : null;
+        $p1 = $playerOneSupport?->supporter;
 
-        $playerTwoSupport = Support::with('supporter')
+        $playerOneTopSupporter = $p1 ? [
+            'id' => $p1->id,
+            'name' => $p1->artist_name ?: $p1->first_name,
+            'image' => $p1->image ? asset('storage/'.$p1->image) : null,
+        ] : null;
+
+        $playerTwoSupport = Support::with('supporter:id,artist_name,first_name,image')
             ->where('match_id', $id)
             ->where('supported_player_id', $match->player_two_id)
             ->select('user_id', DB::raw('SUM(coin_amount) as total_amount'))
@@ -611,15 +608,14 @@ class MatchController extends Controller
             ->orderByDesc('total_amount')
             ->first();
 
-        $playerTwoTopSupporter = $playerTwoSupport && $playerTwoSupport->supporter
-            ? [
-                'id' => $playerTwoSupport->supporter->id,
-                'name' => $playerTwoSupport->supporter->name,
-                'image' => $playerTwoSupport->supporter->image
-                    ? asset('storage/'.$playerTwoSupport->supporter->image)
-                    : null,
-            ]
-            : null;
+        $p2 = $playerTwoSupport?->supporter;
+
+        $playerTwoTopSupporter = $p2 ? [
+            'id' => $p2->id,
+            'name' => $p2->artist_name ?: $p2->first_name,
+            'image' => $p2->image ? asset('storage/'.$p2->image) : null,
+        ] : null;
+
         $playerOneTotalSupporter = Support::where('match_id', $id)
             ->where('supported_player_id', $match->player_one_id)
             ->count();
@@ -627,6 +623,20 @@ class MatchController extends Controller
         $playerTwoTotalSupporter = Support::where('match_id', $id)
             ->where('supported_player_id', $match->player_two_id)
             ->count();
+
+        $match->player_one = $match->playerOne ? [
+            'id' => $match->playerOne->id,
+            'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
+            'image' => $match->playerOne->image,
+        ] : null;
+
+        $match->player_two = $match->playerTwo ? [
+            'id' => $match->playerTwo->id,
+            'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
+            'image' => $match->playerTwo->image,
+        ] : null;
+
+        unset($match->playerOne, $match->playerTwo);
 
         return response()->json([
             'status' => true,
@@ -639,8 +649,8 @@ class MatchController extends Controller
             'player_one_total_supporter' => $playerOneTotalSupporter,
             'player_two_top_supporter' => $playerTwoTopSupporter,
             'player_two_total_supporter' => $playerTwoTotalSupporter,
-            'player_one_votes' => $playerOneVotes ? $playerOneVotes : 0,
-            'player_two_votes' => $playerTwoVotes ? $playerTwoVotes : 0,
+            'player_one_votes' => $playerOneVotes,
+            'player_two_votes' => $playerTwoVotes,
         ]);
     }
 
