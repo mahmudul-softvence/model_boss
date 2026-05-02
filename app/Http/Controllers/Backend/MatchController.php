@@ -96,6 +96,7 @@ class MatchController extends Controller
             'twitch_link' => 'nullable|url',
             'rules' => 'nullable|string',
             'voting_time' => 'nullable|date|after_or_equal:now',
+            'pin_to_top' =>  'required|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -211,6 +212,7 @@ class MatchController extends Controller
             'twitch_link' => 'nullable|url',
             'rules' => 'nullable|string',
             'voting_time' => 'nullable|date|after_or_equal:now',
+            'pin_to_top' =>  'required|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -565,4 +567,29 @@ class MatchController extends Controller
             'player_two_votes' => $playerTwoVotes ? $playerTwoVotes : 0,
         ]);
     }
+
+    public function togglePin($id)
+    {
+        $match = GameMatch::findOrFail($id);
+
+        if ($match->pin_to_top == 1) {
+            $match->pin_to_top = 0;
+            $message = 'Match unpinned successfully';
+        } else {
+            $match->pin_to_top = 1;
+            $message = 'Match pinned successfully';
+        }
+
+        $match->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => [
+                'id' => $match->id,
+                'pin_to_top' => $match->pin_to_top
+            ]
+        ]);
+    }
+
 }
