@@ -234,14 +234,33 @@ class MatchForVotingController extends Controller
     {
         $matches = MatchForVoting::with([
             'game:id,name,image',
-            'playerOne:id,name,image',
-            'playerTwo:id,name,image',
+            'playerOne:id,artist_name,first_name,image',
+            'playerTwo:id,artist_name,first_name,image',
         ])->get();
+
+        $data = $matches->map(function ($match) {
+
+            $match->player_one = $match->playerOne ? [
+                'id' => $match->playerOne->id,
+                'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
+                'image' => $match->playerOne->image,
+            ] : null;
+
+            $match->player_two = $match->playerTwo ? [
+                'id' => $match->playerTwo->id,
+                'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
+                'image' => $match->playerTwo->image,
+            ] : null;
+
+            unset($match->playerOne, $match->playerTwo);
+
+            return $match;
+        });
 
         return response()->json([
             'status' => true,
             'message' => 'Matches retrieved successfully',
-            'data' => $matches,
+            'data' => $data,
         ]);
     }
 
