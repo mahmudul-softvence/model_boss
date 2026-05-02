@@ -87,6 +87,8 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::get('matches/{id}', [MatchController::class, 'edit']);
     Route::post('matches/{id}', [MatchController::class, 'update']);
     Route::delete('matches/{id}', [MatchController::class, 'destroy']);
+
+    Route::patch('/pin-unpin-match/{id}', [MatchController::class, 'togglePin']);
     // match confirmation
     Route::post('match-confirm/{id}', [SupportController::class, 'confirm']);
 

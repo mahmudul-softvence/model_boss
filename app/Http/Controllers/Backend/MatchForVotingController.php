@@ -24,8 +24,8 @@ class MatchForVotingController extends Controller
 
         $query = MatchForVoting::with([
             'game:id,name,image',
-            'playerOne:id,name,image',
-            'playerTwo:id,name,image',
+            'playerOne:id,artist_name,first_name,image',
+            'playerTwo:id,artist_name,first_name,image',
         ]);
 
         if ($request->filled('game_id')) {
@@ -35,7 +35,7 @@ class MatchForVotingController extends Controller
         if ($request->filled('player_id')) {
             $query->where(function ($q) use ($request) {
                 $q->where('player_one_id', $request->player_id)
-                    ->orWhere('player_two_id', $request->player_id);
+                ->orWhere('player_two_id', $request->player_id);
             });
         }
 
@@ -45,27 +45,45 @@ class MatchForVotingController extends Controller
             $query->where(function ($q) use ($search) {
 
                 $q->where('id', 'like', "%{$search}%")
-
-                    ->orWhereHas('game', function ($gameQuery) use ($search) {
-                        $gameQuery->where('name', 'like', "%{$search}%");
-                    })
-
-                    ->orWhereHas('playerOne', function ($playerQuery) use ($search) {
-                        $playerQuery->where('name', 'like', "%{$search}%");
-                    })
-
-                    ->orWhereHas('playerTwo', function ($playerQuery) use ($search) {
-                        $playerQuery->where('name', 'like', "%{$search}%");
-                    });
+                ->orWhereHas('game', function ($gameQuery) use ($search) {
+                    $gameQuery->where('name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('playerOne', function ($playerQuery) use ($search) {
+                    $playerQuery->where('artist_name', 'like', "%{$search}%")
+                                ->orWhere('first_name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('playerTwo', function ($playerQuery) use ($search) {
+                    $playerQuery->where('artist_name', 'like', "%{$search}%")
+                                ->orWhere('first_name', 'like', "%{$search}%");
+                });
             });
         }
 
         $matches = $query->latest()->paginate($perPage);
 
+        $data = $matches->getCollection()->map(function ($match) {
+
+            $match->player_one = $match->playerOne ? [
+                'id' => $match->playerOne->id,
+                'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
+                'image' => $match->playerOne->image,
+            ] : null;
+
+            $match->player_two = $match->playerTwo ? [
+                'id' => $match->playerTwo->id,
+                'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
+                'image' => $match->playerTwo->image,
+            ] : null;
+
+            unset($match->playerOne, $match->playerTwo);
+
+            return $match;
+        });
+
         return response()->json([
             'status' => true,
             'message' => 'Match voting list retrieved successfully',
-            'data' => $matches->items(),
+            'data' => $data,
             'meta' => [
                 'current_page' => $matches->currentPage(),
                 'last_page' => $matches->lastPage(),
@@ -234,14 +252,33 @@ class MatchForVotingController extends Controller
     {
         $matches = MatchForVoting::with([
             'game:id,name,image',
-            'playerOne:id,name,image',
-            'playerTwo:id,name,image',
+            'playerOne:id,artist_name,first_name,image',
+            'playerTwo:id,artist_name,first_name,image',
         ])->get();
+
+        $data = $matches->map(function ($match) {
+
+            $match->player_one = $match->playerOne ? [
+                'id' => $match->playerOne->id,
+                'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
+                'image' => $match->playerOne->image,
+            ] : null;
+
+            $match->player_two = $match->playerTwo ? [
+                'id' => $match->playerTwo->id,
+                'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
+                'image' => $match->playerTwo->image,
+            ] : null;
+
+            unset($match->playerOne, $match->playerTwo);
+
+            return $match;
+        });
 
         return response()->json([
             'status' => true,
             'message' => 'Matches retrieved successfully',
-            'data' => $matches,
+            'data' => $data,
         ]);
     }
 
@@ -342,6 +379,9 @@ class MatchForVotingController extends Controller
 
             $match = $match->fresh()->load(['playerOne', 'playerTwo']);
 
+            // ✅ NAME FIX (ONLY CHANGE)
+            $match->playerOne->name = $match->playerOne->artist_name ?: $match->playerOne->first_name;
+            $match->playerTwo->name = $match->playerTwo->artist_name ?: $match->playerTwo->first_name;
 
             $playerVotes = PlayerVote::selectRaw('voted_player_id, SUM(total_vote) as total')
                 ->where('match_id', $match->id)
@@ -374,6 +414,7 @@ class MatchForVotingController extends Controller
                 ->whereIn('user_id', $topVotersRaw->pluck('user_id'))
                 ->get()
                 ->groupBy('user_id');
+
             $topVoters = $topVotersRaw->values()->map(function ($row, $index) use ($votes) {
 
                 $userVotes = $votes[$row->user_id] ?? collect();
@@ -384,7 +425,6 @@ class MatchForVotingController extends Controller
                     'user_id' => $row->user_id,
                     'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
                     'total_votes' => (int) $row->total_votes,
-
                     'vote_breakdown' => $sortedVotes
                         ->pluck('total_vote')
                         ->implode(', '),
