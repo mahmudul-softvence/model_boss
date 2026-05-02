@@ -88,7 +88,7 @@ class SupportController extends Controller
                     ->limit(10)
                     ->pluck('user_id');
 
-                $topSupporters = Support::with('supporter:id,name,image')
+                $topSupporters = Support::with('supporter:id,artist_name,first_name,image')
                     ->where('match_id', $match->id)
                     ->whereIn('user_id', $topUsers)
                     ->get()
@@ -99,18 +99,18 @@ class SupportController extends Controller
 
                         $sortedSupports = $userSupports->sortByDesc('coin_amount')->values();
                         $first = $sortedSupports->first();
-
+                        $supporter = $first->supporter;
                         return [
                             'user_id' => $first->user_id,
                             'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
                             'supported_amounts' => $sortedSupports
                                 ->pluck('coin_amount')
                                 ->implode(', '),
-                            'supporter' => [
-                                'id' => $first->supporter->id,
-                                'name' => $first->supporter->name,
-                                'image' => optional($first->supporter)->image_url,
-                            ],
+                            'supporter' => $supporter ? [
+                                'id' => $supporter->id,
+                                'name' => $supporter->artist_name ?: $supporter->first_name,
+                                'image' => $supporter->image ? asset('storage/'.$supporter->image) : null,
+                            ] : null,
                         ];
                     });
 
@@ -133,7 +133,7 @@ class SupportController extends Controller
                 $playerOneTopSupporter = $playerOneSupport && $playerOneSupport->supporter
                     ? [
                         'id' => $playerOneSupport->supporter->id,
-                        'name' => $playerOneSupport->supporter->name,
+                        'name' => $playerOneSupport->supporter->artist_name ?: $playerOneSupport->supporter->first_name,
                         'image' => $playerOneSupport->supporter->image
                             ? asset('storage/'.$playerOneSupport->supporter->image)
                             : null,
@@ -143,7 +143,7 @@ class SupportController extends Controller
                 $playerTwoTopSupporter = $playerTwoSupport && $playerTwoSupport->supporter
                     ? [
                         'id' => $playerTwoSupport->supporter->id,
-                        'name' => $playerTwoSupport->supporter->name,
+                        'name' => $playerTwoSupport->supporter->artist_name ?: $playerTwoSupport->supporter->first_name,
                         'image' => $playerTwoSupport->supporter->image
                             ? asset('storage/'.$playerTwoSupport->supporter->image)
                             : null,
