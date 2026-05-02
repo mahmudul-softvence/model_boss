@@ -367,8 +367,8 @@ class MatchController extends Controller
     public function players($id)
     {
         $match = GameMatch::with([
-            'playerOne:id,name',
-            'playerTwo:id,name',
+            'playerOne:id,artist_name,first_name',
+            'playerTwo:id,artist_name,first_name',
         ])->find($id);
 
         if (! $match) {
@@ -382,8 +382,15 @@ class MatchController extends Controller
             'status' => true,
             'message' => 'Players retrieved successfully',
             'data' => [
-                'player_one' => $match->playerOne,
-                'player_two' => $match->playerTwo,
+                'player_one' => $match->playerOne ? [
+                    'id' => $match->playerOne->id,
+                    'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
+                ] : null,
+
+                'player_two' => $match->playerTwo ? [
+                    'id' => $match->playerTwo->id,
+                    'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
+                ] : null,
             ],
         ]);
     }
@@ -483,6 +490,7 @@ class MatchController extends Controller
             ],
         ]);
     }
+    
     public function socketMatch($id)
     {
         $super = User::where('id', 1)->select('image')->first();
