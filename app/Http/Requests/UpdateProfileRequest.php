@@ -26,10 +26,12 @@ class UpdateProfileRequest extends FormRequest
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
+            'artist_name' => 'required|string|max:255',
             'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'phone_number' => 'nullable|string|max:20',
             'nationality' => 'nullable|string|max:255',
             'address' => 'nullable|string|max:255',
+            'city' => 'required|string|max:255',
             'zip_code' => 'nullable|string|max:20',
             'state' => 'nullable|string|max:255',
         ];

@@ -33,6 +33,8 @@ class UserFactory extends Factory
             'first_name' => $firstName,
             'middle_name' => $middleName,
             'last_name' => $lastName,
+            'artist_name' => fake()->userName(),
+            'city' => fake()->city(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
