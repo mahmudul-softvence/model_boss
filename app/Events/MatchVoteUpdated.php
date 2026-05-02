@@ -24,10 +24,10 @@ class MatchVoteUpdated implements ShouldBroadcastNow
     {
         $this->data = $data;
 
-        // Log::info('MatchVoteUpdated Event Constructed', [
-        //     'match_id' => $data['match_id'] ?? null,
-        //     'payload' => $data,
-        // ]);
+        Log::info('MatchVoteUpdated Event Constructed', [
+            'match_id' => $data['match_id'] ?? null,
+            'payload' => $data,
+        ]);
     }
 
     public function broadcastOn()

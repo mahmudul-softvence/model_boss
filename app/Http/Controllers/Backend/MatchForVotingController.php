@@ -379,6 +379,9 @@ class MatchForVotingController extends Controller
 
             $match = $match->fresh()->load(['playerOne', 'playerTwo']);
 
+            // ✅ NAME FIX (ONLY CHANGE)
+            $match->playerOne->name = $match->playerOne->artist_name ?: $match->playerOne->first_name;
+            $match->playerTwo->name = $match->playerTwo->artist_name ?: $match->playerTwo->first_name;
 
             $playerVotes = PlayerVote::selectRaw('voted_player_id, SUM(total_vote) as total')
                 ->where('match_id', $match->id)
@@ -411,6 +414,7 @@ class MatchForVotingController extends Controller
                 ->whereIn('user_id', $topVotersRaw->pluck('user_id'))
                 ->get()
                 ->groupBy('user_id');
+
             $topVoters = $topVotersRaw->values()->map(function ($row, $index) use ($votes) {
 
                 $userVotes = $votes[$row->user_id] ?? collect();
@@ -421,7 +425,6 @@ class MatchForVotingController extends Controller
                     'user_id' => $row->user_id,
                     'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
                     'total_votes' => (int) $row->total_votes,
-
                     'vote_breakdown' => $sortedVotes
                         ->pluck('total_vote')
                         ->implode(', '),

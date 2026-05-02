@@ -9,6 +9,7 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class VotingStarted implements ShouldBroadcastNow
 {
@@ -32,21 +33,23 @@ class VotingStarted implements ShouldBroadcastNow
 
             'player_one' => [
                 'id' => $match->playerOne->id,
-                'name' => $match->playerOne->name,
+                'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
                 'image' => $match->playerOne->image_url,
-                'total_votes' => $playerOneVotes ? $playerOneVotes : 0,
+                'total_votes' => $playerOneVotes ?: 0,
             ],
 
             'player_two' => [
                 'id' => $match->playerTwo->id,
-                'name' => $match->playerTwo->name,
+                'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
                 'image' => $match->playerTwo->image_url,
-                'total_votes' => $playerTwoVotes ? $playerTwoVotes : 0,
+                'total_votes' => $playerTwoVotes ?: 0,
             ],
 
             'vote_start_time' => $match->vote_start_time,
             'voting_time' => $match->voting_time,
         ];
+
+        // Log::info($this->matchData);
     }
 
     public function broadcastOn()
