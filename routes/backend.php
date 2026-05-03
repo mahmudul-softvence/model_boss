@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Backend\AdminSettingController;
+use App\Http\Controllers\Backend\CredentialSettingController;
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\GalleryController;
 use App\Http\Controllers\Backend\NewsController;
@@ -50,6 +51,10 @@ Route::middleware(['auth:api', 'role:super_admin'])->prefix('admin')->group(func
     Route::put('settings/change_password', [AdminSettingController::class, 'change_password']);
     Route::get('settings/auto_accept_withdraw', [AdminSettingController::class, 'get_auto_accept_withdraw']);
     Route::put('settings/auto_accept_withdraw', [AdminSettingController::class, 'auto_accept_withdraw']);
+
+    // Credential Settings
+    Route::get('credentials', [CredentialSettingController::class, 'index']);
+    Route::put('credentials/{group}', [CredentialSettingController::class, 'update']);
 });
 
 Route::middleware('auth:api')->group(function () {
