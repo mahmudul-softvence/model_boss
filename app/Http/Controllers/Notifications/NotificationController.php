@@ -28,7 +28,7 @@ class NotificationController extends Controller
         return $this->sendResponse([], 'Notification Deleted Successfully');
     }
 
-    public function delete_all_notifications(Request $request, $id)
+    public function delete_all_notifications(Request $request)
     {
         $request->user()->notifications()->delete();
 
