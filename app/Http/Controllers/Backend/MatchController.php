@@ -125,7 +125,6 @@ class MatchController extends Controller
             'twitch_link' => 'nullable|url',
             'rules' => 'nullable|string',
             'voting_time' => 'nullable|date|after_or_equal:now',
-            'pin_to_top' =>  'required|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -253,7 +252,6 @@ class MatchController extends Controller
             'twitch_link' => 'nullable|url',
             'rules' => 'nullable|string',
             'voting_time' => 'nullable|date|after_or_equal:now',
-            'pin_to_top' =>  'required|in:0,1',
         ]);
 
         if ($validator->fails()) {
