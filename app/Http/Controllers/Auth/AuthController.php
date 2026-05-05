@@ -26,7 +26,7 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
-            'artist_name' => 'required|string|max:255',
+            'artist_name' => 'nullable|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8',
             'game_id' => 'nullable|exists:games,id',
