@@ -33,7 +33,7 @@ class ProfileController extends Controller
             'first_name' => $validated['first_name'],
             'middle_name' => $validated['middle_name'] ?? null,
             'last_name' => $validated['last_name'],
-            'artist_name' => $validated['artist_name'],
+            'artist_name' => $validated['artist_name'] ?? null,
             'phone_number' => $validated['phone_number'] ?? null,
             'nationality' => $validated['nationality'] ?? null,
             'address' => $validated['address'] ?? null,

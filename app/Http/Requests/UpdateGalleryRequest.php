@@ -24,7 +24,7 @@ class UpdateGalleryRequest extends FormRequest
     {
         return [
             'short_video' => 'file|mimes:mp4,mov,avi|max:20480',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:20480',
             'description' => 'nullable|string',
             'is_featured' => 'boolean',
         ];
