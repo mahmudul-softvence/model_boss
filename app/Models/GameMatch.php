@@ -32,6 +32,7 @@ class GameMatch extends Model
         'voting_time',
         'vote_start_time',
         'pin_to_top',
+        'remove_status',
     ];
 
     protected $casts = [

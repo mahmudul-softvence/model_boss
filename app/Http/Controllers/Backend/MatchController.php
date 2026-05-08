@@ -342,6 +342,13 @@ class MatchController extends Controller
             ], 404);
         }
 
+        if ($match->player_one_bet != $match->players_bet_amount) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Cannot delete match with support data',
+            ], 400);
+        }
+
         $playerOneLogo = $match->getRawOriginal('player_one_logo');
 
         if ($playerOneLogo && Storage::disk('public')->exists($playerOneLogo)) {
@@ -434,6 +441,7 @@ class MatchController extends Controller
             'playerOne:id,artist_name,first_name,image',
             'playerTwo:id,artist_name,first_name,image',
         ])
+            ->where('remove_status', 0)
             ->when($filter === 'live', function ($query) {
                 $query->where('confirmation_status', 1)
                     ->where('type', 'live');
@@ -454,24 +462,24 @@ class MatchController extends Controller
             ->orderBy('id', 'desc')
             ->paginate($perPage);
 
-            $data = $matches->getCollection()->map(function ($match) {
+        $data = $matches->getCollection()->map(function ($match) {
 
-                $match->player_one = $match->playerOne ? [
-                    'id' => $match->playerOne->id,
-                    'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
-                    'image' => $match->playerOne->image,
-                ] : null;
+            $match->player_one = $match->playerOne ? [
+                'id' => $match->playerOne->id,
+                'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
+                'image' => $match->playerOne->image,
+            ] : null;
 
-                $match->player_two = $match->playerTwo ? [
-                    'id' => $match->playerTwo->id,
-                    'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
-                    'image' => $match->playerTwo->image,
-                ] : null;
+            $match->player_two = $match->playerTwo ? [
+                'id' => $match->playerTwo->id,
+                'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
+                'image' => $match->playerTwo->image,
+            ] : null;
 
-                unset($match->playerOne, $match->playerTwo);
+            unset($match->playerOne, $match->playerTwo);
 
-                return $match;
-            });
+            return $match;
+        });
 
         return response()->json([
             'status' => true,
@@ -488,7 +496,7 @@ class MatchController extends Controller
             ],
         ]);
     }
-    
+        
     public function socketMatch($id)
     {
         $super = User::where('id', 1)->select('image')->first();
@@ -672,6 +680,30 @@ class MatchController extends Controller
             'data' => [
                 'id' => $match->id,
                 'pin_to_top' => $match->pin_to_top
+            ]
+        ]);
+    }
+
+    public function toggleRemove($id)
+    {
+        $match = GameMatch::findOrFail($id);
+
+        if ($match->remove_status == 1) {
+            $match->remove_status = 0;
+            $message = 'Match restore successfully';
+        } else {
+            $match->remove_status = 1;
+            $message = 'Match removed successfully';
+        }
+
+        $match->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => [
+                'id' => $match->id,
+                'remove_status' => $match->remove_status
             ]
         ]);
     }

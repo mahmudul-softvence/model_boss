@@ -89,6 +89,7 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::delete('matches/{id}', [MatchController::class, 'destroy']);
 
     Route::patch('/pin-unpin-match/{id}', [MatchController::class, 'togglePin']);
+    Route::patch('/remove-view-match/{id}', [MatchController::class, 'toggleRemove']);
     // match confirmation
     Route::post('match-confirm/{id}', [SupportController::class, 'confirm']);
 
