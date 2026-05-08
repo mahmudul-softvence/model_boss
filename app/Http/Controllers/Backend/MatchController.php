@@ -342,6 +342,13 @@ class MatchController extends Controller
             ], 404);
         }
 
+        if ($match->player_one_bet != $match->players_bet_amount) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Cannot delete match with support data',
+            ], 400);
+        }
+
         $playerOneLogo = $match->getRawOriginal('player_one_logo');
 
         if ($playerOneLogo && Storage::disk('public')->exists($playerOneLogo)) {
