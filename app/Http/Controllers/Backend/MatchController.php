@@ -683,4 +683,28 @@ class MatchController extends Controller
         ]);
     }
 
+    public function toggleRemove($id)
+    {
+        $match = GameMatch::findOrFail($id);
+
+        if ($match->remove_status == 1) {
+            $match->remove_status = 0;
+            $message = 'Match restore successfully';
+        } else {
+            $match->remove_status = 1;
+            $message = 'Match removed successfully';
+        }
+
+        $match->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => [
+                'id' => $match->id,
+                'remove_status' => $match->remove_status
+            ]
+        ]);
+    }
+
 }
