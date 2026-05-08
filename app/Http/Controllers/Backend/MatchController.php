@@ -441,6 +441,7 @@ class MatchController extends Controller
             'playerOne:id,artist_name,first_name,image',
             'playerTwo:id,artist_name,first_name,image',
         ])
+            ->where('remove_status', 0)
             ->when($filter === 'live', function ($query) {
                 $query->where('confirmation_status', 1)
                     ->where('type', 'live');
@@ -461,24 +462,24 @@ class MatchController extends Controller
             ->orderBy('id', 'desc')
             ->paginate($perPage);
 
-            $data = $matches->getCollection()->map(function ($match) {
+        $data = $matches->getCollection()->map(function ($match) {
 
-                $match->player_one = $match->playerOne ? [
-                    'id' => $match->playerOne->id,
-                    'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
-                    'image' => $match->playerOne->image,
-                ] : null;
+            $match->player_one = $match->playerOne ? [
+                'id' => $match->playerOne->id,
+                'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
+                'image' => $match->playerOne->image,
+            ] : null;
 
-                $match->player_two = $match->playerTwo ? [
-                    'id' => $match->playerTwo->id,
-                    'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
-                    'image' => $match->playerTwo->image,
-                ] : null;
+            $match->player_two = $match->playerTwo ? [
+                'id' => $match->playerTwo->id,
+                'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
+                'image' => $match->playerTwo->image,
+            ] : null;
 
-                unset($match->playerOne, $match->playerTwo);
+            unset($match->playerOne, $match->playerTwo);
 
-                return $match;
-            });
+            return $match;
+        });
 
         return response()->json([
             'status' => true,
@@ -495,7 +496,7 @@ class MatchController extends Controller
             ],
         ]);
     }
-    
+        
     public function socketMatch($id)
     {
         $super = User::where('id', 1)->select('image')->first();
