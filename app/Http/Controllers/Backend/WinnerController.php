@@ -11,6 +11,7 @@ use App\Models\UserBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Events\MatchCompleted;
 
 class WinnerController extends Controller
 {
@@ -66,6 +67,19 @@ class WinnerController extends Controller
                 }
 
                 $userIds = $supports->pluck('user_id')->unique();
+
+                if ($userIds->isNotEmpty()) {
+
+                    $winnerName = $winner?->artist_name 
+                        ?? $winner?->first_name 
+                        ?? 'Unknown';
+
+                    MatchCompleted::dispatch(
+                        $userIds->toArray(),
+                        $match->id,
+                        $winnerName
+                    );
+                }
 
                 $balances = UserBalance::whereIn('user_id', $userIds)
                     ->lockForUpdate()
