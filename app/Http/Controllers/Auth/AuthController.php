@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
+use App\Models\LoginOtp;
 use App\Models\Referral;
 use App\Models\User;
 use App\Models\UserBalance;
+use App\Notifications\LoginOtpNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
@@ -127,9 +130,50 @@ class AuthController extends Controller
             return $this->sendError('Please verify your email.', ['verified' => false], 403);
         }
 
-        $data = $this->respondWithToken($token);
+        auth()->logout();
 
-        return $this->sendResponse($data, 'User login successfully.');
+        $otp = (string) random_int(100000, 999999);
+
+        LoginOtp::updateOrCreate(
+            ['email' => $user->email],
+            ['otp' => $otp]
+        );
+
+        Notification::route('mail', $user->email)
+            ->notify(new LoginOtpNotification($otp));
+
+        return $this->sendResponse(
+            ['email' => $user->email],
+            'OTP sent to your email. Please verify to complete login.'
+        );
+    }
+
+    public function verifyLoginOtp(Request $request)
+    {
+        $request->validate([
+            'email' => ['required', 'email', 'exists:users,email'],
+            'otp' => ['required', 'digits:6'],
+        ]);
+
+        $loginOtp = LoginOtp::where('email', $request->email)->first();
+
+        if (! $loginOtp) {
+            return $this->sendError('Invalid email.', [], 422);
+        }
+
+        $isValid = $loginOtp->otp === $request->otp
+            && $loginOtp->updated_at->addMinutes(10)->isFuture();
+
+        if (! $isValid) {
+            return $this->sendError('Invalid or expired OTP.', [], 422);
+        }
+
+        $loginOtp->delete();
+
+        $user = User::where('email', $request->email)->first();
+        $token = auth()->login($user);
+
+        return $this->sendResponse($this->respondWithToken($token), 'User login successfully.');
     }
 
     public function me()
