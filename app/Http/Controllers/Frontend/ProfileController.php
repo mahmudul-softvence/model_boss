@@ -8,6 +8,7 @@ use App\Http\Resources\PostResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\UserBalance;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
@@ -105,5 +106,18 @@ class ProfileController extends Controller
         return $this->sendResponse([
             'following' => UserResource::collection($following),
         ]);
+    }
+
+    public function changeFavGame(Request $request)
+    {
+        $validated = $request->validate([
+            'game_id' => ['required', 'integer', 'exists:games,id'],
+        ]);
+
+        $user = auth()->user();
+        $user->game_id = $validated['game_id'];
+        $user->save();
+
+        return $this->sendResponse(UserResource::make($user->fresh()));
     }
 }
