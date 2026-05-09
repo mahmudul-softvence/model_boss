@@ -32,9 +32,6 @@
                             letter-spacing:-0.5px;line-height:1.2;">
                     Verify Your Login
                 </h1>
-                <p style="margin:10px 0 0;font-size:14px;color:#7880a0;line-height:1.6;">
-                    Enter the code below in the app to complete<br />your sign-in to Model Boss.
-                </p>
 
             </td>
         </tr>
@@ -95,38 +92,6 @@
             </td>
         </tr>
 
-        <!-- ─── DIVIDER ─── -->
-        <tr>
-            <td style="background:#0d0d1c;padding:0 48px;
-                        border-left:1px solid rgba(233,30,140,0.15);
-                        border-right:1px solid rgba(233,30,140,0.15);">
-                <div style="height:1px;background:linear-gradient(90deg,transparent 0%,rgba(233,30,140,0.4) 50%,transparent 100%);"></div>
-            </td>
-        </tr>
-
-        <!-- ─── SECURITY NOTE ─── -->
-        <tr>
-            <td style="background:#0d0d1c;padding:28px 48px 36px;
-                        border-left:1px solid rgba(233,30,140,0.15);
-                        border-right:1px solid rgba(233,30,140,0.15);">
-
-                <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                        <td style="width:20px;vertical-align:top;padding-top:2px;">
-                            <span style="font-size:15px;color:#e91e8c;">⚠</span>
-                        </td>
-                        <td style="padding-left:10px;">
-                            <p style="margin:0;font-size:12px;color:#505570;line-height:1.8;">
-                                Didn't request this? Your account is safe — just ignore this email.
-                                If you're concerned, consider changing your password.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-
-            </td>
-        </tr>
-
         <!-- ─── FOOTER ─── -->
         <tr>
             <td style="background:#09091a;border-radius:0 0 18px 18px;
@@ -137,8 +102,7 @@
                 <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(156,39,176,0.3),transparent);margin-bottom:18px;"></div>
 
                 <p style="margin:0;font-size:12px;color:#2e2e48;line-height:1.8;">
-                    &copy; {{ date('Y') }} Model Boss &nbsp;·&nbsp; All rights reserved<br />
-                    <span style="font-size:11px;">This is an automated message — do not reply.</span>
+                    &copy; {{ date('Y') }} Model Boss &nbsp;·&nbsp; All rights reserved
                 </p>
 
             </td>
