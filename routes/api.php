@@ -23,6 +23,7 @@ Route::get('/login', function () {
 Route::group(['middleware' => 'api'], function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
+    Route::post('verify-login-otp', [AuthController::class, 'verifyLoginOtp']);
     Route::post('refresh', [AuthController::class, 'refresh']);
 
     Route::post('resend_verification', [AuthController::class, 'resend_verification']);
