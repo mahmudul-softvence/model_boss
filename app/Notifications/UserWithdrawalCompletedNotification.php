@@ -28,12 +28,12 @@ class UserWithdrawalCompletedNotification extends Notification implements Should
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Withdrawal Completed - '.$this->withdrawal->withdraw_no)
-            ->greeting('Hello!')
-            ->line('Your withdrawal request has been successfully processed.')
-            ->line('Withdrawal No: '.$this->withdrawal->withdraw_no)
-            ->line('Value: $'.$this->withdrawal->usd_amount)
-            ->line('Thank you.');
+            ->subject('Withdrawal Completed – '.$this->withdrawal->withdraw_no)
+            ->view('emails.withdrawal-completed', [
+                'withdraw_no' => $this->withdrawal->withdraw_no,
+                'usd_amount' => $this->withdrawal->usd_amount,
+                'coin_amount' => $this->withdrawal->coin_amount,
+            ]);
     }
 
     public function toDatabase($notifiable)

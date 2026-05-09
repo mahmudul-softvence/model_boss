@@ -27,10 +27,10 @@ class VerifyEmailQueued extends Notification implements ShouldQueue
         );
 
         return (new MailMessage)
-            ->subject('Verify Email Address')
-            ->line('Please click the button below to verify your email address.')
-            ->action('Verify Email Address', $verificationUrl)
-            ->line('If you did not create an account, no further action is required.')
-            ->line('Thank you.');
+            ->subject('Verify Your Email – Model Boss')
+            ->view('emails.verify-email', [
+                'url' => $verificationUrl,
+                'name' => $notifiable->name ?? $notifiable->email,
+            ]);
     }
 }

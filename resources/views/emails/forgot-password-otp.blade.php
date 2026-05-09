@@ -1,7 +1,8 @@
 @extends('emails.layout')
 
-@section('title', 'Login OTP – Model Boss')
-@section('heading', 'Verify Your Login')
+@section('title', 'Reset Your Password – Model Boss')
+@section('heading', 'Reset Your Password')
+@section('subheading', 'Use the OTP below to reset your Model Boss password.')
 
 @section('body')
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0;">
@@ -11,14 +12,13 @@
             style="background:#12112a;border:1px solid rgba(233,30,140,0.35);
                    border-radius:14px;padding:32px 24px;">
 
-            <p style="margin:0 0 14px;font-size:10px;font-weight:700;
+            <p class="txt-muted" style="margin:0 0 14px;font-size:10px;font-weight:700;
                        color:#6b4fa0;letter-spacing:5px;text-transform:uppercase;">
                 One-Time Password
             </p>
 
-            <p class="txt-otp otp-size txt-white"
-               style="margin:0;font-size:52px;font-weight:900;
-                      color:#ffffff;letter-spacing:16px;font-variant-numeric:tabular-nums;">
+            <p class="txt-white" style="margin:0;font-size:52px;font-weight:900;
+                       color:#ffffff;letter-spacing:16px;font-variant-numeric:tabular-nums;">
                 {{ $otp }}
             </p>
 

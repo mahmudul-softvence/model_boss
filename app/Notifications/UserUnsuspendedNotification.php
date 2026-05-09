@@ -24,13 +24,10 @@ class UserUnsuspendedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your Account Has Been Restored')
-            ->greeting('Hello '.$notifiable->name.',')
-            ->line('Good news! Your account suspension has been lifted.')
-            ->line('You now have full access to your account again.')
-            ->action('Login to Your Account', 'http://localhost:3000/login')
-            ->line('If you have any questions, please contact our support team.')
-            ->line('Thank you.');
+            ->subject('Your Account Has Been Restored – Model Boss')
+            ->view('emails.user-unsuspended', [
+                'name' => $notifiable->name ?? $notifiable->email,
+            ]);
     }
 
     /**

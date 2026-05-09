@@ -37,12 +37,12 @@ class UserWithdrawalDeclinedNotification extends Notification implements ShouldQ
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Withdrawal Request Declined - '.$this->withdrawal->withdraw_no)
-            ->greeting('Hello '.$notifiable->name.',')
-            ->line('Your withdrawal request #'.$this->withdrawal->withdraw_no.' has been declined.')
-            ->line('Amount: '.$this->withdrawal->coin_amount.' Coins')
-            ->line('If you have any questions, please contact our support team.')
-            ->line('Thank you.');
+            ->subject('Withdrawal Declined – '.$this->withdrawal->withdraw_no)
+            ->view('emails.withdrawal-declined', [
+                'name' => $notifiable->name ?? $notifiable->email,
+                'withdraw_no' => $this->withdrawal->withdraw_no,
+                'coin_amount' => $this->withdrawal->coin_amount,
+            ]);
     }
 
     /**

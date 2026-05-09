@@ -47,11 +47,13 @@ class AdminWithdrawalNotification extends Notification implements ShouldQueue
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('New Withdrawal Request')
-            ->line('A new withdrawal request has been submitted.')
-            ->line('User: '.$this->user->name)
-            ->line('Amount: '.$this->withdraw->coin_amount)
-            ->line('Thank you.');
+            ->subject('New Withdrawal Request – Model Boss')
+            ->view('emails.admin-withdrawal', [
+                'user_name' => $this->user->name,
+                'withdraw_no' => $this->withdraw->withdraw_no,
+                'coin_amount' => $this->withdraw->coin_amount,
+                'usd_amount' => $this->withdraw->usd_amount,
+            ]);
     }
 
     /**
