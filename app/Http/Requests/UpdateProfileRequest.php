@@ -31,7 +31,7 @@ class UpdateProfileRequest extends FormRequest
             'phone_number' => 'nullable|string|max:20',
             'nationality' => 'nullable|string|max:255',
             'address' => 'nullable|string|max:255',
-            'city' => 'required|string|max:255',
+            'city' => 'nullable|string|max:255',
             'zip_code' => 'nullable|string|max:20',
             'state' => 'nullable|string|max:255',
         ];
