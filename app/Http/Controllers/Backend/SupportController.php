@@ -591,6 +591,12 @@ class SupportController extends Controller
                 $sortedSupports = $userSupports->sortByDesc('coin_amount')->values();
                 $first = $sortedSupports->first();
 
+                if (!$first) {
+                    return null;
+                }
+
+                $supporter = $first->supporter;
+
                 return [
                     'user_id' => $first->user_id,
                     'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
@@ -598,12 +604,14 @@ class SupportController extends Controller
                         ->pluck('coin_amount')
                         ->implode(', '),
                     'supporter' => [
-                        'id' => $first->supporter->id,
-                        'name' => $first->supporter->name,
-                        'image' => optional($first->supporter)->image_url,
+                        'id' => optional($supporter)->id,
+                        'name' => optional($supporter)->name,
+                        'image' => optional($supporter)->image_url,
                     ],
                 ];
-            });
+            })
+            ->filter()
+            ->values();
 
         return response()->json([
             'status' => true,
@@ -611,4 +619,5 @@ class SupportController extends Controller
             'data' => $topSupporters,
         ], 200);
     }
+
 }
