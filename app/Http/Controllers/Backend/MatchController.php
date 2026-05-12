@@ -180,14 +180,14 @@ class MatchController extends Controller
             $otherUsers,
             'New match available! Go to home to support your favorite player.',
             $players,
-            $data['rules'] ?? null
+            null
         ))->toOthers();
 
         broadcast(new MatchCreated(
             $players,
             'A match has been created and you have been selected as a player. Please review the rules carefully.',
             $players,
-            $data['rules'] ?? null
+            $data['rules'] ?? null 
         ))->toOthers();
 
         return response()->json([
