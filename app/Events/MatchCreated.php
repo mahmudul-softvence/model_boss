@@ -12,25 +12,23 @@ class MatchCreated implements ShouldBroadcast
     use Dispatchable, SerializesModels;
 
     public $message;
-
     public $rules;
 
     protected $userIds;
-
     protected $playerIds;
 
-    public function __construct($userIds, $playerIds, $rules = null)
+    public function __construct($userIds, $message, $playerIds, $rules = null)
     {
-        $this->message = 'New match available! Go to home to support your favorite player.';
-        $this->rules = $rules;
         $this->userIds = $userIds;
+        $this->message = $message;
         $this->playerIds = $playerIds;
+        $this->rules = $rules;
     }
 
     public function broadcastOn()
     {
         return collect($this->userIds)->map(function ($id) {
-            return new PrivateChannel('user.'.$id);
+            return new PrivateChannel('user.' . $id);
         })->toArray();
     }
 
