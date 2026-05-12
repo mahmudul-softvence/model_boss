@@ -174,10 +174,20 @@ class MatchController extends Controller
             $data['player_two_id'],
         ];
 
+        $otherUsers = array_diff($users, $players);
+
         broadcast(new MatchCreated(
-            $users,
+            $otherUsers,
+            'New match available! Go to home to support your favorite player.',
             $players,
-            $data['rules'] ?? null
+            null
+        ))->toOthers();
+
+        broadcast(new MatchCreated(
+            $players,
+            'A match has been created and you have been selected as a player. Please review the rules carefully.',
+            $players,
+            $data['rules'] ?? null 
         ))->toOthers();
 
         return response()->json([
