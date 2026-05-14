@@ -33,22 +33,37 @@
                 @hasSection('heading')
                 <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:28px;">
                     <tr>
-                        <td style="background:@yield('heading_bg', 'linear-gradient(135deg,#3cb043,#27a63e)');
-                                   border-radius:50px;padding:11px 28px 11px 14px;">
+                        <td>
                             <table cellpadding="0" cellspacing="0" border="0">
                                 <tr>
-                                    <td style="vertical-align:middle;padding-right:10px;">
-                                        <div style="width:30px;height:30px;background:rgba(255,255,255,0.25);
-                                                    border-radius:50%;text-align:center;line-height:30px;
-                                                    font-size:16px;color:#ffffff;font-weight:900;">
-                                            @yield('heading_icon', '✓')
-                                        </div>
-                                    </td>
-                                    <td style="vertical-align:middle;">
-                                        <span style="font-size:17px;font-weight:700;color:#ffffff;
-                                                     letter-spacing:0.3px;white-space:nowrap;">
-                                            @yield('heading')
-                                        </span>
+                                    <td style="background:@yield('heading_bg','linear-gradient(180deg,#80e080 0%,#32a832 100%)');
+                                               border-radius:50px;padding:12px 32px 12px 14px;">
+                                        <table cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <!-- White circle with coloured checkmark -->
+                                                <td style="vertical-align:middle;padding-right:12px;">
+                                                    <table cellpadding="0" cellspacing="0" border="0">
+                                                        <tr>
+                                                            <td style="width:32px;height:32px;
+                                                                       background:#ffffff;border-radius:50%;
+                                                                       text-align:center;vertical-align:middle;">
+                                                                <span style="font-size:18px;font-weight:900;
+                                                                             color:@yield('heading_icon_color','#2ea82e');
+                                                                             line-height:32px;display:block;">
+                                                                    @yield('heading_icon', '✓')
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                <td style="vertical-align:middle;">
+                                                    <span style="font-size:17px;font-weight:700;color:#ffffff;
+                                                                 letter-spacing:0.4px;white-space:nowrap;">
+                                                        @yield('heading')
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
                                 </tr>
                             </table>

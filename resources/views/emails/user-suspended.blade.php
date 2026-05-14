@@ -2,8 +2,9 @@
 
 @section('title', 'Account Suspended – Model Boss')
 @section('heading', 'Account Suspended')
-@section('heading_bg', 'linear-gradient(135deg,#ef4444,#dc2626)')
+@section('heading_bg', 'linear-gradient(180deg,#f87171 0%,#b91c1c 100%)')
 @section('heading_icon', '🚫')
+@section('heading_icon_color', '#ef4444')
 
 @section('body')
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">

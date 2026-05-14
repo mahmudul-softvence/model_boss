@@ -2,8 +2,9 @@
 
 @section('title', 'Reset Your Password – Model Boss')
 @section('heading', 'Reset Your Password')
-@section('heading_bg', 'linear-gradient(135deg,#9c27b0,#6a1b9a)')
+@section('heading_bg', 'linear-gradient(180deg,#ce93d8 0%,#6a1b9a 100%)')
 @section('heading_icon', '🔑')
+@section('heading_icon_color', '#9c27b0')
 @section('subheading', 'Use the OTP below to reset your Model Boss password.')
 
 @section('body')
