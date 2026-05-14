@@ -5,32 +5,24 @@
 @section('subheading', 'Great news — your account suspension has been lifted.')
 
 @section('body')
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:36px 0 28px;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
     <tr>
         <td align="center">
 
-            <!-- success icon -->
-            <div style="width:64px;height:64px;margin:0 auto 24px;
-                        background:linear-gradient(145deg,#10b981,#059669);
-                        border-radius:50%;text-align:center;line-height:64px;font-size:28px;">
-                ✓
-            </div>
-
-            <p class="txt-muted" style="margin:0 0 24px;font-size:14px;color:#505570;line-height:1.7;text-align:center;">
-                Hello, <strong class="txt-white" style="color:#ffffff;">{{ $name }}</strong>!<br />
+            <p style="margin:0 0 20px;font-size:14px;color:#4b5563;line-height:1.7;text-align:center;">
+                Hello, <strong style="color:#111827;">{{ $name }}</strong>!<br />
                 You now have full access to your Model Boss account again.
             </p>
 
             <!-- info card -->
             <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                   class="info-card"
-                   style="background:#12112a;border:1px solid rgba(16,185,129,0.25);border-radius:14px;margin-bottom:28px;">
+                   style="background:#ede8f8;border:1px solid #bbf7d0;border-radius:16px;margin-bottom:24px;">
                 <tr>
                     <td style="padding:20px 24px;text-align:center;">
                         <p style="margin:0;font-size:13px;color:#10b981;font-weight:600;">
                             ✓ &nbsp;Account fully restored
                         </p>
-                        <p class="txt-muted" style="margin:8px 0 0;font-size:12px;color:#505570;">
+                        <p style="margin:8px 0 0;font-size:12px;color:#6b7280;">
                             All features and access have been re-enabled.
                         </p>
                     </td>
@@ -38,13 +30,13 @@
             </table>
 
             <!-- CTA button -->
-            <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:32px;">
+            <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:8px;">
                 <tr>
-                    <td style="background:linear-gradient(135deg,#e91e8c,#9c27b0);border-radius:10px;padding:1px;">
+                    <td style="background:linear-gradient(135deg,#e91e8c,#9c27b0);border-radius:12px;">
                         <a href="{{ config('app.frontend_url') }}/login"
                            style="display:inline-block;padding:14px 36px;
                                   background:linear-gradient(135deg,#e91e8c,#9c27b0);
-                                  border-radius:10px;font-size:15px;font-weight:700;
+                                  border-radius:12px;font-size:15px;font-weight:700;
                                   color:#ffffff;text-decoration:none;letter-spacing:0.5px;">
                             Login to Your Account
                         </a>
