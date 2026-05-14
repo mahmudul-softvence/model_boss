@@ -40,6 +40,8 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'referral_no',
         'game_id',
         'social_verification_status',
+        'social_verification_number',
+        'show_email',
         'is_player',
     ];
 
@@ -54,6 +56,8 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_player' => 'boolean',
+            'social_verification_status' => 'boolean',
+            'show_email' => 'boolean',
         ];
     }
 

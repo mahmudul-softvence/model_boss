@@ -34,6 +34,8 @@ class UpdateProfileRequest extends FormRequest
             'city' => 'nullable|string|max:255',
             'zip_code' => 'nullable|string|max:20',
             'state' => 'nullable|string|max:255',
+            'social_verification_status' => 'nullable|boolean',
+            'social_verification_number' => 'nullable|string|max:255',
         ];
     }
 }

@@ -40,6 +40,7 @@ class AuthController extends Controller
             'zip_code' => 'nullable|string|max:20',
             'state' => 'nullable|string|max:255',
             'social_verification_status' => 'nullable|boolean',
+            'social_verification_number' => 'nullable|string|max:255',
             'is_player' => 'sometimes|boolean',
         ]);
 
@@ -59,6 +60,7 @@ class AuthController extends Controller
             'zip_code',
             'state',
             'social_verification_status',
+            'social_verification_number',
         ]);
         $data['password'] = bcrypt($data['password']);
         $data['game_id'] = $request->game_id;

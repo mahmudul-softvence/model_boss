@@ -16,6 +16,9 @@ class UserResource extends JsonResource
     {
         $suspension = $this->suspension;
 
+        $isOwner = auth()->check() && auth()->id() === $this->id;
+        $emailVisible = $this->show_email || $isOwner;
+
         return [
             'id' => $this->id,
             'name' => $this->full_name ?? $this->name,
@@ -23,14 +26,16 @@ class UserResource extends JsonResource
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
             'artist_name' => $this->artist_name,
-            'email' => $this->email,
+            'email' => $emailVisible ? $this->email : null,
+            'show_email' => (bool) $this->show_email,
             'phone_number' => $this->phone_number,
             'nationality' => $this->nationality,
             'address' => $this->address,
             'city' => $this->city,
             'zip_code' => $this->zip_code,
             'state' => $this->state,
-            'social_verification_status' => $this->social_verification_status,
+            'social_verification_status' => (bool) $this->social_verification_status,
+            'social_verification_number' => $this->social_verification_status ? $this->social_verification_number : null,
             'is_player' => (bool) $this->is_player,
             'image' => $this->image_url,
             'provider' => $this->provider,

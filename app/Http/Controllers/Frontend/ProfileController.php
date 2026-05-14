@@ -41,6 +41,8 @@ class ProfileController extends Controller
             'city' => $validated['city'],
             'zip_code' => $validated['zip_code'] ?? null,
             'state' => $validated['state'] ?? null,
+            'social_verification_status' => $validated['social_verification_status'] ?? $user->social_verification_status,
+            'social_verification_number' => $validated['social_verification_number'] ?? null,
         ]);
 
         $user->save();
@@ -116,6 +118,19 @@ class ProfileController extends Controller
 
         $user = auth()->user();
         $user->game_id = $validated['game_id'];
+        $user->save();
+
+        return $this->sendResponse(UserResource::make($user->fresh()));
+    }
+
+    public function toggleEmailVisibility(Request $request)
+    {
+        $validated = $request->validate([
+            'show_email' => ['required', 'boolean'],
+        ]);
+
+        $user = auth()->user();
+        $user->show_email = $validated['show_email'];
         $user->save();
 
         return $this->sendResponse(UserResource::make($user->fresh()));

@@ -27,6 +27,7 @@ Route::middleware(['auth:api'])->group(function () {
     // Profile
     Route::post('profile/update', [ProfileController::class, 'update']);
     Route::post('profile/change-fav-game', [ProfileController::class, 'changeFavGame']);
+    Route::post('profile/toggle-email-visibility', [ProfileController::class, 'toggleEmailVisibility']);
 
     // Twitch live
     Route::get('twitch/check_live', [TwitchController::class, 'status']);
