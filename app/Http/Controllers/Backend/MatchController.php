@@ -475,6 +475,13 @@ class MatchController extends Controller
             ->when($filter === 'upcoming', function ($query) {
                 $query->where('confirmation_status', 0);
             })
+            ->orderByRaw("
+                CASE 
+                    WHEN id = (SELECT id FROM game_matches ORDER BY created_at DESC LIMIT 1)
+                    THEN 0
+                    ELSE 1
+                END
+            ")
             ->orderBy('pin_to_top', 'desc')
             ->orderBy('id', 'desc')
             ->paginate($perPage);
