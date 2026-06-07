@@ -23,6 +23,13 @@ Route::middleware(['auth:api'])->group(function () {
     // Follow/Unfollow
     Route::post('follow/{id}', [FollowController::class, 'follow']);
     Route::delete('unfollow/{id}', [FollowController::class, 'unfollow']);
+    Route::get('followers/count', [ProfileController::class, 'followersCount']);
+    Route::get('following/count', [ProfileController::class, 'followingCount']);
+    // New paginated endpoints that include mutual flags for UI (do not replace existing routes)
+    Route::get('followers/list', [ProfileController::class, 'followersList']);
+    Route::get('following/list', [ProfileController::class, 'followingList']);
+    Route::get('see_follower', [ProfileController::class, 'see_follower']);
+    Route::get('see_following', [ProfileController::class, 'see_following']);
 
     // Profile
     Route::post('profile/update', [ProfileController::class, 'update']);
@@ -65,9 +72,6 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::get('show_artist_prifile/{id}', [ProfileController::class, 'show_artist_prifile']);
     Route::get('show_artist_posts/{id}', [ProfileController::class, 'show_artist_posts']);
-
-    Route::get('see_follower', [ProfileController::class, 'see_follower']);
-    Route::get('see_following', [ProfileController::class, 'see_following']);
 });
 
 Route::middleware(['api'])->group(function () {
