@@ -23,9 +23,9 @@ For deeper guidance on specific topics, read the relevant reference file before 
 ### Installation
 
 ```bash
-php artisan vendor:publish --tag="cashier-migrations"
-php artisan migrate
-php artisan vendor:publish --tag="cashier-config"
+ artisan vendor:publish --tag="cashier-migrations"
+ artisan migrate
+ artisan vendor:publish --tag="cashier-config"
 ```
 
 ### Environment Variables
