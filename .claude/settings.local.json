@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "mcp__laravel-boost__application-info"
-    ]
-  }
-}
