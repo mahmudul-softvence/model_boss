@@ -110,6 +110,75 @@ class ProfileController extends Controller
         ]);
     }
 
+    /**
+     * Return paginated followers with an `is_following` flag so the front-end
+     * can show a "Follow back" action.
+     */
+    public function followersList(Request $request)
+    {
+        $user = auth()->user();
+
+        $limit = $request->query('limit', 20);
+
+        $followingIds = $user->following()->pluck('following_id')->toArray();
+
+        $followers = $user->followers()->latest()->paginate($limit);
+
+        $followers->getCollection()->transform(function ($f) use ($followingIds, $request) {
+            $resource = UserResource::make($f)->toArray($request);
+            $resource['is_following'] = in_array($f->id, $followingIds, true);
+
+            return $resource;
+        });
+
+        return $this->sendResponse([
+            'followers' => $followers,
+        ]);
+    }
+
+    /**
+     * Return paginated following with an `is_followed_by` mutual flag.
+     */
+    public function followingList(Request $request)
+    {
+        $user = auth()->user();
+
+        $limit = $request->query('limit', 20);
+
+        $followerIds = $user->followers()->pluck('follower_id')->toArray();
+
+        $following = $user->following()->latest()->paginate($limit);
+
+        $following->getCollection()->transform(function ($f) use ($followerIds, $request) {
+            $resource = UserResource::make($f)->toArray($request);
+            $resource['is_followed_by'] = in_array($f->id, $followerIds, true);
+
+            return $resource;
+        });
+
+        return $this->sendResponse([
+            'following' => $following,
+        ]);
+    }
+
+    public function followersCount()
+    {
+        $user = auth()->user();
+
+        return $this->sendResponse([
+            'followers_count' => $user->followers_count,
+        ]);
+    }
+
+    public function followingCount()
+    {
+        $user = auth()->user();
+
+        return $this->sendResponse([
+            'following_count' => $user->following_count,
+        ]);
+    }
+
     public function changeFavGame(Request $request)
     {
         $validated = $request->validate([
