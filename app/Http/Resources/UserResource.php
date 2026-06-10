@@ -16,18 +16,24 @@ class UserResource extends JsonResource
     {
         $suspension = $this->suspension;
 
-        $isOwner = auth()->check() && auth()->id() === $this->id;
+        $isOwner = $request->user()?->is($this->resource) ?? false;
         $emailVisible = $this->show_email || $isOwner;
+        $nameVisible = $this->show_name || $isOwner;
 
         return [
             'id' => $this->id,
-            'name' => $this->full_name ?? $this->name,
-            'first_name' => $this->first_name,
-            'middle_name' => $this->middle_name,
-            'last_name' => $this->last_name,
-            'artist_name' => $this->artist_name,
+            'name' => $nameVisible ? $this->full_name ?? $this->name : null,
+            'first_name' => $nameVisible ? $this->first_name : null,
+            'middle_name' => $nameVisible ? $this->middle_name : null,
+            'last_name' => $nameVisible ? $this->last_name : null,
+            'artist_name' => $nameVisible ? $this->artist_name : null,
             'email' => $emailVisible ? $this->email : null,
             'show_email' => (bool) $this->show_email,
+            'show_name' => (bool) $this->show_name,
+            'show_total_earning' => (bool) $this->show_total_earning,
+            'show_total_referral_earning' => (bool) $this->show_total_referral_earning,
+            'show_total_tip_received' => (bool) $this->show_total_tip_received,
+            'show_total_withdraw' => (bool) $this->show_total_withdraw,
             'phone_number' => $this->phone_number,
             'nationality' => $this->nationality,
             'address' => $this->address,

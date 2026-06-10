@@ -8,11 +8,21 @@ use App\Http\Resources\PostResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\UserBalance;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
+    private const PROFILE_VISIBILITY_FIELDS = [
+        'show_email',
+        'show_name',
+        'show_total_earning',
+        'show_total_referral_earning',
+        'show_total_tip_received',
+        'show_total_withdraw',
+    ];
+
     public function update(UpdateProfileRequest $request)
     {
         $validated = $request->validated();
@@ -52,9 +62,9 @@ class ProfileController extends Controller
 
     public function show_artist_prifile($id)
     {
-        $user = User::find($id);
+        $user = User::with('userBalance')->findOrFail($id);
 
-        $userBalance = UserBalance::where('user_id', $user->id)->first();
+        $userBalance = $user->userBalance;
 
         $isFollowed = false;
 
@@ -66,10 +76,10 @@ class ProfileController extends Controller
             'user' => UserResource::make($user),
             'is_followed' => $isFollowed,
 
-            'total_earning' => $userBalance->total_earning ?? 0,
-            'total_referral_earning' => $userBalance->total_referral_earning ?? 0,
-            'total_tip_received' => $userBalance->total_tip_received ?? 0,
-            'total_withdraw' => $userBalance->total_withdraw ?? 0,
+            'total_earning' => $this->visibleBalanceAmount($user, $userBalance, 'total_earning', 'show_total_earning'),
+            'total_referral_earning' => $this->visibleBalanceAmount($user, $userBalance, 'total_referral_earning', 'show_total_referral_earning'),
+            'total_tip_received' => $this->visibleBalanceAmount($user, $userBalance, 'total_tip_received', 'show_total_tip_received'),
+            'total_withdraw' => $this->visibleBalanceAmount($user, $userBalance, 'total_withdraw', 'show_total_withdraw'),
             'total_balance' => $userBalance->total_balance ?? 0,
             'total_bet' => $userBalance->total_bet ?? 0,
         ];
@@ -203,5 +213,39 @@ class ProfileController extends Controller
         $user->save();
 
         return $this->sendResponse(UserResource::make($user->fresh()));
+    }
+
+    public function updateVisibility(Request $request): JsonResponse
+    {
+        $validated = $request->validate($this->visibilityValidationRules());
+
+        if ($validated === []) {
+            return $this->sendError('At least one visibility field is required.', [], 422);
+        }
+
+        $user = auth()->user();
+        $user->fill($validated);
+        $user->save();
+
+        return $this->sendResponse(UserResource::make($user->fresh()));
+    }
+
+    private function visibleBalanceAmount(User $user, ?UserBalance $userBalance, string $amountField, string $visibilityField): mixed
+    {
+        if ((bool) $user->{$visibilityField} || (auth()->check() && auth()->id() === $user->id)) {
+            return $userBalance?->{$amountField} ?? 0;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    private function visibilityValidationRules(): array
+    {
+        return collect(self::PROFILE_VISIBILITY_FIELDS)
+            ->mapWithKeys(fn (string $field): array => [$field => ['sometimes', 'boolean']])
+            ->all();
     }
 }
