@@ -35,7 +35,7 @@ class MatchForVotingController extends Controller
         if ($request->filled('player_id')) {
             $query->where(function ($q) use ($request) {
                 $q->where('player_one_id', $request->player_id)
-                ->orWhere('player_two_id', $request->player_id);
+                    ->orWhere('player_two_id', $request->player_id);
             });
         }
 
@@ -45,17 +45,17 @@ class MatchForVotingController extends Controller
             $query->where(function ($q) use ($search) {
 
                 $q->where('id', 'like', "%{$search}%")
-                ->orWhereHas('game', function ($gameQuery) use ($search) {
-                    $gameQuery->where('name', 'like', "%{$search}%");
-                })
-                ->orWhereHas('playerOne', function ($playerQuery) use ($search) {
-                    $playerQuery->where('artist_name', 'like', "%{$search}%")
-                                ->orWhere('first_name', 'like', "%{$search}%");
-                })
-                ->orWhereHas('playerTwo', function ($playerQuery) use ($search) {
-                    $playerQuery->where('artist_name', 'like', "%{$search}%")
-                                ->orWhere('first_name', 'like', "%{$search}%");
-                });
+                    ->orWhereHas('game', function ($gameQuery) use ($search) {
+                        $gameQuery->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('playerOne', function ($playerQuery) use ($search) {
+                        $playerQuery->where('artist_name', 'like', "%{$search}%")
+                            ->orWhere('first_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('playerTwo', function ($playerQuery) use ($search) {
+                        $playerQuery->where('artist_name', 'like', "%{$search}%")
+                            ->orWhere('first_name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -467,7 +467,7 @@ class MatchForVotingController extends Controller
                 'data' => [
                     'match_id' => $match->id,
                     'top_voters' => $topVoters,
-                ]
+                ],
             ]);
 
         } catch (\Exception $e) {

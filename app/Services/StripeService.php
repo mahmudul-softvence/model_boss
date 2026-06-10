@@ -17,8 +17,8 @@ class StripeService
             'One Time Custom Payment',
             1,
             [
-                'success_url' => config('app.frontend_url') . '/payment-success',
-                'cancel_url' => config('app.frontend_url') . '/payment-cancel',
+                'success_url' => config('app.frontend_url').'/payment-success',
+                'cancel_url' => config('app.frontend_url').'/payment-cancel',
                 'metadata' => [
                     'user_id' => $user->id,
                     'amount' => $amount,

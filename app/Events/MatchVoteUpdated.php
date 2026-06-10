@@ -3,15 +3,8 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use App\Models\GameMatch;
-use App\Models\PlayerVote;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
 class MatchVoteUpdated implements ShouldBroadcastNow
@@ -32,7 +25,7 @@ class MatchVoteUpdated implements ShouldBroadcastNow
 
     public function broadcastOn()
     {
-        return new Channel('match.' . $this->data['match_id']);
+        return new Channel('match.'.$this->data['match_id']);
     }
 
     public function broadcastAs()

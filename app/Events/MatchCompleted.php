@@ -13,7 +13,9 @@ class MatchCompleted implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public array $userIds;
+
     public int $matchId;
+
     public string $message;
 
     public function __construct(array $userIds, int $matchId, string $winnerName)
@@ -27,7 +29,7 @@ class MatchCompleted implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return collect($this->userIds)
-            ->map(fn (int $id) => new PrivateChannel('user.' . $id))
+            ->map(fn (int $id) => new PrivateChannel('user.'.$id))
             ->all();
     }
 
@@ -35,7 +37,7 @@ class MatchCompleted implements ShouldBroadcastNow
     {
         return [
             'match_id' => $this->matchId,
-            'message'  => $this->message,
+            'message' => $this->message,
         ];
     }
 

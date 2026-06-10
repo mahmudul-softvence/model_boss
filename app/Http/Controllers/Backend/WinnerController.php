@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Events\MatchCompleted;
 use App\Http\Controllers\Controller;
 use App\Jobs\PlatformFeeJob;
 use App\Models\CoinTransaction;
@@ -11,7 +12,6 @@ use App\Models\UserBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use App\Events\MatchCompleted;
 
 class WinnerController extends Controller
 {
@@ -70,8 +70,8 @@ class WinnerController extends Controller
 
                 if ($userIds->isNotEmpty()) {
 
-                    $winnerName = $winner?->artist_name 
-                        ?? $winner?->first_name 
+                    $winnerName = $winner?->artist_name
+                        ?? $winner?->first_name
                         ?? 'Unknown';
 
                     MatchCompleted::dispatch(

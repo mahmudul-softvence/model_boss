@@ -59,7 +59,7 @@ class HomeController extends Controller
             return $this->sendResponse([]);
         }
 
-        $artist = User::role('artist')
+        $artist = User::role(['user', 'artist'])
             ->where(function ($query) use ($search) {
                 $query->where('name', 'like', '%'.$search.'%')
                     ->orWhere('artist_name', 'like', '%'.$search.'%');

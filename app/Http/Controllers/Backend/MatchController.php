@@ -8,11 +8,11 @@ use App\Models\GameMatch;
 use App\Models\PlayerVote;
 use App\Models\Support;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
 
 class MatchController extends Controller
 {
@@ -63,13 +63,13 @@ class MatchController extends Controller
         }
 
         $matches = $query
-            ->orderByRaw("
+            ->orderByRaw('
                 CASE 
                     WHEN id = (SELECT id FROM game_matches ORDER BY created_at DESC LIMIT 1)
                     THEN 0
                     ELSE 1
                 END
-            ")
+            ')
             ->orderBy('pin_to_top', 'desc')
             ->orderBy('id', 'desc')
             ->paginate($perPage);
@@ -194,7 +194,7 @@ class MatchController extends Controller
             $players,
             'A match has been created and you have been selected as a player. Please review the rules carefully.',
             $players,
-            $data['rules'] ?? null 
+            $data['rules'] ?? null
         ))->toOthers();
 
         return response()->json([
@@ -427,7 +427,7 @@ class MatchController extends Controller
 
             $query->where(function ($q) use ($search) {
                 $q->where('artist_name', 'LIKE', "%{$search}%")
-                ->orWhere('first_name', 'LIKE', "%{$search}%");
+                    ->orWhere('first_name', 'LIKE', "%{$search}%");
             });
         }
 
@@ -469,19 +469,19 @@ class MatchController extends Controller
                         $sub->where('confirmation_status', 1)
                             ->where('type', '!=', 'live');
                     })
-                    ->orWhere('confirmation_status', 2);
+                        ->orWhere('confirmation_status', 2);
                 });
             })
             ->when($filter === 'upcoming', function ($query) {
                 $query->where('confirmation_status', 0);
             })
-            ->orderByRaw("
+            ->orderByRaw('
                 CASE 
                     WHEN id = (SELECT id FROM game_matches ORDER BY created_at DESC LIMIT 1)
                     THEN 0
                     ELSE 1
                 END
-            ")
+            ')
             ->orderBy('pin_to_top', 'desc')
             ->orderBy('id', 'desc')
             ->paginate($perPage);
@@ -492,14 +492,14 @@ class MatchController extends Controller
                 'id' => $match->playerOne->id,
                 'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
                 'image' => $match->playerOne->image,
-                'image_url' => $match->playerOne->image ? asset('storage/' . $match->playerOne->image) : null,
+                'image_url' => $match->playerOne->image ? asset('storage/'.$match->playerOne->image) : null,
             ] : null;
 
             $match->player_two = $match->playerTwo ? [
                 'id' => $match->playerTwo->id,
                 'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
                 'image' => $match->playerTwo->image,
-                'image_url' => $match->playerTwo->image ? asset('storage/' . $match->playerTwo->image) : null,
+                'image_url' => $match->playerTwo->image ? asset('storage/'.$match->playerTwo->image) : null,
             ] : null;
 
             unset($match->playerOne, $match->playerTwo);
@@ -511,7 +511,7 @@ class MatchController extends Controller
             'status' => true,
             'message' => 'Matches retrieved successfully',
             'data' => $data,
-            'model_picture' => $super->image ? asset('storage/' . $super->image) : null,
+            'model_picture' => $super->image ? asset('storage/'.$super->image) : null,
             'meta' => [
                 'current_page' => $matches->currentPage(),
                 'last_page' => $matches->lastPage(),
@@ -522,7 +522,7 @@ class MatchController extends Controller
             ],
         ]);
     }
-        
+
     public function socketMatch($id)
     {
         $super = User::where('id', 1)->select('image')->first();
@@ -660,14 +660,14 @@ class MatchController extends Controller
             'id' => $match->playerOne->id,
             'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
             'image' => $match->playerOne->image,
-            'image_url' => $match->playerOne->image ? asset('storage/' . $match->playerOne->image) : null,
+            'image_url' => $match->playerOne->image ? asset('storage/'.$match->playerOne->image) : null,
         ] : null;
 
         $match->player_two = $match->playerTwo ? [
             'id' => $match->playerTwo->id,
             'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
             'image' => $match->playerTwo->image,
-            'image_url' => $match->playerTwo->image ? asset('storage/' . $match->playerTwo->image) : null,
+            'image_url' => $match->playerTwo->image ? asset('storage/'.$match->playerTwo->image) : null,
         ] : null;
 
         unset($match->playerOne, $match->playerTwo);
@@ -707,8 +707,8 @@ class MatchController extends Controller
             'message' => $message,
             'data' => [
                 'id' => $match->id,
-                'pin_to_top' => $match->pin_to_top
-            ]
+                'pin_to_top' => $match->pin_to_top,
+            ],
         ]);
     }
 
@@ -731,9 +731,8 @@ class MatchController extends Controller
             'message' => $message,
             'data' => [
                 'id' => $match->id,
-                'remove_status' => $match->remove_status
-            ]
+                'remove_status' => $match->remove_status,
+            ],
         ]);
     }
-
 }

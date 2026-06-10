@@ -100,6 +100,7 @@ class SupportController extends Controller
                         $sortedSupports = $userSupports->sortByDesc('coin_amount')->values();
                         $first = $sortedSupports->first();
                         $supporter = $first->supporter;
+
                         return [
                             'user_id' => $first->user_id,
                             'serial_no' => str_pad($index + 1, 3, '0', STR_PAD_LEFT),
@@ -232,12 +233,12 @@ class SupportController extends Controller
 
                     if ($p1_total >= $p2_total) {
                         $bigger_player_id = $match->player_one_id;
-                        $bigger_total     = $p1_total;
-                        $smaller_total    = $p2_total;
+                        $bigger_total = $p1_total;
+                        $smaller_total = $p2_total;
                     } else {
                         $bigger_player_id = $match->player_two_id;
-                        $bigger_total     = $p2_total;
-                        $smaller_total    = $p1_total;
+                        $bigger_total = $p2_total;
+                        $smaller_total = $p1_total;
                     }
 
                     $excess = $bigger_total - $smaller_total;
@@ -280,7 +281,7 @@ class SupportController extends Controller
                     $match->update([
                         'player_one_total' => $smaller_total,
                         'player_two_total' => $smaller_total,
-                        'type'             => 'live',
+                        'type' => 'live',
                     ]);
 
                     foreach ($supports as $support) {
@@ -591,7 +592,7 @@ class SupportController extends Controller
                 $sortedSupports = $userSupports->sortByDesc('coin_amount')->values();
                 $first = $sortedSupports->first();
 
-                if (!$first) {
+                if (! $first) {
                     return null;
                 }
 
@@ -619,5 +620,4 @@ class SupportController extends Controller
             'data' => $topSupporters,
         ], 200);
     }
-
 }
