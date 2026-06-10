@@ -8,8 +8,8 @@ use App\Http\Resources\UserResource;
 use App\Models\LoginOtp;
 use App\Models\Referral;
 use App\Models\User;
-use App\Models\UserBalance;
 use App\Notifications\LoginOtpNotification;
+use App\Support\ProfileBalanceData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -181,17 +181,11 @@ class AuthController extends Controller
     public function me()
     {
         $user = auth()->user();
-        $userBalance = UserBalance::where('user_id', $user->id)->first();
+        $user->loadMissing('userBalance');
 
         $data = [
             'user' => UserResource::make($user),
-
-            'total_earning' => $userBalance->total_earning ?? 0,
-            'total_referral_earning' => $userBalance->total_referral_earning ?? 0,
-            'total_tip_received' => $userBalance->total_tip_received ?? 0,
-            'total_withdraw' => $userBalance->total_withdraw ?? 0,
-            'total_balance' => $userBalance->total_balance ?? 0,
-            'total_bet' => $userBalance->total_bet ?? 0,
+            ...ProfileBalanceData::forUser($user, viewer: $user),
         ];
 
         return $this->sendResponse($data, 'User informations.');

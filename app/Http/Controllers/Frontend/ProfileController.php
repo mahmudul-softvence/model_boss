@@ -7,7 +7,7 @@ use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\PostResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
-use App\Models\UserBalance;
+use App\Support\ProfileBalanceData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -75,13 +75,7 @@ class ProfileController extends Controller
         $data = [
             'user' => UserResource::make($user),
             'is_followed' => $isFollowed,
-
-            'total_earning' => $this->visibleBalanceAmount($user, $userBalance, 'total_earning', 'show_total_earning'),
-            'total_referral_earning' => $this->visibleBalanceAmount($user, $userBalance, 'total_referral_earning', 'show_total_referral_earning'),
-            'total_tip_received' => $this->visibleBalanceAmount($user, $userBalance, 'total_tip_received', 'show_total_tip_received'),
-            'total_withdraw' => $this->visibleBalanceAmount($user, $userBalance, 'total_withdraw', 'show_total_withdraw'),
-            'total_balance' => $userBalance->total_balance ?? 0,
-            'total_bet' => $userBalance->total_bet ?? 0,
+            ...ProfileBalanceData::forUser($user, $userBalance, auth()->user()),
         ];
 
         return $this->sendResponse($data);
@@ -228,15 +222,6 @@ class ProfileController extends Controller
         $user->save();
 
         return $this->sendResponse(UserResource::make($user->fresh()));
-    }
-
-    private function visibleBalanceAmount(User $user, ?UserBalance $userBalance, string $amountField, string $visibilityField): mixed
-    {
-        if ((bool) $user->{$visibilityField} || (auth()->check() && auth()->id() === $user->id)) {
-            return $userBalance?->{$amountField} ?? 0;
-        }
-
-        return null;
     }
 
     /**
