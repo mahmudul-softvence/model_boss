@@ -56,10 +56,6 @@ class StripeWithdrawController extends Controller
                         throw new \Exception('Insufficient balance.');
                     }
 
-                    if (! $userBalance) {
-                        throw new \Exception('User balance not found.');
-                    }
-
                     $account = Account::retrieve($user->stripe_account_id);
 
                     if (! $account->payouts_enabled) {

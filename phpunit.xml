@@ -28,7 +28,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
-        <env name="JWT_SECRET" value="testing"/>
+        <env name="JWT_SECRET" value="f4c62fff4e807750e1222757173b16244c775db9cb1b3959e2c21e0e27abbb0a"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>
 </phpunit>

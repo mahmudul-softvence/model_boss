@@ -31,10 +31,14 @@ class WinnerControllerTest extends TestCase
         $admin = $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
         $viewer = $this->createUserWithRole(UserRole::USER, 'viewer@example.com');
         $artist = $this->createUserWithRole(UserRole::ARTIST, 'artist@example.com');
-        $playerOne = User::factory()->create(['email' => 'player-one@example.com']);
+        $playerOne = User::factory()->create([
+            'email' => 'player-one@example.com',
+            'artist_name' => 'Champion',
+        ]);
         $playerTwo = User::factory()->create(['email' => 'player-two@example.com']);
 
         UserBalance::create(['user_id' => $viewer->id]);
+        UserBalance::create(['user_id' => $artist->id]);
 
         $match = GameMatch::create([
             'match_no' => '123456',
@@ -57,6 +61,16 @@ class WinnerControllerTest extends TestCase
             'match_no' => $match->match_no,
             'supported_player_id' => $playerOne->id,
             'user_id' => $viewer->id,
+            'coin_amount' => 25,
+            'result' => 'pending',
+        ]);
+
+        FinalSupport::create([
+            'support_id' => 2,
+            'match_id' => $match->id,
+            'match_no' => $match->match_no,
+            'supported_player_id' => $playerOne->id,
+            'user_id' => $artist->id,
             'coin_amount' => 25,
             'result' => 'pending',
         ]);
@@ -86,7 +100,7 @@ class WinnerControllerTest extends TestCase
             return in_array('private-user.'.$viewer->id, $channels, true)
                 && in_array('private-user.'.$artist->id, $channels, true)
                 && $event->broadcastAs() === 'match.completed'
-                && $event->broadcastWith()['message'] === 'Match is over.';
+                && $event->broadcastWith()['message'] === 'The match is over. Winner is Champion';
         });
 
         Bus::assertDispatched(PlatformFeeJob::class);

@@ -8,6 +8,7 @@ use App\Jobs\PlatformFeeJob;
 use App\Models\CoinTransaction;
 use App\Models\FinalSupport;
 use App\Models\GameMatch;
+use App\Models\User;
 use App\Models\UserBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +70,8 @@ class WinnerController extends Controller
                 $userIds = $supports->pluck('user_id')->unique();
 
                 if ($userIds->isNotEmpty()) {
+
+                    $winner = User::find($winnerId);
 
                     $winnerName = $winner?->artist_name
                         ?? $winner?->first_name

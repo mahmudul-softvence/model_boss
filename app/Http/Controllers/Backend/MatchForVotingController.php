@@ -10,7 +10,6 @@ use App\Models\GameMatch;
 use App\Models\MatchForVoting;
 use App\Models\MatchVoter;
 use App\Models\PlayerVote;
-use App\Models\User;
 use App\Models\UserBalance;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -390,17 +389,6 @@ class MatchForVotingController extends Controller
 
             $playerOneVotes = $playerVotes[$match->player_one_id] ?? 0;
             $playerTwoVotes = $playerVotes[$match->player_two_id] ?? 0;
-
-            $topUsers = PlayerVote::selectRaw('user_id, SUM(total_vote) as total_votes')
-                ->where('match_id', $match->id)
-                ->groupBy('user_id')
-                ->orderByDesc('total_votes')
-                ->limit(10)
-                ->pluck('total_votes', 'user_id');
-
-            $users = User::whereIn('id', $topUsers->keys())
-                ->get()
-                ->keyBy('id');
 
             $topVotersRaw = PlayerVote::selectRaw('user_id, SUM(total_vote) as total_votes')
                 ->where('match_id', $match->id)
