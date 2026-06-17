@@ -1,0 +1,380 @@
+<?php
+
+namespace App\Http\Controllers\Frontend;
+
+use App\Enums\ChallengeMode;
+use App\Enums\ChallengeStatus;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\ChallengeResource;
+use App\Jobs\ChallengeOfferExpiredJob;
+use App\Models\Challenge;
+use App\Models\ChallengeCreator;
+use App\Models\User;
+use App\Models\UserBalance;
+use App\Notifications\ChallengeAcceptedNotification;
+use App\Notifications\ChallengeCreatedAdminNotification;
+use App\Notifications\ChallengeRejectedNotification;
+use App\Services\ChallengeEscrowService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+
+class ChallengeController extends Controller
+{
+    public function __construct(private ChallengeEscrowService $escrow) {}
+
+    /**
+     * Whether the authenticated user is allowed to create challenges.
+     */
+    public function canCreate()
+    {
+        $user = auth('api')->user();
+
+        return response()->json([
+            'status' => true,
+            'can_create_challenge' => $this->userCanCreate($user->id),
+        ]);
+    }
+
+    /**
+     * Create a challenge offer and reserve the challenger's stake.
+     */
+    public function store(Request $request)
+    {
+        $user = auth('api')->user();
+
+        if (! $this->userCanCreate($user->id)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You are not allowed to create challenges.',
+            ], 403);
+        }
+
+        $request->validate([
+            'game_id' => 'required|exists:games,id',
+            'amount' => 'required|numeric|min:1',
+            'match_date' => 'required|date|after_or_equal:today',
+            'match_time' => 'required|date_format:H:i',
+            'mode' => ['required', Rule::in([ChallengeMode::UNIQUE->value, ChallengeMode::GLOBAL->value])],
+            'target_player_id' => [
+                Rule::requiredIf($request->mode === ChallengeMode::UNIQUE->value),
+                'nullable',
+                'exists:users,id',
+                Rule::notIn([$user->id]),
+            ],
+            'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'show_real_name' => 'nullable|boolean',
+            'memo' => 'nullable|string',
+            'duration_hours' => 'nullable|integer|min:1',
+        ]);
+
+        $durationHours = (int) ($request->duration_hours ?? 24);
+        $amount = (float) $request->amount;
+
+        $logoPath = $request->hasFile('logo')
+            ? $request->file('logo')->store('logos', 'public')
+            : null;
+
+        $challenge = DB::transaction(function () use ($request, $user, $amount, $durationHours, $logoPath) {
+
+            $challenge = Challenge::create([
+                'challenge_no' => $this->generateChallengeNo(),
+                'challenger_id' => $user->id,
+                'mode' => $request->mode,
+                'target_player_id' => $request->mode === ChallengeMode::UNIQUE->value
+                    ? $request->target_player_id
+                    : null,
+                'game_id' => $request->game_id,
+                'amount' => $amount,
+                'logo' => $logoPath,
+                'memo' => $request->memo,
+                'show_real_name' => $request->boolean('show_real_name', true),
+                'match_date' => $request->match_date,
+                'match_time' => $request->match_time,
+                'status' => ChallengeStatus::PENDING,
+                'duration_hours' => $durationHours,
+                'offer_expires_at' => now()->addHours($durationHours),
+            ]);
+
+            $this->escrow->hold($user->id, $amount, $challenge);
+
+            return $challenge;
+        });
+
+        ChallengeOfferExpiredJob::dispatch($challenge->id)->delay($challenge->offer_expires_at);
+
+        $this->notifyAdmins(new ChallengeCreatedAdminNotification($challenge));
+
+        $remaining = UserBalance::where('user_id', $user->id)->value('total_balance');
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Challenge created and is awaiting admin approval.',
+            'data' => [
+                'challenge_no' => $challenge->challenge_no,
+                'amount_deducted' => $amount,
+                'remaining_balance' => $remaining,
+                'duration' => $durationHours.' Hours',
+            ],
+        ], 201);
+    }
+
+    /**
+     * Accept an approved (offered) challenge by matching the stake.
+     */
+    public function accept(Request $request, $id)
+    {
+        $request->validate([
+            'terms_accepted' => 'accepted',
+        ]);
+
+        $user = auth('api')->user();
+
+        $challenge = DB::transaction(function () use ($user, $id) {
+
+            $challenge = Challenge::lockForUpdate()->findOrFail($id);
+
+            if ($challenge->status !== ChallengeStatus::OFFERED) {
+                abort(400, 'This challenge is not open for acceptance.');
+            }
+
+            if ($challenge->isExpired()) {
+                abort(400, 'This challenge offer has expired.');
+            }
+
+            if ($challenge->challenger_id === $user->id) {
+                abort(400, 'You cannot accept your own challenge.');
+            }
+
+            if ($challenge->mode === ChallengeMode::UNIQUE
+                && $challenge->target_player_id !== $user->id) {
+                abort(403, 'This challenge is reserved for another player.');
+            }
+
+            $this->escrow->hold($user->id, (float) $challenge->amount, $challenge);
+
+            $challenge->update([
+                'status' => ChallengeStatus::ACCEPTED,
+                'accepted_by_user_id' => $user->id,
+                'accepted_at' => now(),
+            ]);
+
+            return $challenge;
+        });
+
+        $challenge->challenger?->notify(new ChallengeAcceptedNotification($challenge));
+
+        $remaining = UserBalance::where('user_id', $user->id)->value('total_balance');
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Challenge accepted successfully.',
+            'data' => [
+                'challenge_no' => $challenge->challenge_no,
+                'amount_deducted' => $challenge->amount,
+                'remaining_balance' => $remaining,
+                'duration' => $challenge->duration_hours.' Hours',
+            ],
+        ]);
+    }
+
+    /**
+     * Target player declines a unique challenge; the challenger is refunded.
+     */
+    public function decline($id)
+    {
+        $user = auth('api')->user();
+
+        $challenge = DB::transaction(function () use ($user, $id) {
+
+            $challenge = Challenge::lockForUpdate()->findOrFail($id);
+
+            if ($challenge->status !== ChallengeStatus::OFFERED
+                || $challenge->mode !== ChallengeMode::UNIQUE) {
+                abort(400, 'This challenge cannot be declined.');
+            }
+
+            if ($challenge->target_player_id !== $user->id) {
+                abort(403, 'This challenge is not addressed to you.');
+            }
+
+            $this->escrow->refund($challenge->challenger_id, (float) $challenge->amount, $challenge);
+
+            $challenge->update(['status' => ChallengeStatus::DECLINED]);
+
+            return $challenge;
+        });
+
+        $challenge->challenger?->notify(new ChallengeRejectedNotification($challenge));
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Challenge declined.',
+        ]);
+    }
+
+    /**
+     * Challenger cancels their own offer before it is accepted.
+     */
+    public function cancel($id)
+    {
+        $user = auth('api')->user();
+
+        DB::transaction(function () use ($user, $id) {
+
+            $challenge = Challenge::lockForUpdate()->findOrFail($id);
+
+            if ($challenge->challenger_id !== $user->id) {
+                abort(403, 'You can only cancel your own challenge.');
+            }
+
+            if (! in_array($challenge->status, [ChallengeStatus::PENDING, ChallengeStatus::OFFERED], true)) {
+                abort(400, 'This challenge can no longer be cancelled.');
+            }
+
+            $this->escrow->refund($challenge->challenger_id, (float) $challenge->amount, $challenge);
+
+            $challenge->update(['status' => ChallengeStatus::CANCELLED]);
+        });
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Challenge cancelled and refunded.',
+        ]);
+    }
+
+    /**
+     * Public ranked list of challenge offers, ordered by amount desc.
+     */
+    public function index(Request $request)
+    {
+        $perPage = $request->per_page ?? 10;
+
+        $paginator = Challenge::query()
+            ->visible()
+            ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
+            ->orderByAmountDesc()
+            ->orderBy('id', 'desc')
+            ->paginate($perPage);
+
+        $offset = ($paginator->currentPage() - 1) * $paginator->perPage();
+
+        $paginator->getCollection()->transform(function ($challenge, $index) use ($offset) {
+            $challenge->rank = $offset + $index + 1;
+
+            return $challenge;
+        });
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Challenges retrieved successfully',
+            'data' => ChallengeResource::collection($paginator->getCollection()),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'prev' => $paginator->currentPage() > 1,
+                'next' => $paginator->hasMorePages(),
+            ],
+        ]);
+    }
+
+    /**
+     * Full challenge detail page payload.
+     */
+    public function show($id)
+    {
+        $challenge = Challenge::query()
+            ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
+            ->findOrFail($id);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Challenge retrieved successfully',
+            'data' => new ChallengeResource($challenge),
+        ]);
+    }
+
+    /**
+     * Challenges created by a given user (for their profile).
+     */
+    public function userChallenges(Request $request, $id)
+    {
+        $perPage = $request->per_page ?? 10;
+
+        $paginator = Challenge::query()
+            ->where('challenger_id', $id)
+            ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
+            ->orderBy('id', 'desc')
+            ->paginate($perPage);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'User challenges retrieved successfully',
+            'data' => ChallengeResource::collection($paginator->getCollection()),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'prev' => $paginator->currentPage() > 1,
+                'next' => $paginator->hasMorePages(),
+            ],
+        ]);
+    }
+
+    /**
+     * Top challengers by total staked amount.
+     */
+    public function leaderboard(Request $request)
+    {
+        $limit = $request->limit ?? 10;
+
+        $leaders = Challenge::query()
+            ->selectRaw('challenger_id, SUM(amount) as total_amount')
+            ->groupBy('challenger_id')
+            ->orderByDesc('total_amount')
+            ->with('challenger:id,name,artist_name,first_name,image')
+            ->limit($limit)
+            ->get()
+            ->values()
+            ->map(function ($row, $index) {
+                $user = $row->challenger;
+
+                return [
+                    'rank' => $index + 1,
+                    'user_id' => $row->challenger_id,
+                    'name' => $user?->artist_name ?: $user?->first_name,
+                    'image' => $user?->image_url,
+                    'total_amount' => $row->total_amount,
+                ];
+            });
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Big boss challengers retrieved successfully',
+            'data' => $leaders,
+        ]);
+    }
+
+    private function userCanCreate(int $userId): bool
+    {
+        return ChallengeCreator::where('user_id', $userId)->exists();
+    }
+
+    private function generateChallengeNo(): string
+    {
+        do {
+            $no = (string) random_int(100000, 999999);
+        } while (Challenge::where('challenge_no', $no)->exists());
+
+        return $no;
+    }
+
+    private function notifyAdmins($notification): void
+    {
+        User::role('super_admin')->get()
+            ->each(fn ($admin) => $admin->notify($notification));
+    }
+}

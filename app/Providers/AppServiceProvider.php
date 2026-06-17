@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Setting;
 use App\Support\CredentialSettings;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Apple\Provider as AppleProvider;
 use SocialiteProviders\Manager\SocialiteWasCalled;
@@ -21,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(function (SocialiteWasCalled $event): void {
             $event->extendSocialite('apple', AppleProvider::class);
         });
+
+        // Allow the Scramble API docs (/docs/api) to be viewed in every environment.
+        Gate::define('viewApiDocs', fn ($user = null): bool => true);
 
         $this->bootCredentialsFromDatabase();
     }

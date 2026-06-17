@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\Backend\Admin\ChallengeController as AdminChallengeController;
 use App\Http\Controllers\Backend\CategoryController;
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\GameController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Backend\MatchForVotingController;
 use App\Http\Controllers\Backend\SupportController;
 use App\Http\Controllers\Backend\TipController;
 use App\Http\Controllers\Backend\WinnerController;
+use App\Http\Controllers\Frontend\ChallengeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', function () {
@@ -44,6 +46,12 @@ Route::group(['middleware' => 'api'], function () {
     Route::get('bigboss-supporter', [SupportController::class, 'bigBossSupporter']);
 
     Route::get('match-for-voting', [MatchForVotingController::class, 'todaysMatches']);
+
+    // Big Boss Challenge (public)
+    Route::get('challenges', [ChallengeController::class, 'index']);
+    Route::get('challenges/{id}', [ChallengeController::class, 'show'])->whereNumber('id');
+    Route::get('users/{id}/challenges', [ChallengeController::class, 'userChallenges'])->whereNumber('id');
+    Route::get('bigboss-challenger', [ChallengeController::class, 'leaderboard']);
 });
 
 Route::middleware(['auth:api'])->group(function () {
@@ -64,6 +72,13 @@ Route::middleware(['auth:api'])->group(function () {
 
     Route::post('/vote', [MatchForVotingController::class, 'vote']);
     Route::post('/vote-player/{match_id}', [MatchForVotingController::class, 'votePlayer']);
+
+    // Big Boss Challenge (player actions)
+    Route::get('my-challenge-access', [ChallengeController::class, 'canCreate']);
+    Route::post('challenges', [ChallengeController::class, 'store']);
+    Route::post('challenges/{id}/accept', [ChallengeController::class, 'accept']);
+    Route::post('challenges/{id}/decline', [ChallengeController::class, 'decline']);
+    Route::post('challenges/{id}/cancel', [ChallengeController::class, 'cancel']);
 });
 
 Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'admin'], function () {
@@ -115,6 +130,17 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::delete('match-voting/{id}', [MatchForVotingController::class, 'destroy']);
 
     Route::get('all-transaction', [WinnerController::class, 'adminTransactions']);
+
+    // Big Boss Challenge (admin)
+    Route::get('challenges', [AdminChallengeController::class, 'index']);
+    Route::get('challenge-stats', [AdminChallengeController::class, 'stats']);
+    Route::post('challenges/{id}/approve', [AdminChallengeController::class, 'approve']);
+    Route::post('challenges/{id}/reject', [AdminChallengeController::class, 'reject']);
+    Route::post('challenges/{id}/winner', [AdminChallengeController::class, 'winner']);
+    Route::post('challenges/{id}/cancel', [AdminChallengeController::class, 'cancel']);
+    Route::delete('challenges/{id}', [AdminChallengeController::class, 'destroy']);
+    Route::post('users/{user}/challenge-access', [AdminChallengeController::class, 'grantAccess']);
+    Route::delete('users/{user}/challenge-access', [AdminChallengeController::class, 'revokeAccess']);
 
 });
 
