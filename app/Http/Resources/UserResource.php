@@ -26,7 +26,7 @@ class UserResource extends JsonResource
             'first_name' => $nameVisible ? $this->first_name : null,
             'middle_name' => $nameVisible ? $this->middle_name : null,
             'last_name' => $nameVisible ? $this->last_name : null,
-            'artist_name' => $nameVisible ? $this->artist_name : null,
+            'artist_name' => $this->artist_name,
             'email' => $emailVisible ? $this->email : null,
             'show_email' => (bool) $this->show_email,
             'show_name' => (bool) $this->show_name,

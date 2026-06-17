@@ -105,7 +105,7 @@ class ArtistEmailVisibilityTest extends TestCase
         $response->assertJsonPath('data.user.first_name', null);
         $response->assertJsonPath('data.user.middle_name', null);
         $response->assertJsonPath('data.user.last_name', null);
-        $response->assertJsonPath('data.user.artist_name', null);
+        $response->assertJsonPath('data.user.artist_name', 'Secret Stage');
         $response->assertJsonPath('data.total_earning', null);
         $response->assertJsonPath('data.total_referral_earning', null);
         $response->assertJsonPath('data.total_tip_received', null);
