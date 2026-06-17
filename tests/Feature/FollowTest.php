@@ -2,13 +2,100 @@
 
 namespace Tests\Feature;
 
+use App\Models\Follower;
 use App\Models\User;
+use App\Notifications\NewFollowerNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class FollowTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_following_a_user_sends_notification_to_that_user()
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $this->actingAs($user, 'api')
+            ->postJson("/api/follow/{$other->id}")
+            ->assertStatus(200);
+
+        Notification::assertSentTo(
+            $other,
+            NewFollowerNotification::class,
+            function (NewFollowerNotification $notification, array $channels) use ($other, $user) {
+                $this->assertEqualsCanonicalizing(['mail', 'database', 'broadcast'], $notification->via($other));
+
+                return in_array('mail', $channels)
+                    && in_array('database', $channels)
+                    && in_array('broadcast', $channels)
+                    && $notification->toDatabase($other)['follower_id'] === $user->id;
+            }
+        );
+    }
+
+    public function test_following_again_does_not_send_duplicate_notification()
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $this->actingAs($user, 'api')->postJson("/api/follow/{$other->id}")->assertStatus(200);
+        $this->actingAs($user, 'api')->postJson("/api/follow/{$other->id}")->assertStatus(200);
+
+        Notification::assertSentToTimes($other, NewFollowerNotification::class, 1);
+    }
+
+    public function test_unfollow_then_follow_again_does_not_resend_notification()
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $this->actingAs($user, 'api')->postJson("/api/follow/{$other->id}")->assertStatus(200);
+        $this->actingAs($user, 'api')->deleteJson("/api/unfollow/{$other->id}")->assertStatus(200);
+
+        // The follow row is restored, so re-following must not notify again.
+        $this->actingAs($user, 'api')->postJson("/api/follow/{$other->id}")->assertStatus(200);
+
+        Notification::assertSentToTimes($other, NewFollowerNotification::class, 1);
+    }
+
+    public function test_unfollow_soft_deletes_the_follow_row()
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $this->actingAs($user, 'api')->postJson("/api/follow/{$other->id}")->assertStatus(200);
+        $this->actingAs($user, 'api')->deleteJson("/api/unfollow/{$other->id}")->assertStatus(200);
+
+        // Row remains, only soft-deleted.
+        $this->assertDatabaseHas('followers', [
+            'follower_id' => $user->id,
+            'following_id' => $other->id,
+        ]);
+        $this->assertNotNull(
+            Follower::withTrashed()
+                ->where('follower_id', $user->id)
+                ->where('following_id', $other->id)
+                ->value('deleted_at')
+        );
+
+        // Re-following restores the same row (no duplicate, counts back to 1).
+        $this->actingAs($user, 'api')->postJson("/api/follow/{$other->id}")->assertStatus(200);
+
+        $this->assertEquals(1, Follower::where('follower_id', $user->id)
+            ->where('following_id', $other->id)->count());
+
+        $other->refresh();
+        $this->assertEquals(1, $other->followers_count);
+    }
 
     public function test_follow_counts_and_idempotency()
     {
