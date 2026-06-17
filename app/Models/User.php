@@ -47,6 +47,8 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'show_total_referral_earning',
         'show_total_tip_received',
         'show_total_withdraw',
+        'show_total_balance',
+        'show_total_bet',
         'is_player',
     ];
 
@@ -68,6 +70,8 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'show_total_referral_earning' => 'boolean',
             'show_total_tip_received' => 'boolean',
             'show_total_withdraw' => 'boolean',
+            'show_total_balance' => 'boolean',
+            'show_total_bet' => 'boolean',
         ];
     }
 

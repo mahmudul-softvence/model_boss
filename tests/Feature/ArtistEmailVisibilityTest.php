@@ -81,6 +81,8 @@ class ArtistEmailVisibilityTest extends TestCase
             'show_total_referral_earning' => false,
             'show_total_tip_received' => false,
             'show_total_withdraw' => false,
+            'show_total_balance' => false,
+            'show_total_bet' => false,
         ]);
         $artist->assignRole(UserRole::ARTIST);
         $artist->userBalance()->create([
@@ -88,6 +90,8 @@ class ArtistEmailVisibilityTest extends TestCase
             'total_referral_earning' => 25.25,
             'total_tip_received' => 10.75,
             'total_withdraw' => 40.00,
+            'total_balance' => 60.00,
+            'total_bet' => 15.00,
         ]);
 
         $viewer = User::factory()->create();
@@ -106,11 +110,15 @@ class ArtistEmailVisibilityTest extends TestCase
         $response->assertJsonPath('data.total_referral_earning', null);
         $response->assertJsonPath('data.total_tip_received', null);
         $response->assertJsonPath('data.total_withdraw', null);
+        $response->assertJsonPath('data.total_balance', null);
+        $response->assertJsonPath('data.total_bet', null);
         $response->assertJsonPath('data.user.show_name', false);
         $response->assertJsonPath('data.user.show_total_earning', false);
         $response->assertJsonPath('data.user.show_total_referral_earning', false);
         $response->assertJsonPath('data.user.show_total_tip_received', false);
         $response->assertJsonPath('data.user.show_total_withdraw', false);
+        $response->assertJsonPath('data.user.show_total_balance', false);
+        $response->assertJsonPath('data.user.show_total_bet', false);
     }
 
     public function test_user_always_sees_own_hidden_name_and_private_totals(): void
@@ -124,6 +132,8 @@ class ArtistEmailVisibilityTest extends TestCase
             'show_total_referral_earning' => false,
             'show_total_tip_received' => false,
             'show_total_withdraw' => false,
+            'show_total_balance' => false,
+            'show_total_bet' => false,
         ]);
         $user->assignRole(UserRole::USER);
         $user->userBalance()->create([
@@ -131,6 +141,8 @@ class ArtistEmailVisibilityTest extends TestCase
             'total_referral_earning' => 25.25,
             'total_tip_received' => 10.75,
             'total_withdraw' => 40.00,
+            'total_balance' => 60.00,
+            'total_bet' => 15.00,
         ]);
 
         $response = $this->actingAs($user, 'api')
@@ -145,6 +157,8 @@ class ArtistEmailVisibilityTest extends TestCase
         $this->assertSame(25.25, (float) $data['total_referral_earning']);
         $this->assertSame(10.75, (float) $data['total_tip_received']);
         $this->assertSame(40.00, (float) $data['total_withdraw']);
+        $this->assertSame(60.00, (float) $data['total_balance']);
+        $this->assertSame(15.00, (float) $data['total_bet']);
     }
 
     public function test_me_route_shows_hidden_profile_fields_to_authenticated_user(): void
@@ -244,6 +258,8 @@ class ArtistEmailVisibilityTest extends TestCase
                 'show_total_referral_earning' => false,
                 'show_total_tip_received' => false,
                 'show_total_withdraw' => false,
+                'show_total_balance' => false,
+                'show_total_bet' => false,
             ]);
 
         $response->assertOk();
@@ -253,6 +269,8 @@ class ArtistEmailVisibilityTest extends TestCase
         $response->assertJsonPath('data.show_total_referral_earning', false);
         $response->assertJsonPath('data.show_total_tip_received', false);
         $response->assertJsonPath('data.show_total_withdraw', false);
+        $response->assertJsonPath('data.show_total_balance', false);
+        $response->assertJsonPath('data.show_total_bet', false);
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
             'show_email' => false,
@@ -261,6 +279,8 @@ class ArtistEmailVisibilityTest extends TestCase
             'show_total_referral_earning' => false,
             'show_total_tip_received' => false,
             'show_total_withdraw' => false,
+            'show_total_balance' => false,
+            'show_total_bet' => false,
         ]);
     }
 

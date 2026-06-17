@@ -34,6 +34,8 @@ class UserResource extends JsonResource
             'show_total_referral_earning' => (bool) $this->show_total_referral_earning,
             'show_total_tip_received' => (bool) $this->show_total_tip_received,
             'show_total_withdraw' => (bool) $this->show_total_withdraw,
+            'show_total_balance' => (bool) $this->show_total_balance,
+            'show_total_bet' => (bool) $this->show_total_bet,
             'phone_number' => $this->phone_number,
             'nationality' => $this->nationality,
             'address' => $this->address,

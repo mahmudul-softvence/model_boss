@@ -21,6 +21,8 @@ class ProfileController extends Controller
         'show_total_referral_earning',
         'show_total_tip_received',
         'show_total_withdraw',
+        'show_total_balance',
+        'show_total_bet',
     ];
 
     public function update(UpdateProfileRequest $request)

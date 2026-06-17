@@ -27,8 +27,8 @@ class ProfileBalanceData
             'total_referral_earning' => self::visibleAmount($user, $userBalance, $isOwner, 'total_referral_earning', 'show_total_referral_earning'),
             'total_tip_received' => self::visibleAmount($user, $userBalance, $isOwner, 'total_tip_received', 'show_total_tip_received'),
             'total_withdraw' => self::visibleAmount($user, $userBalance, $isOwner, 'total_withdraw', 'show_total_withdraw'),
-            'total_balance' => $userBalance?->total_balance ?? 0,
-            'total_bet' => $userBalance?->total_bet ?? 0,
+            'total_balance' => self::visibleAmount($user, $userBalance, $isOwner, 'total_balance', 'show_total_balance'),
+            'total_bet' => self::visibleAmount($user, $userBalance, $isOwner, 'total_bet', 'show_total_bet'),
         ];
     }
 
