@@ -25,7 +25,7 @@ class UpdateNewsRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
             'status' => 'required|in:not_published,published',
             'is_featured' => 'boolean',
         ];
