@@ -266,6 +266,63 @@ class ChallengeTest extends TestCase
         $this->assertSame([1, 2, 3], $ranks);
     }
 
+    public function test_target_player_can_list_incoming_challenges(): void
+    {
+        $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+
+        $target = $this->player('target@example.com', balance: 1000);
+        $other = $this->player('other@example.com', balance: 1000);
+
+        // Two live offers addressed to the target...
+        Challenge::factory()->offered()->count(2)->create(['target_player_id' => $target->id]);
+        // ...one addressed to someone else...
+        Challenge::factory()->offered()->create(['target_player_id' => $other->id]);
+        // ...and one still pending admin approval for the target.
+        Challenge::factory()->create(['target_player_id' => $target->id]);
+
+        $response = $this->withHeaders($this->authHeadersFor($target))
+            ->getJson('/api/challenges-for-me')
+            ->assertOk();
+
+        // Default view shows only live (offered) offers addressed to the target.
+        $response->assertJsonPath('meta.total', 2);
+
+        foreach ($response->json('data') as $row) {
+            $this->assertSame($target->id, $row['target_player']['id']);
+            $this->assertSame(ChallengeStatus::OFFERED->value, $row['status']);
+        }
+
+        // status=all also includes the pending one.
+        $this->withHeaders($this->authHeadersFor($target))
+            ->getJson('/api/challenges-for-me?status=all')
+            ->assertJsonPath('meta.total', 3);
+    }
+
+    public function test_challenge_offer_notifies_the_target_via_mail_database_and_broadcast(): void
+    {
+        $admin = $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+        $game = $this->createGame();
+        $challenger = $this->player('challenger@example.com', balance: 1000, canCreate: true);
+        $target = $this->player('target@example.com', balance: 1000);
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson('/api/challenges', $this->offerPayload($game, $target));
+
+        $challenge = Challenge::first();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/approve")
+            ->assertOk();
+
+        Notification::assertSentTo(
+            $target,
+            ChallengeOfferNotification::class,
+            fn ($notification, array $channels) => in_array('mail', $channels, true)
+                && in_array('database', $channels, true)
+                && in_array('broadcast', $channels, true),
+        );
+    }
+
     // Helpers ---------------------------------------------------------------
 
     private function seedRoles(): void
