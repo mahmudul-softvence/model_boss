@@ -75,6 +75,7 @@ Route::middleware(['auth:api'])->group(function () {
 
     // Big Boss Challenge (player actions)
     Route::get('my-challenge-access', [ChallengeController::class, 'canCreate']);
+    Route::get('challenges-for-me', [ChallengeController::class, 'incoming']);
     Route::post('challenges', [ChallengeController::class, 'store']);
     Route::post('challenges/{id}/accept', [ChallengeController::class, 'accept']);
     Route::post('challenges/{id}/decline', [ChallengeController::class, 'decline']);
