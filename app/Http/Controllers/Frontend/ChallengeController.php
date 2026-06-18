@@ -30,8 +30,7 @@ class ChallengeController extends Controller
     {
         $user = auth('api')->user();
 
-        return response()->json([
-            'status' => true,
+        return $this->sendResponse([
             'can_create_challenge' => $this->userCanCreate($user->id),
         ]);
     }
@@ -44,10 +43,7 @@ class ChallengeController extends Controller
         $user = auth('api')->user();
 
         if (! $this->userCanCreate($user->id)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'You are not allowed to create challenges.',
-            ], 403);
+            return $this->sendError('You are not allowed to create challenges.', [], 403);
         }
 
         $request->validate([
@@ -107,16 +103,12 @@ class ChallengeController extends Controller
 
         $remaining = UserBalance::where('user_id', $user->id)->value('total_balance');
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Challenge created and is awaiting admin approval.',
-            'data' => [
-                'challenge_no' => $challenge->challenge_no,
-                'amount_deducted' => $amount,
-                'remaining_balance' => $remaining,
-                'duration' => $durationHours.' Hours',
-            ],
-        ], 201);
+        return $this->sendResponse([
+            'challenge_no' => $challenge->challenge_no,
+            'amount_deducted' => $amount,
+            'remaining_balance' => $remaining,
+            'duration' => $durationHours.' Hours',
+        ], 'Challenge created and is awaiting admin approval.', 201);
     }
 
     /**
@@ -166,16 +158,12 @@ class ChallengeController extends Controller
 
         $remaining = UserBalance::where('user_id', $user->id)->value('total_balance');
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Challenge accepted successfully.',
-            'data' => [
-                'challenge_no' => $challenge->challenge_no,
-                'amount_deducted' => $challenge->amount,
-                'remaining_balance' => $remaining,
-                'duration' => $challenge->duration_hours.' Hours',
-            ],
-        ]);
+        return $this->sendResponse([
+            'challenge_no' => $challenge->challenge_no,
+            'amount_deducted' => $challenge->amount,
+            'remaining_balance' => $remaining,
+            'duration' => $challenge->duration_hours.' Hours',
+        ], 'Challenge accepted successfully.');
     }
 
     /**
@@ -207,10 +195,7 @@ class ChallengeController extends Controller
 
         $challenge->challenger?->notify(new ChallengeRejectedNotification($challenge));
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Challenge declined.',
-        ]);
+        return $this->sendResponse([], 'Challenge declined.');
     }
 
     /**
@@ -237,10 +222,7 @@ class ChallengeController extends Controller
             $challenge->update(['status' => ChallengeStatus::CANCELLED]);
         });
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Challenge cancelled and refunded.',
-        ]);
+        return $this->sendResponse([], 'Challenge cancelled and refunded.');
     }
 
     /**
@@ -265,19 +247,10 @@ class ChallengeController extends Controller
             return $challenge;
         });
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Challenges retrieved successfully',
-            'data' => ChallengeResource::collection($paginator->getCollection()),
-            'meta' => [
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'prev' => $paginator->currentPage() > 1,
-                'next' => $paginator->hasMorePages(),
-            ],
-        ]);
+        return $this->sendResponse(
+            ChallengeResource::collection($paginator),
+            'Challenges retrieved successfully',
+        );
     }
 
     /**
@@ -289,11 +262,10 @@ class ChallengeController extends Controller
             ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
             ->findOrFail($id);
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Challenge retrieved successfully',
-            'data' => new ChallengeResource($challenge),
-        ]);
+        return $this->sendResponse(
+            new ChallengeResource($challenge),
+            'Challenge retrieved successfully',
+        );
     }
 
     /**
@@ -309,19 +281,35 @@ class ChallengeController extends Controller
             ->orderBy('id', 'desc')
             ->paginate($perPage);
 
-        return response()->json([
-            'status' => true,
-            'message' => 'User challenges retrieved successfully',
-            'data' => ChallengeResource::collection($paginator->getCollection()),
-            'meta' => [
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'prev' => $paginator->currentPage() > 1,
-                'next' => $paginator->hasMorePages(),
-            ],
-        ]);
+        return $this->sendResponse(
+            ChallengeResource::collection($paginator),
+            'User challenges retrieved successfully',
+        );
+    }
+
+    /**
+     * Challenges directed at the authenticated user (incoming offers).
+     *
+     * Defaults to live offers awaiting a response. Pass `?status=all` to see
+     * every challenge ever addressed to the user, or a specific status value.
+     */
+    public function incoming(Request $request)
+    {
+        $user = auth('api')->user();
+        $perPage = $request->per_page ?? 10;
+        $status = $request->input('status', ChallengeStatus::OFFERED->value);
+
+        $paginator = Challenge::query()
+            ->where('target_player_id', $user->id)
+            ->when($status !== 'all', fn ($q) => $q->where('status', $status))
+            ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
+            ->orderBy('id', 'desc')
+            ->paginate($perPage);
+
+        return $this->sendResponse(
+            ChallengeResource::collection($paginator),
+            'Incoming challenges retrieved successfully',
+        );
     }
 
     /**
@@ -351,11 +339,7 @@ class ChallengeController extends Controller
                 ];
             });
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Big boss challengers retrieved successfully',
-            'data' => $leaders,
-        ]);
+        return $this->sendResponse($leaders, 'Big boss challengers retrieved successfully');
     }
 
     private function userCanCreate(int $userId): bool
