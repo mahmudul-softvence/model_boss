@@ -630,6 +630,7 @@ class MatchController extends Controller
             'id' => $p1->id,
             'name' => $p1->artist_name ?: $p1->first_name,
             'image' => $p1->image ? asset('storage/'.$p1->image) : null,
+            'total_amount' => (int) $playerOneSupport->total_amount,
         ] : null;
 
         $playerTwoSupport = Support::with('supporter:id,artist_name,first_name,image')
@@ -646,6 +647,7 @@ class MatchController extends Controller
             'id' => $p2->id,
             'name' => $p2->artist_name ?: $p2->first_name,
             'image' => $p2->image ? asset('storage/'.$p2->image) : null,
+            'total_amount' => (int) $playerTwoSupport->total_amount,
         ] : null;
 
         $playerOneTotalSupporter = Support::where('match_id', $id)

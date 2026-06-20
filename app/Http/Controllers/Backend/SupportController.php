@@ -138,6 +138,7 @@ class SupportController extends Controller
                         'image' => $playerOneSupport->supporter->image
                             ? asset('storage/'.$playerOneSupport->supporter->image)
                             : null,
+                        'total_amount' => (int) $playerOneSupport->total_amount,
                     ]
                     : null;
 
@@ -148,6 +149,7 @@ class SupportController extends Controller
                         'image' => $playerTwoSupport->supporter->image
                             ? asset('storage/'.$playerTwoSupport->supporter->image)
                             : null,
+                        'total_amount' => (int) $playerTwoSupport->total_amount,
                     ]
                     : null;
 
