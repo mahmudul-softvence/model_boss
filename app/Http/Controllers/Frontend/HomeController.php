@@ -60,12 +60,24 @@ class HomeController extends Controller
         }
 
         $artist = User::role(['user', 'artist'])
+            ->withCount(['followers', 'following'])
             ->where(function ($query) use ($search) {
                 $query->where('name', 'like', '%'.$search.'%')
                     ->orWhere('artist_name', 'like', '%'.$search.'%');
             })
             ->get();
 
-        return $this->sendResponse(UserResource::collection($artist));
+        $authFollowingIds = $request->user()
+            ? $request->user()->following()->pluck('following_id')->all()
+            : [];
+
+        $data = $artist->map(function ($user) use ($authFollowingIds, $request) {
+            $resource = UserResource::make($user)->toArray($request);
+            $resource['is_following'] = in_array($user->id, $authFollowingIds, true);
+
+            return $resource;
+        });
+
+        return $this->sendResponse($data);
     }
 }
