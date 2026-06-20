@@ -7,6 +7,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Follower;
 use App\Models\User;
 use App\Notifications\NewFollowerNotification;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FollowController extends Controller
@@ -84,5 +85,57 @@ class FollowController extends Controller
         });
 
         return $this->sendResponse([], 'Unfollowed successfully');
+    }
+
+    /**
+     * Paginated followers of the given user, each flagged with `is_following`
+     * to indicate whether the authenticated user already follows them.
+     */
+    public function userFollowers(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $limit = $request->query('limit', 20);
+
+        $authFollowingIds = auth()->user()->following()->pluck('following_id')->all();
+
+        $followers = $user->followers()->latest()->paginate($limit);
+
+        $followers->getCollection()->transform(function ($follower) use ($authFollowingIds, $request) {
+            $resource = UserResource::make($follower)->toArray($request);
+            $resource['is_following'] = in_array($follower->id, $authFollowingIds, true);
+
+            return $resource;
+        });
+
+        return $this->sendResponse([
+            'followers' => $followers,
+        ]);
+    }
+
+    /**
+     * Paginated accounts the given user is following, each flagged with
+     * `is_following` relative to the authenticated user.
+     */
+    public function userFollowing(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $limit = $request->query('limit', 20);
+
+        $authFollowingIds = auth()->user()->following()->pluck('following_id')->all();
+
+        $following = $user->following()->latest()->paginate($limit);
+
+        $following->getCollection()->transform(function ($followee) use ($authFollowingIds, $request) {
+            $resource = UserResource::make($followee)->toArray($request);
+            $resource['is_following'] = in_array($followee->id, $authFollowingIds, true);
+
+            return $resource;
+        });
+
+        return $this->sendResponse([
+            'following' => $following,
+        ]);
     }
 }
