@@ -30,6 +30,9 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('following/list', [ProfileController::class, 'followingList']);
     Route::get('see_follower', [ProfileController::class, 'see_follower']);
     Route::get('see_following', [ProfileController::class, 'see_following']);
+    // Followers/following of a specific user (e.g. after searching an artist)
+    Route::get('users/{id}/followers', [FollowController::class, 'userFollowers']);
+    Route::get('users/{id}/following', [FollowController::class, 'userFollowing']);
 
     // Profile
     Route::post('profile/update', [ProfileController::class, 'update']);
