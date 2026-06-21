@@ -26,8 +26,9 @@ class NewFollowerNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('You have a new follower – '.$this->follower->name)
+            ->subject('You have a new follower – ' . $this->follower->name)
             ->view('emails.new-follower', [
+                'follower_id' => $this->follower->id,
                 'notifiable_name' => $notifiable->name,
                 'follower_name' => $this->follower->name,
             ]);
@@ -60,7 +61,7 @@ class NewFollowerNotification extends Notification implements ShouldQueue
             'type' => 'user.new_follower',
             'follower_id' => $this->follower->id,
             'follower_name' => $this->follower->name,
-            'message' => $this->follower->name.' just followed you.',
+            'message' => $this->follower->name . ' just followed you.',
         ];
     }
 }
