@@ -45,6 +45,7 @@ class UserResource extends JsonResource
             'social_verification_status' => (bool) $this->social_verification_status,
             'social_verification_number' => $this->social_verification_status ? $this->social_verification_number : null,
             'is_player' => (bool) $this->is_player,
+            'is_challenger' => $this->whenHas('is_challenger', fn ($value) => (bool) $value),
             'image' => $this->image_url,
             'provider' => $this->provider,
             'verified_at' => ! is_null($this->email_verified_at),

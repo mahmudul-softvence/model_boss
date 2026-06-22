@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Notifications\VerifyEmailQueued;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -130,6 +131,11 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     public function suspension()
     {
         return $this->hasOne(UserSuspension::class);
+    }
+
+    public function challengeCreator(): HasOne
+    {
+        return $this->hasOne(ChallengeCreator::class);
     }
 
     public function following()

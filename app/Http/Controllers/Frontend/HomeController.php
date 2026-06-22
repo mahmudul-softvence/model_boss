@@ -13,6 +13,8 @@ use App\Models\Gallery;
 use App\Models\Game;
 use App\Models\News;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -40,6 +42,19 @@ class HomeController extends Controller
         return $this->sendResponse(GameResource::collection($games));
     }
 
+    public function get_users_for_select(Request $request): JsonResponse
+    {
+        $users = User::latest()
+            ->limit(10)
+            ->get()
+            ->map(fn(User $user): array => [
+                'id' => $user->id,
+                'text' => $this->selectUserLabel($user),
+            ]);
+
+        return $this->sendResponse($users);
+    }
+
     public function get_live_staus()
     {
         $live_status = CheckLiveStatus::get();
@@ -62,8 +77,8 @@ class HomeController extends Controller
         $artist = User::role(['user', 'artist'])
             ->withCount(['followers', 'following'])
             ->where(function ($query) use ($search) {
-                $query->where('name', 'like', '%'.$search.'%')
-                    ->orWhere('artist_name', 'like', '%'.$search.'%');
+                $query->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('artist_name', 'like', '%' . $search . '%');
             })
             ->get();
 
@@ -79,5 +94,18 @@ class HomeController extends Controller
         });
 
         return $this->sendResponse($data);
+    }
+
+    private function selectUserLabel(User $user): string
+    {
+        if (! empty($user->artist_name)) {
+            return $user->artist_name;
+        }
+
+        if ($user->show_name && ($user->full_name || $user->name)) {
+            return $user->full_name ?? $user->name;
+        }
+
+        return 'User #' . $user->id;
     }
 }
