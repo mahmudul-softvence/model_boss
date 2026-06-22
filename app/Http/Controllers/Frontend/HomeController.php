@@ -44,7 +44,17 @@ class HomeController extends Controller
 
     public function get_users_for_select(Request $request): JsonResponse
     {
+        $search = $request->query('search');
+
         $users = User::latest()
+            ->when($search, function (Builder $query) use ($search): void {
+                $query->where(function (Builder $query) use ($search): void {
+                    $query->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('artist_name', 'like', '%' . $search . '%')
+                        ->orWhere('first_name', 'like', '%' . $search . '%')
+                        ->orWhere('last_name', 'like', '%' . $search . '%');
+                });
+            })
             ->limit(10)
             ->get()
             ->map(fn(User $user): array => [
