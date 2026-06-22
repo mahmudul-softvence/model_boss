@@ -46,20 +46,19 @@ class HomeController extends Controller
     {
         $search = $request->query('search');
 
-        $users = User::latest()
+        $users = User::query()
+            ->select(['id', 'artist_name'])
+            ->with('roles:id,name')
+            ->latest()
             ->when($search, function (Builder $query) use ($search): void {
-                $query->where(function (Builder $query) use ($search): void {
-                    $query->where('name', 'like', '%' . $search . '%')
-                        ->orWhere('artist_name', 'like', '%' . $search . '%')
-                        ->orWhere('first_name', 'like', '%' . $search . '%')
-                        ->orWhere('last_name', 'like', '%' . $search . '%');
-                });
+                $query->where('artist_name', 'like', '%'.$search.'%');
             })
             ->limit(10)
             ->get()
-            ->map(fn(User $user): array => [
+            ->map(fn (User $user): array => [
                 'id' => $user->id,
-                'text' => $this->selectUserLabel($user),
+                'artist' => $user->artist_name,
+                'role' => $user->getRoleNames()->first(),
             ]);
 
         return $this->sendResponse($users);
@@ -87,8 +86,8 @@ class HomeController extends Controller
         $artist = User::role(['user', 'artist'])
             ->withCount(['followers', 'following'])
             ->where(function ($query) use ($search) {
-                $query->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('artist_name', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('artist_name', 'like', '%'.$search.'%');
             })
             ->get();
 
@@ -104,18 +103,5 @@ class HomeController extends Controller
         });
 
         return $this->sendResponse($data);
-    }
-
-    private function selectUserLabel(User $user): string
-    {
-        if (! empty($user->artist_name)) {
-            return $user->artist_name;
-        }
-
-        if ($user->show_name && ($user->full_name || $user->name)) {
-            return $user->full_name ?? $user->name;
-        }
-
-        return 'User #' . $user->id;
     }
 }
