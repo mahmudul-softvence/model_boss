@@ -116,7 +116,7 @@ class ChallengeController extends Controller
     public function accept(Request $request, $id)
     {
         $request->validate([
-            'terms_accepted' => 'accepted',
+            'terms_accepted' => 'required|boolean',
         ]);
 
         $user = auth('api')->user();
