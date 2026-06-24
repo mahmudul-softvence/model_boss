@@ -9,8 +9,10 @@ use App\Http\Resources\ChallengeResource;
 use App\Models\Challenge;
 use App\Models\User;
 use App\Notifications\ChallengeApprovedNotification;
+use App\Notifications\ChallengeLostNotification;
 use App\Notifications\ChallengeOfferNotification;
 use App\Notifications\ChallengeRejectedNotification;
+use App\Notifications\ChallengeWonNotification;
 use App\Services\ChallengeEscrowService;
 use App\Services\ChallengeSettlementService;
 use Illuminate\Http\Request;
@@ -131,14 +133,28 @@ class ChallengeController extends Controller
             ],
         ]);
 
+        $winnerId = (int) $request->winner_id;
+
         try {
-            $result = $this->settlement->settle($challenge, (int) $request->winner_id);
+            $result = $this->settlement->settle($challenge, $winnerId);
         } catch (\RuntimeException $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage(),
             ], 400);
         }
+
+        $loserId = $winnerId === $challenge->challenger_id
+            ? $challenge->accepted_by_user_id
+            : $challenge->challenger_id;
+
+        $challenge->loadMissing(['challenger', 'acceptor']);
+
+        $winner = User::find($winnerId);
+        $loser = User::find($loserId);
+
+        $winner?->notify(new ChallengeWonNotification($challenge, (float) $result['winner_payout']));
+        $loser?->notify(new ChallengeLostNotification($challenge, (float) $challenge->amount));
 
         return response()->json([
             'status' => true,

@@ -11,8 +11,10 @@ use App\Models\User;
 use App\Models\UserBalance;
 use App\Notifications\ChallengeAcceptedNotification;
 use App\Notifications\ChallengeApprovedNotification;
+use App\Notifications\ChallengeLostNotification;
 use App\Notifications\ChallengeOfferNotification;
 use App\Notifications\ChallengeRejectedNotification;
+use App\Notifications\ChallengeWonNotification;
 use App\Services\ChallengeEscrowService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -223,6 +225,24 @@ class ChallengeTest extends TestCase
             'type' => 'challenge-fee',
             'amount' => 90,
         ]);
+
+        Notification::assertSentTo(
+            $challenger,
+            ChallengeWonNotification::class,
+            function (ChallengeWonNotification $notification, array $channels) use ($challenger) {
+                return $channels === ['mail', 'database', 'broadcast']
+                    && $notification->toDatabase($challenger)['payout'] === 510.0;
+            }
+        );
+
+        Notification::assertSentTo(
+            $acceptor,
+            ChallengeLostNotification::class,
+            function (ChallengeLostNotification $notification, array $channels) use ($acceptor) {
+                return $channels === ['mail', 'database', 'broadcast']
+                    && $notification->toDatabase($acceptor)['stake'] === 300.0;
+            }
+        );
     }
 
     public function test_offer_expiry_refunds_the_challenger(): void
