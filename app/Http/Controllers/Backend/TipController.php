@@ -270,13 +270,19 @@ class TipController extends Controller
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('artist_name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%");
                 });
             })
-            ->select('id', 'name', 'email')
+            ->select('id', 'name', 'artist_name', 'email')
             ->latest()
             ->limit(10)
-            ->get();
+            ->get()
+            ->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->artist_name ?: $user->name,
+                'email' => $user->email,
+            ]);
 
         return response()->json([
             'status' => true,

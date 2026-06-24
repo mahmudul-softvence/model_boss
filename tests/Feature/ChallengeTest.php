@@ -298,6 +298,42 @@ class ChallengeTest extends TestCase
             ->assertJsonPath('meta.total', 3);
     }
 
+    public function test_player_payload_prefers_artist_name_then_falls_back_to_real_name(): void
+    {
+        $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+
+        // Target with an artist name set.
+        $withArtist = $this->player('artist@example.com', balance: 1000);
+        $withArtist->update(['artist_name' => 'Stage Star']);
+
+        // Target without an artist name; name parts drive the real name.
+        $withoutArtist = $this->player('real@example.com', balance: 1000);
+        $withoutArtist->update([
+            'first_name' => 'Real',
+            'middle_name' => null,
+            'last_name' => 'Name',
+            'artist_name' => null,
+        ]);
+
+        Challenge::factory()->offered()->create(['target_player_id' => $withArtist->id]);
+        Challenge::factory()->offered()->create(['target_player_id' => $withoutArtist->id]);
+
+        $artistRow = $this->withHeaders($this->authHeadersFor($withArtist))
+            ->getJson('/api/challenges-for-me')
+            ->assertOk()
+            ->json('data.0.target_player');
+
+        $this->assertSame('Stage Star', $artistRow['name']);
+
+        $realRow = $this->withHeaders($this->authHeadersFor($withoutArtist))
+            ->getJson('/api/challenges-for-me')
+            ->assertOk()
+            ->json('data.0.target_player');
+
+        $this->assertSame($withoutArtist->fresh()->name, $realRow['name']);
+        $this->assertSame('Real Name', $realRow['name']);
+    }
+
     public function test_challenge_offer_notifies_the_target_via_mail_database_and_broadcast(): void
     {
         $admin = $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');

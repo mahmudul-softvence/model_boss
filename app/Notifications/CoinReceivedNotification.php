@@ -29,7 +29,7 @@ class CoinReceivedNotification extends Notification implements ShouldQueue
             ->subject('You received coins on Model Boss')
             ->view('emails.coin-received', [
                 'notifiable_name' => $notifiable->name,
-                'sender_name' => $this->sender->name,
+                'sender_name' => $this->senderName(),
                 'amount' => $this->amount,
             ]);
     }
@@ -57,12 +57,22 @@ class CoinReceivedNotification extends Notification implements ShouldQueue
      */
     protected function payload(): array
     {
+        $senderName = $this->senderName();
+
         return [
             'type' => 'coin.received',
             'sender_id' => $this->sender->id,
-            'sender_name' => $this->sender->name,
+            'sender_name' => $senderName,
             'amount' => $this->amount,
-            'message' => $this->sender->name.' sent you '.$this->amount.' coins.',
+            'message' => $senderName.' sent you '.$this->amount.' coins.',
         ];
+    }
+
+    /**
+     * Use the sender's artist name when available, otherwise their real name.
+     */
+    protected function senderName(): string
+    {
+        return $this->sender->artist_name ?: $this->sender->name;
     }
 }

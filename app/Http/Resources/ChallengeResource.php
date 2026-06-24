@@ -40,7 +40,7 @@ class ChallengeResource extends JsonResource
                 'name' => $this->game?->name,
                 'image' => $this->game?->image,
             ]),
-            'challenger' => $this->playerPayload($this->whenLoaded('challenger') ? $this->challenger : null, $this->show_real_name),
+            'challenger' => $this->playerPayload($this->whenLoaded('challenger') ? $this->challenger : null),
             'target_player' => $this->playerPayload($this->whenLoaded('targetPlayer') ? $this->targetPlayer : null),
             'acceptor' => $this->playerPayload($this->whenLoaded('acceptor') ? $this->acceptor : null),
             'winner_id' => $this->winner_id,
@@ -51,15 +51,13 @@ class ChallengeResource extends JsonResource
     /**
      * @return array<string, mixed>|null
      */
-    protected function playerPayload(?User $user, bool $showRealName = true): ?array
+    protected function playerPayload(?User $user): ?array
     {
         if (! $user) {
             return null;
         }
 
-        $name = $showRealName && $user->show_name
-            ? ($user->name ?: $user->artist_name)
-            : ($user->artist_name ?: $user->first_name);
+        $name = $user->artist_name ?: $user->name;
 
         return [
             'id' => $user->id,
