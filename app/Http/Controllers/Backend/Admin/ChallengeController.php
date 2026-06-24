@@ -39,6 +39,7 @@ class ChallengeController extends Controller
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where('challenge_no', 'like', "%{$request->search}%");
             })
+            ->orderByAmountDesc()
             ->orderBy('id', 'desc')
             ->paginate($perPage);
 
