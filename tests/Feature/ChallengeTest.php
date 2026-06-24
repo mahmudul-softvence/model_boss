@@ -6,7 +6,6 @@ use App\Enums\ChallengeStatus;
 use App\Enums\UserRole;
 use App\Jobs\ChallengeOfferExpiredJob;
 use App\Models\Challenge;
-use App\Models\ChallengeCreator;
 use App\Models\Game;
 use App\Models\User;
 use App\Models\UserBalance;
@@ -75,7 +74,7 @@ class ChallengeTest extends TestCase
         $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
         $game = $this->createGame();
 
-        $challenger = $this->player('nope@example.com', balance: 1000);
+        $challenger = $this->player('nope@example.com', balance: 1000, canCreate: false);
         $target = $this->player('target@example.com', balance: 1000);
 
         $this->withHeaders($this->authHeadersFor($challenger))
@@ -395,16 +394,12 @@ class ChallengeTest extends TestCase
         return $admin;
     }
 
-    private function player(string $email, float $balance = 0, bool $canCreate = false): User
+    private function player(string $email, float $balance = 0, bool $canCreate = true): User
     {
-        $user = User::factory()->create(['email' => $email]);
+        $user = User::factory()->create(['email' => $email, 'is_challenger' => $canCreate]);
         $user->assignRole(UserRole::USER->value);
 
         UserBalance::create(['user_id' => $user->id, 'total_balance' => $balance]);
-
-        if ($canCreate) {
-            ChallengeCreator::create(['user_id' => $user->id]);
-        }
 
         return $user;
     }

@@ -7,7 +7,6 @@ use App\Enums\ChallengeStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ChallengeResource;
 use App\Models\Challenge;
-use App\Models\ChallengeCreator;
 use App\Models\User;
 use App\Notifications\ChallengeApprovedNotification;
 use App\Notifications\ChallengeOfferNotification;
@@ -34,7 +33,7 @@ class ChallengeController extends Controller
 
         $paginator = Challenge::query()
             ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
-            ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where('challenge_no', 'like', "%{$request->search}%");
             })
@@ -247,9 +246,10 @@ class ChallengeController extends Controller
      */
     public function grantAccess($userId)
     {
-        User::findOrFail($userId);
+        $user = User::findOrFail($userId);
 
-        ChallengeCreator::firstOrCreate(['user_id' => $userId]);
+        $user->is_challenger = true;
+        $user->save();
 
         return response()->json([
             'status' => true,
@@ -262,7 +262,10 @@ class ChallengeController extends Controller
      */
     public function revokeAccess($userId)
     {
-        ChallengeCreator::where('user_id', $userId)->delete();
+        $user = User::findOrFail($userId);
+
+        $user->is_challenger = false;
+        $user->save();
 
         return response()->json([
             'status' => true,

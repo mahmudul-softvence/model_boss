@@ -181,8 +181,7 @@ class AuthController extends Controller
     public function me()
     {
         $user = auth()->user();
-        $user->loadMissing('userBalance')
-            ->loadExists(['challengeCreator as is_challenger']);
+        $user->loadMissing('userBalance');
 
         $data = [
             'user' => UserResource::make($user),

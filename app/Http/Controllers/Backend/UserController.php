@@ -27,7 +27,6 @@ class UserController extends Controller
         $search = $request->query('search');
 
         $users = User::with(['roles', 'game'])
-            ->withExists(['challengeCreator as is_challenger'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('name', 'like', "%{$search}%")
@@ -91,8 +90,7 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        $user->load(['roles', 'game'])
-            ->loadExists(['challengeCreator as is_challenger']);
+        $user->load(['roles', 'game']);
 
         return $this->sendResponse(UserResource::make($user));
     }
@@ -237,7 +235,6 @@ class UserController extends Controller
 
         $users = $usersQuery
             ->with(['roles', 'game'])
-            ->withExists(['challengeCreator as is_challenger'])
             ->get();
 
         return $this->sendResponse(UserResource::collection($users));

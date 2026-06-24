@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ChallengeResource;
 use App\Jobs\ChallengeOfferExpiredJob;
 use App\Models\Challenge;
-use App\Models\ChallengeCreator;
 use App\Models\User;
 use App\Models\UserBalance;
 use App\Notifications\ChallengeAcceptedNotification;
@@ -31,7 +30,7 @@ class ChallengeController extends Controller
         $user = auth('api')->user();
 
         return $this->sendResponse([
-            'can_create_challenge' => $this->userCanCreate($user->id),
+            'can_create_challenge' => $this->userCanCreate($user),
         ]);
     }
 
@@ -42,7 +41,7 @@ class ChallengeController extends Controller
     {
         $user = auth('api')->user();
 
-        if (! $this->userCanCreate($user->id)) {
+        if (! $this->userCanCreate($user)) {
             return $this->sendError('You are not allowed to create challenges.', [], 403);
         }
 
@@ -342,9 +341,9 @@ class ChallengeController extends Controller
         return $this->sendResponse($leaders, 'Big boss challengers retrieved successfully');
     }
 
-    private function userCanCreate(int $userId): bool
+    private function userCanCreate(User $user): bool
     {
-        return ChallengeCreator::where('user_id', $userId)->exists();
+        return (bool) $user->is_challenger;
     }
 
     private function generateChallengeNo(): string

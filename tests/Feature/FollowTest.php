@@ -38,6 +38,22 @@ class FollowTest extends TestCase
         );
     }
 
+    public function test_new_follower_email_includes_follow_back_url_to_the_frontend()
+    {
+        config(['app.frontend_url' => 'http://localhost:3000/']);
+
+        $follower = User::factory()->create();
+        $notifiable = User::factory()->create();
+
+        $mail = (new NewFollowerNotification($follower))->toMail($notifiable);
+
+        $this->assertSame('emails.new-follower', $mail->view);
+        $this->assertSame(
+            'http://localhost:3000/artist/'.$follower->id,
+            $mail->viewData['follow_back_url']
+        );
+    }
+
     public function test_following_again_does_not_send_duplicate_notification()
     {
         Notification::fake();

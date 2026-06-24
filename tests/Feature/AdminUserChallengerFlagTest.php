@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
-use App\Models\ChallengeCreator;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
@@ -19,13 +18,12 @@ class AdminUserChallengerFlagTest extends TestCase
     {
         $this->seedRoles();
         $admin = $this->createAdmin();
-        $challenger = User::factory()->create(['email' => 'challenger@example.com']);
-        $regularUser = User::factory()->create(['email' => 'regular@example.com']);
+        // Challenge access is on by default; admins can disable it per user.
+        $challenger = User::factory()->create(['email' => 'challenger@example.com', 'is_challenger' => true]);
+        $regularUser = User::factory()->create(['email' => 'regular@example.com', 'is_challenger' => false]);
 
         $challenger->assignRole(UserRole::USER->value);
         $regularUser->assignRole(UserRole::USER->value);
-
-        ChallengeCreator::create(['user_id' => $challenger->id]);
 
         $response = $this->withHeaders($this->authHeadersFor($admin))
             ->getJson('/api/admin/users?limit=20');
@@ -46,11 +44,9 @@ class AdminUserChallengerFlagTest extends TestCase
     {
         $this->seedRoles();
         $admin = $this->createAdmin();
-        $challenger = User::factory()->create(['email' => 'detail-challenger@example.com']);
+        $challenger = User::factory()->create(['email' => 'detail-challenger@example.com', 'is_challenger' => true]);
 
         $challenger->assignRole(UserRole::USER->value);
-
-        ChallengeCreator::create(['user_id' => $challenger->id]);
 
         $response = $this->withHeaders($this->authHeadersFor($admin))
             ->getJson("/api/admin/users/{$challenger->id}");
@@ -59,6 +55,36 @@ class AdminUserChallengerFlagTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.id', $challenger->id)
             ->assertJsonPath('data.is_challenger', true);
+    }
+
+    public function test_admin_can_revoke_and_grant_a_users_challenge_access(): void
+    {
+        $this->seedRoles();
+        $admin = $this->createAdmin();
+        $user = User::factory()->create(['email' => 'access@example.com', 'is_challenger' => true]);
+        $user->assignRole(UserRole::USER->value);
+
+        // DELETE revokes access.
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->deleteJson("/api/admin/users/{$user->id}/challenge-access")
+            ->assertOk()
+            ->assertJson([
+                'status' => true,
+                'message' => 'Challenge creation access revoked.',
+            ]);
+
+        $this->assertFalse($user->fresh()->is_challenger);
+
+        // POST grants it back.
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/users/{$user->id}/challenge-access")
+            ->assertOk()
+            ->assertJson([
+                'status' => true,
+                'message' => 'Challenge creation access granted.',
+            ]);
+
+        $this->assertTrue($user->fresh()->is_challenger);
     }
 
     private function seedRoles(): void
