@@ -7,6 +7,7 @@ use App\Models\CoinTransaction;
 use App\Models\Tip;
 use App\Models\User;
 use App\Models\UserBalance;
+use App\Notifications\CoinReceivedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -214,6 +215,13 @@ class TipController extends Controller
                     'reference' => 'Fee from send coin by user #'.$senderId,
                 ]);
             });
+
+            $sender = User::find($senderId);
+            $receiver = User::find($receiverId);
+
+            if ($sender && $receiver) {
+                $receiver->notify(new CoinReceivedNotification($sender, $receiverAmount));
+            }
 
             return response()->json([
                 'status' => true,
