@@ -7,8 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialController extends Controller
@@ -67,13 +69,7 @@ class SocialController extends Controller
             $user = User::where('email', $email)->first();
 
             if ($user) {
-                $avatarPath = null;
-                if ($socialUser->getAvatar()) {
-                    $avatarContents = file_get_contents($socialUser->getAvatar());
-                    $avatarName = 'users/images/'.Str::random(40).'.jpg';
-                    Storage::disk('public')->put($avatarName, $avatarContents);
-                    $avatarPath = $avatarName;
-                }
+                $avatarPath = $this->storeSocialAvatar($provider, $socialUser);
 
                 $user->update([
                     'provider' => $provider,
@@ -95,13 +91,7 @@ class SocialController extends Controller
 
             $nameParts = User::splitFullName($name);
 
-            $avatarPath = null;
-            if ($socialUser->getAvatar()) {
-                $avatarContents = file_get_contents($socialUser->getAvatar());
-                $avatarName = 'users/images/'.Str::random(40).'.jpg';
-                Storage::disk('public')->put($avatarName, $avatarContents);
-                $avatarPath = $avatarName;
-            }
+            $avatarPath = $this->storeSocialAvatar($provider, $socialUser);
 
             $user = User::create([
                 'first_name' => $nameParts['first_name'] ?? 'User',
@@ -172,5 +162,46 @@ class SocialController extends Controller
     private function supportsProvider(string $provider): bool
     {
         return in_array($provider, self::SUPPORTED_PROVIDERS, true);
+    }
+
+    /**
+     * Download the provider avatar at the best available resolution and store it locally.
+     */
+    private function storeSocialAvatar(string $provider, SocialiteUser $socialUser): ?string
+    {
+        $avatarUrl = $socialUser->getAvatar();
+
+        if (! $avatarUrl) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(10)->get($this->highResAvatarUrl($provider, $avatarUrl));
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        $path = 'users/images/'.Str::random(40).'.jpg';
+        Storage::disk('public')->put($path, $response->body());
+
+        return $path;
+    }
+
+    /**
+     * Upgrade a provider avatar URL to a higher resolution where the provider supports it.
+     */
+    private function highResAvatarUrl(string $provider, string $url): string
+    {
+        return match ($provider) {
+            // Google appends a size token like "=s96-c"; request a larger render.
+            'google' => preg_replace('/=s\d+(-c)?/', '=s500-c', $url) ?? $url,
+            // Facebook's default avatar is "type=normal"; request explicit dimensions.
+            'facebook' => str_replace('type=normal', 'width=500&height=500', $url),
+            default => $url,
+        };
     }
 }
