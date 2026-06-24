@@ -119,6 +119,10 @@ class ChallengeController extends Controller
             'terms_accepted' => 'required|boolean',
         ]);
 
+        if (! $request->boolean('terms_accepted')) {
+            abort(400, 'You must accept the terms to continue.');
+        }
+
         $user = auth('api')->user();
 
         $challenge = DB::transaction(function () use ($user, $id) {
