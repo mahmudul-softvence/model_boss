@@ -32,6 +32,7 @@ class ChallengeOfferNotification extends Notification implements ShouldQueue
                 'challenger_name' => $this->challenge->challenger?->name,
                 'challenge_no' => $this->challenge->challenge_no,
                 'amount' => $this->challenge->amount,
+                'challenge_url' => rtrim((string) config('app.frontend_url'), '/').'/challenge-dashboard/'.$this->challenge->id,
             ]);
     }
 

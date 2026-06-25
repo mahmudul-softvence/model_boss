@@ -29,6 +29,18 @@
                 </tr>
             </table>
 
+            <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 16px;">
+                <tr>
+                    <td style="border-radius:50px;background:linear-gradient(180deg,#b18bf5 0%,#7c3aed 100%);">
+                        <a href="{{ $challenge_url }}" target="_blank"
+                           style="display:inline-block;padding:14px 40px;font-size:15px;font-weight:700;
+                                  color:#ffffff;text-decoration:none;border-radius:50px;letter-spacing:0.3px;">
+                            Challenge Link
+                        </a>
+                    </td>
+                </tr>
+            </table>
+
             <p style="margin:0 0 8px;font-size:13px;color:#9ca3af;line-height:1.7;text-align:center;">
                 Open the app to accept or decline this challenge before it expires.
             </p>
