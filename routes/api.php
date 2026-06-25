@@ -142,8 +142,7 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::delete('challenges/{id}', [AdminChallengeController::class, 'destroy']);
     Route::post('users/{user}/challenge-access', [AdminChallengeController::class, 'grantAccess']);
     Route::delete('users/{user}/challenge-access', [AdminChallengeController::class, 'revokeAccess']);
-
 });
 
-require __DIR__.'/backend.php';
-require __DIR__.'/frontend.php';
+require __DIR__ . '/backend.php';
+require __DIR__ . '/frontend.php';

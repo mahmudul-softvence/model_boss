@@ -104,6 +104,18 @@ class Challenge extends Model
         return $query->orderByDesc('amount');
     }
 
+    public function scopeOrderByStatusPriority(Builder $query): Builder
+    {
+        return $query->orderByRaw(
+            'CASE status WHEN ? THEN 0 WHEN ? THEN 1 WHEN ? THEN 2 ELSE 3 END',
+            [
+                ChallengeStatus::PENDING->value,
+                ChallengeStatus::OFFERED->value,
+                ChallengeStatus::COMPLETED->value,
+            ]
+        );
+    }
+
     public function isExpired(): bool
     {
         return $this->offer_expires_at !== null
