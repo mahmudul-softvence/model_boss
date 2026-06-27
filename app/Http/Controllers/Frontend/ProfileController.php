@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateBioRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\PostResource;
 use App\Http\Resources\UserResource;
@@ -31,12 +32,12 @@ class ProfileController extends Controller
         $user = auth()->user();
 
         if ($request->hasFile('image')) {
-
             if ($user->image) {
                 Storage::disk('public')->delete($user->image);
             }
 
-            $imagePath = $request->file('image')
+            $imagePath = $request
+                ->file('image')
                 ->store('users/images', 'public');
 
             $user->image = $imagePath;
@@ -53,7 +54,8 @@ class ProfileController extends Controller
             'city' => $validated['city'],
             'zip_code' => $validated['zip_code'] ?? null,
             'state' => $validated['state'] ?? null,
-            'social_verification_status' => $validated['social_verification_status'] ?? $user->social_verification_status,
+            'social_verification_status' => $validated['social_verification_status'] ??
+                $user->social_verification_status,
             'social_verification_number' => $validated['social_verification_number'] ?? null,
         ]);
 
@@ -62,16 +64,34 @@ class ProfileController extends Controller
         return $this->sendResponse(UserResource::make($user));
     }
 
+    public function updateBio(UpdateBioRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $user = $request->user();
+
+        $user->bio = $validated['bio'];
+        $user->save();
+        $user->loadChallengeRecordCounts();
+
+        return $this->sendResponse(UserResource::make($user));
+    }
+
     public function show_artist_prifile($id)
     {
-        $user = User::with('userBalance')->findOrFail($id);
+        $user = User::with('userBalance')
+            ->withChallengeRecordCounts()
+            ->findOrFail($id);
 
         $userBalance = $user->userBalance;
 
         $isFollowed = false;
 
         if (auth()->check()) {
-            $isFollowed = auth()->user()->following()->where('following_id', $id)->exists();
+            $isFollowed = auth()
+                ->user()
+                ->following()
+                ->where('following_id', $id)
+                ->exists();
         }
 
         $data = [
@@ -130,12 +150,18 @@ class ProfileController extends Controller
 
         $followers = $user->followers()->latest()->paginate($limit);
 
-        $followers->getCollection()->transform(function ($f) use ($followingIds, $request) {
-            $resource = UserResource::make($f)->toArray($request);
-            $resource['is_following'] = in_array($f->id, $followingIds, true);
+        $followers
+            ->getCollection()
+            ->transform(function ($f) use ($followingIds, $request) {
+                $resource = UserResource::make($f)->toArray($request);
+                $resource['is_following'] = in_array(
+                    $f->id,
+                    $followingIds,
+                    true,
+                );
 
-            return $resource;
-        });
+                return $resource;
+            });
 
         return $this->sendResponse([
             'followers' => $followers,
@@ -155,12 +181,18 @@ class ProfileController extends Controller
 
         $following = $user->following()->latest()->paginate($limit);
 
-        $following->getCollection()->transform(function ($f) use ($followerIds, $request) {
-            $resource = UserResource::make($f)->toArray($request);
-            $resource['is_followed_by'] = in_array($f->id, $followerIds, true);
+        $following
+            ->getCollection()
+            ->transform(function ($f) use ($followerIds, $request) {
+                $resource = UserResource::make($f)->toArray($request);
+                $resource['is_followed_by'] = in_array(
+                    $f->id,
+                    $followerIds,
+                    true,
+                );
 
-            return $resource;
-        });
+                return $resource;
+            });
 
         return $this->sendResponse([
             'following' => $following,
@@ -216,7 +248,11 @@ class ProfileController extends Controller
         $validated = $request->validate($this->visibilityValidationRules());
 
         if ($validated === []) {
-            return $this->sendError('At least one visibility field is required.', [], 422);
+            return $this->sendError(
+                'At least one visibility field is required.',
+                [],
+                422,
+            );
         }
 
         $user = auth()->user();
@@ -232,7 +268,11 @@ class ProfileController extends Controller
     private function visibilityValidationRules(): array
     {
         return collect(self::PROFILE_VISIBILITY_FIELDS)
-            ->mapWithKeys(fn (string $field): array => [$field => ['sometimes', 'boolean']])
+            ->mapWithKeys(
+                fn (string $field): array => [
+                    $field => ['sometimes', 'boolean'],
+                ],
+            )
             ->all();
     }
 }

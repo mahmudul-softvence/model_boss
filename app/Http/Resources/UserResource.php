@@ -27,6 +27,7 @@ class UserResource extends JsonResource
             'middle_name' => $nameVisible ? $this->middle_name : null,
             'last_name' => $nameVisible ? $this->last_name : null,
             'artist_name' => $this->artist_name,
+            'bio' => $this->bio,
             'email' => $emailVisible ? $this->email : null,
             'show_email' => (bool) $this->show_email,
             'show_name' => (bool) $this->show_name,
@@ -43,9 +44,17 @@ class UserResource extends JsonResource
             'zip_code' => $this->zip_code,
             'state' => $this->state,
             'social_verification_status' => (bool) $this->social_verification_status,
-            'social_verification_number' => $this->social_verification_status ? $this->social_verification_number : null,
+            'social_verification_number' => $this->social_verification_status
+                ? $this->social_verification_number
+                : null,
             'is_player' => (bool) $this->is_player,
             'is_challenger' => (bool) $this->is_challenger,
+            'challenge_wins_count' => (int) ($this->challenge_wins_count ??
+                    $this->challengeWins()->count()),
+            'challenge_losses_count' => (int) ($this->challenge_losses_as_challenger_count ??
+                    $this->challengeLossesAsChallenger()->count()) +
+                (int) ($this->challenge_losses_as_acceptor_count ??
+                    $this->challengeLossesAsAcceptor()->count()),
             'image' => $this->image_url,
             'provider' => $this->provider,
             'verified_at' => ! is_null($this->email_verified_at),

@@ -45,7 +45,11 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->sendError('Validation Error.', $validator->errors(), 422);
+            return $this->sendError(
+                'Validation Error.',
+                $validator->errors(),
+                422,
+            );
         }
 
         $data = $request->only([
@@ -69,8 +73,10 @@ class AuthController extends Controller
         $referralUser = null;
 
         if ($request->filled('referral_id')) {
-
-            $referralUser = User::where('referral_no', $request->referral_id)->first();
+            $referralUser = User::where(
+                'referral_no',
+                $request->referral_id,
+            )->first();
 
             if (! $referralUser) {
                 return $this->sendError('Invalid referral code.', [], 422);
@@ -95,7 +101,7 @@ class AuthController extends Controller
 
         return $this->sendResponse(
             UserResource::make($user),
-            'A verification email has been sent to your email.'
+            'A verification email has been sent to your email.',
         );
     }
 
@@ -103,8 +109,12 @@ class AuthController extends Controller
     {
         $credentials = request(['email', 'password']);
 
-        if (! $token = auth()->attempt($credentials)) {
-            return $this->sendError('Invalid username or password.', ['error' => 'Invalid username or password'], 401);
+        if (! ($token = auth()->attempt($credentials))) {
+            return $this->sendError(
+                'Invalid username or password.',
+                ['error' => 'Invalid username or password'],
+                401,
+            );
         }
 
         $user = auth()->user();
@@ -129,24 +139,26 @@ class AuthController extends Controller
             $user->sendEmailVerificationNotification();
             auth()->logout();
 
-            return $this->sendError('Please verify your email.', ['verified' => false], 403);
+            return $this->sendError(
+                'Please verify your email.',
+                ['verified' => false],
+                403,
+            );
         }
 
         auth()->logout();
 
         $otp = (string) random_int(100000, 999999);
 
-        LoginOtp::updateOrCreate(
-            ['email' => $user->email],
-            ['otp' => $otp]
-        );
+        LoginOtp::updateOrCreate(['email' => $user->email], ['otp' => $otp]);
 
-        Notification::route('mail', $user->email)
-            ->notify(new LoginOtpNotification($otp));
+        Notification::route('mail', $user->email)->notify(
+            new LoginOtpNotification($otp),
+        );
 
         return $this->sendResponse(
             ['email' => $user->email],
-            'OTP sent to your email. Please verify to complete login.'
+            'OTP sent to your email. Please verify to complete login.',
         );
     }
 
@@ -163,8 +175,9 @@ class AuthController extends Controller
             return $this->sendError('Invalid email.', [], 422);
         }
 
-        $isValid = $loginOtp->otp === $request->otp
-            && $loginOtp->updated_at->addMinutes(10)->isFuture();
+        $isValid =
+            $loginOtp->otp === $request->otp &&
+            $loginOtp->updated_at->addMinutes(10)->isFuture();
 
         if (! $isValid) {
             return $this->sendError('Invalid or expired OTP.', [], 422);
@@ -175,13 +188,17 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
         $token = auth()->login($user);
 
-        return $this->sendResponse($this->respondWithToken($token), 'User login successfully.');
+        return $this->sendResponse(
+            $this->respondWithToken($token),
+            'User login successfully.',
+        );
     }
 
     public function me()
     {
         $user = auth()->user();
         $user->loadMissing('userBalance');
+        $user->loadChallengeRecordCounts();
 
         $data = [
             'user' => UserResource::make($user),
@@ -200,14 +217,16 @@ class AuthController extends Controller
 
     public function refresh()
     {
-
         try {
             $token = JWTAuth::parseToken()->refresh();
             auth()->setToken($token)->authenticate();
 
             $success = $this->respondWithToken($token);
 
-            return $this->sendResponse($success, 'Refresh token return successfully.');
+            return $this->sendResponse(
+                $success,
+                'Refresh token return successfully.',
+            );
         } catch (\Exception $e) {
             return $this->sendError('Token cannot be refreshed'.$e, [], 401);
         }
@@ -221,7 +240,9 @@ class AuthController extends Controller
             return $this->sendError('User not found.');
         }
 
-        if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        if (
+            ! hash_equals((string) $hash, sha1($user->getEmailForVerification()))
+        ) {
             return $this->sendError('Invalid verification link.', [], 403);
         }
 
@@ -230,9 +251,10 @@ class AuthController extends Controller
         }
 
         return redirect()->to(
-            rtrim(config('app.frontend_url'), '/').'/'.
+            rtrim(config('app.frontend_url'), '/').
+                '/'.
                 ltrim(config('app.frontend_login'), '/').
-                '?email_verified=true'
+                '?email_verified=true',
         );
     }
 

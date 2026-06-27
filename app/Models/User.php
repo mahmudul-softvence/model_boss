@@ -4,9 +4,12 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Enums\ChallengeStatus;
 use App\Notifications\VerifyEmailQueued;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -24,6 +27,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'middle_name',
         'last_name',
         'artist_name',
+        'bio',
         'email',
         'phone_number',
         'nationality',
@@ -53,10 +57,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'is_challenger',
     ];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
     {
@@ -124,6 +125,48 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         return $this->hasMany(GameMatch::class, 'winner_id');
     }
 
+    public function challengeWins(): HasMany
+    {
+        return $this->hasMany(Challenge::class, 'winner_id')->where(
+            'status',
+            ChallengeStatus::COMPLETED->value,
+        );
+    }
+
+    public function challengeLossesAsChallenger(): HasMany
+    {
+        return $this->hasMany(Challenge::class, 'challenger_id')
+            ->where('status', ChallengeStatus::COMPLETED->value)
+            ->whereNotNull('winner_id')
+            ->whereColumn('winner_id', '!=', 'challenger_id');
+    }
+
+    public function challengeLossesAsAcceptor(): HasMany
+    {
+        return $this->hasMany(Challenge::class, 'accepted_by_user_id')
+            ->where('status', ChallengeStatus::COMPLETED->value)
+            ->whereNotNull('winner_id')
+            ->whereColumn('winner_id', '!=', 'accepted_by_user_id');
+    }
+
+    public function scopeWithChallengeRecordCounts(Builder $query): Builder
+    {
+        return $query->withCount([
+            'challengeWins',
+            'challengeLossesAsChallenger',
+            'challengeLossesAsAcceptor',
+        ]);
+    }
+
+    public function loadChallengeRecordCounts(): static
+    {
+        return $this->loadCount([
+            'challengeWins',
+            'challengeLossesAsChallenger',
+            'challengeLossesAsAcceptor',
+        ]);
+    }
+
     public function posts()
     {
         return $this->hasMany(Post::class);
@@ -136,7 +179,12 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     public function following()
     {
-        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'following_id')
+        return $this->belongsToMany(
+            User::class,
+            'followers',
+            'follower_id',
+            'following_id',
+        )
             ->using(Follower::class)
             ->withTimestamps()
             ->wherePivotNull('deleted_at');
@@ -144,7 +192,12 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     public function followers()
     {
-        return $this->belongsToMany(User::class, 'followers', 'following_id', 'follower_id')
+        return $this->belongsToMany(
+            User::class,
+            'followers',
+            'following_id',
+            'follower_id',
+        )
             ->using(Follower::class)
             ->withTimestamps()
             ->wherePivotNull('deleted_at');
@@ -181,9 +234,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             return null;
         }
 
-        return $this->image
-            ? asset('storage/'.$this->image)
-            : null;
+        return $this->image ? asset('storage/'.$this->image) : null;
     }
 
     public function getFullNameAttribute(): ?string
@@ -191,22 +242,20 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         return static::formatFullName(
             $this->first_name,
             $this->middle_name,
-            $this->last_name
+            $this->last_name,
         );
     }
 
     public function isSuspended(): bool
     {
         return $this->suspension &&
-            (
-                $this->suspension->is_permanent ||
-                ($this->suspension->suspended_until?->isFuture())
-            );
+            ($this->suspension->is_permanent ||
+                $this->suspension->suspended_until?->isFuture());
     }
 
     public static function splitFullName(?string $fullName): array
     {
-        $fullName = preg_replace('/\s+/', ' ', trim((string) $fullName));
+        $fullName = preg_replace("/\s+/", ' ', trim((string) $fullName));
 
         if ($fullName === '') {
             return [
@@ -228,13 +277,14 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         ];
     }
 
-    public static function formatFullName(?string $firstName, ?string $middleName = null, ?string $lastName = null): ?string
-    {
-        $fullName = trim(implode(' ', array_filter([
-            $firstName,
-            $middleName,
-            $lastName,
-        ])));
+    public static function formatFullName(
+        ?string $firstName,
+        ?string $middleName = null,
+        ?string $lastName = null,
+    ): ?string {
+        $fullName = trim(
+            implode(' ', array_filter([$firstName, $middleName, $lastName])),
+        );
 
         return $fullName !== '' ? $fullName : null;
     }
@@ -248,7 +298,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
                 $user->name = static::formatFullName(
                     $user->first_name,
                     $user->middle_name,
-                    $user->last_name
+                    $user->last_name,
                 );
 
                 return;
@@ -269,7 +319,6 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         parent::boot();
 
         static::creating(function ($user) {
-
             if (empty($user->referral_no)) {
                 $user->referral_no = strtoupper(Str::uuid()->toString());
             }
