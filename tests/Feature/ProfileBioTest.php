@@ -125,6 +125,7 @@ class ProfileBioTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.user.bio', 'Ready for any challenge.')
             ->assertJsonPath('data.user.challenge_wins_count', 1)
-            ->assertJsonPath('data.user.challenge_losses_count', 2);
+            ->assertJsonPath('data.user.challenge_losses_count', 2)
+            ->assertJsonPath('data.user.challenge_total_count', 3);
     }
 }

@@ -20,6 +20,15 @@ class UserResource extends JsonResource
         $emailVisible = $this->show_email || $isOwner;
         $nameVisible = $this->show_name || $isOwner;
 
+        $challengeWinsCount =
+            (int) ($this->challenge_wins_count ??
+                $this->challengeWins()->count());
+        $challengeLossesCount =
+            (int) ($this->challenge_losses_as_challenger_count ??
+                $this->challengeLossesAsChallenger()->count()) +
+            (int) ($this->challenge_losses_as_acceptor_count ??
+                $this->challengeLossesAsAcceptor()->count());
+
         return [
             'id' => $this->id,
             'name' => $nameVisible ? $this->full_name ?? $this->name : null,
@@ -49,12 +58,9 @@ class UserResource extends JsonResource
                 : null,
             'is_player' => (bool) $this->is_player,
             'is_challenger' => (bool) $this->is_challenger,
-            'challenge_wins_count' => (int) ($this->challenge_wins_count ??
-                    $this->challengeWins()->count()),
-            'challenge_losses_count' => (int) ($this->challenge_losses_as_challenger_count ??
-                    $this->challengeLossesAsChallenger()->count()) +
-                (int) ($this->challenge_losses_as_acceptor_count ??
-                    $this->challengeLossesAsAcceptor()->count()),
+            'challenge_wins_count' => $challengeWinsCount,
+            'challenge_losses_count' => $challengeLossesCount,
+            'challenge_total_count' => $challengeWinsCount + $challengeLossesCount,
             'image' => $this->image_url,
             'provider' => $this->provider,
             'verified_at' => ! is_null($this->email_verified_at),
