@@ -268,6 +268,36 @@ class ChallengeTest extends TestCase
         $this->assertSame(1000.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
     }
 
+    public function test_process_due_command_dispatches_expiry_only_for_overdue_open_offers(): void
+    {
+        $overdueOffered = Challenge::factory()->offered()->create([
+            'offer_expires_at' => now()->subMinute(),
+        ]);
+
+        $overduePending = Challenge::factory()->create([
+            'status' => ChallengeStatus::PENDING->value,
+            'offer_expires_at' => now()->subMinute(),
+        ]);
+
+        // Still within its window, so it must not be swept.
+        $stillOpen = Challenge::factory()->offered()->create([
+            'offer_expires_at' => now()->addHour(),
+        ]);
+
+        // Already accepted, so it is no longer a refundable open offer.
+        $accepted = Challenge::factory()->create([
+            'status' => ChallengeStatus::ACCEPTED->value,
+            'offer_expires_at' => now()->subMinute(),
+        ]);
+
+        $this->artisan('challenges:process-due')->assertSuccessful();
+
+        Bus::assertDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $overdueOffered->id);
+        Bus::assertDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $overduePending->id);
+        Bus::assertNotDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $stillOpen->id);
+        Bus::assertNotDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $accepted->id);
+    }
+
     public function test_public_list_is_ordered_by_amount_desc_with_ranks(): void
     {
         $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
