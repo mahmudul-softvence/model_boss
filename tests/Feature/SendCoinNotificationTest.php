@@ -98,6 +98,34 @@ class SendCoinNotificationTest extends TestCase
         );
     }
 
+    public function test_sending_coins_succeeds_when_receiver_has_no_balance_row(): void
+    {
+        Notification::fake();
+
+        $this->createAdmin();
+        $sender = User::factory()->create();
+        // Receiver intentionally has no user_balances row.
+        $receiver = User::factory()->create();
+
+        UserBalance::create(['user_id' => $sender->id, 'total_balance' => 1000]);
+
+        $this->actingAs($sender, 'api')
+            ->postJson('/api/send-coin', [
+                'receiver_id' => $receiver->id,
+                'amount' => 100,
+            ])
+            ->assertStatus(200)
+            ->assertJson(['status' => true]);
+
+        // amount 100 => fee 10 => receiver gets 90 coins in a freshly created row.
+        $this->assertDatabaseHas('user_balances', [
+            'user_id' => $receiver->id,
+            'total_balance' => 90,
+        ]);
+
+        Notification::assertSentTo($receiver, CoinReceivedNotification::class);
+    }
+
     public function test_no_notification_when_sending_coins_fails(): void
     {
         Notification::fake();

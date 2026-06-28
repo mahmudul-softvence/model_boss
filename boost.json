@@ -1,7 +1,5 @@
 {
     "agents": [
-        "opencode",
-        "codex",
         "claude_code"
     ],
     "cloud": false,

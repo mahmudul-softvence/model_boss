@@ -13,6 +13,7 @@ use App\Notifications\UserSuspendedNotification;
 use App\Notifications\UserUnsuspendedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -56,29 +57,33 @@ class UserController extends Controller
                 ->store('users/images', 'public');
         }
 
-        $user = User::create([
-            'first_name' => $validated['first_name'],
-            'middle_name' => $validated['middle_name'] ?? null,
-            'last_name' => $validated['last_name'],
-            'artist_name' => $validated['artist_name'],
-            'email' => $validated['email'],
-            'password' => bcrypt($validated['password']),
-            'image' => $imagePath,
-            'game_id' => $validated['game_id'] ?? null,
-            'address' => $validated['address'] ?? null,
-            'city' => $validated['city'],
-            'zip_code' => $validated['zip_code'] ?? null,
-            'state' => $validated['state'] ?? null,
-            'referral_no' => Str::random(10),
-            'social_verification_status' => $validated['social_verification_status'] ?? null,
-            'is_player' => (bool) ($validated['is_player'] ?? false),
-        ]);
+        $user = DB::transaction(function () use ($validated, $imagePath) {
+            $user = User::create([
+                'first_name' => $validated['first_name'],
+                'middle_name' => $validated['middle_name'] ?? null,
+                'last_name' => $validated['last_name'],
+                'artist_name' => $validated['artist_name'],
+                'email' => $validated['email'],
+                'password' => bcrypt($validated['password']),
+                'image' => $imagePath,
+                'game_id' => $validated['game_id'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'city' => $validated['city'],
+                'zip_code' => $validated['zip_code'] ?? null,
+                'state' => $validated['state'] ?? null,
+                'referral_no' => Str::random(10),
+                'social_verification_status' => $validated['social_verification_status'] ?? null,
+                'is_player' => (bool) ($validated['is_player'] ?? false),
+            ]);
 
-        $user->markEmailAsVerified();
+            $user->markEmailAsVerified();
 
-        $user->assignRole($validated['role']);
+            $user->assignRole($validated['role']);
 
-        $user->userBalance()->create();
+            $user->userBalance()->create();
+
+            return $user;
+        });
 
         $user->load('roles');
 
@@ -147,9 +152,11 @@ class UserController extends Controller
      */
     public function delete(User $user)
     {
-        $user->userBalance()->delete();
-        $user->roles()->detach();
-        $user->delete();
+        DB::transaction(function () use ($user) {
+            $user->userBalance()->delete();
+            $user->roles()->detach();
+            $user->delete();
+        });
 
         return $this->sendResponse(UserResource::make($user), 'User deleted successfully.');
     }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -93,18 +94,23 @@ class SocialController extends Controller
 
             $avatarPath = $this->storeSocialAvatar($provider, $socialUser);
 
-            $user = User::create([
-                'first_name' => $nameParts['first_name'] ?? 'User',
-                'middle_name' => $nameParts['middle_name'],
-                'last_name' => $nameParts['last_name'],
-                'email' => $email,
-                'image' => $avatarPath,
-                'provider' => $provider,
-                'provider_id' => $providerId,
-            ]);
+            $user = DB::transaction(function () use ($nameParts, $email, $avatarPath, $provider, $providerId) {
+                $user = User::create([
+                    'first_name' => $nameParts['first_name'] ?? 'User',
+                    'middle_name' => $nameParts['middle_name'],
+                    'last_name' => $nameParts['last_name'],
+                    'email' => $email,
+                    'image' => $avatarPath,
+                    'provider' => $provider,
+                    'provider_id' => $providerId,
+                ]);
 
-            $user->markEmailAsVerified();
-            $user->assignRole(UserRole::USER);
+                $user->markEmailAsVerified();
+                $user->assignRole(UserRole::USER);
+                $user->userBalance()->create();
+
+                return $user;
+            });
         }
 
         $user->load('suspension');
