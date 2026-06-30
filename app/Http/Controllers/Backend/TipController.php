@@ -37,7 +37,7 @@ class TipController extends Controller
 
                 $senderBalance = UserBalance::where('user_id', $senderId)
                     ->lockForUpdate()
-                    ->firstOrFail();
+                    ->firstOrCreate(['user_id' => $senderId]);
 
                 if ($senderBalance->total_balance < $amount) {
                     throw new \RuntimeException('Insufficient balance.');
@@ -62,11 +62,11 @@ class TipController extends Controller
 
                     $receiverBalance = UserBalance::where('user_id', $receiverId)
                         ->lockForUpdate()
-                        ->firstOrFail();
+                        ->firstOrCreate(['user_id' => $receiverId]);
 
                     $adminBalance = UserBalance::where('user_id', 1)
                         ->lockForUpdate()
-                        ->firstOrFail();
+                        ->firstOrCreate(['user_id' => 1]);
 
                     $receiverBalance->total_balance += $receiverShare;
                     $receiverBalance->total_tip_received += $receiverShare;
@@ -94,7 +94,7 @@ class TipController extends Controller
 
                     $adminBalance = UserBalance::where('user_id', 1)
                         ->lockForUpdate()
-                        ->firstOrFail();
+                        ->firstOrCreate(['user_id' => 1]);
 
                     $adminBalance->total_balance += $amount;
                     $adminBalance->total_tip_received += $amount;
@@ -168,7 +168,7 @@ class TipController extends Controller
 
                 $senderBalance = UserBalance::where('user_id', $senderId)
                     ->lockForUpdate()
-                    ->firstOrFail();
+                    ->firstOrCreate(['user_id' => $senderId]);
 
                 if ($senderBalance->total_balance < $amount) {
                     throw new \RuntimeException('Insufficient balance.');
@@ -187,7 +187,7 @@ class TipController extends Controller
 
                 $receiverBalance = UserBalance::where('user_id', $receiverId)
                     ->lockForUpdate()
-                    ->firstOrFail();
+                    ->firstOrCreate(['user_id' => $receiverId]);
 
                 $receiverBalance->total_balance += $receiverAmount;
                 $receiverBalance->save();
@@ -202,7 +202,7 @@ class TipController extends Controller
 
                 $adminBalance = UserBalance::where('user_id', 1)
                     ->lockForUpdate()
-                    ->firstOrFail();
+                    ->firstOrCreate(['user_id' => 1]);
 
                 $adminBalance->total_balance += $fee;
                 $adminBalance->save();
