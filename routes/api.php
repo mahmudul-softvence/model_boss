@@ -52,6 +52,7 @@ Route::group(['middleware' => 'api'], function () {
     Route::get('challenges/{id}', [ChallengeController::class, 'show'])->whereNumber('id');
     Route::get('users/{id}/challenges', [ChallengeController::class, 'userChallenges'])->whereNumber('id');
     Route::get('users/{id}/accepted-challenges', [ChallengeController::class, 'acceptedChallenges'])->whereNumber('id');
+    Route::get('users/{id}/completed-challenges', [ChallengeController::class, 'completedChallenges'])->whereNumber('id');
     Route::get('bigboss-challenger', [ChallengeController::class, 'leaderboard']);
 });
 

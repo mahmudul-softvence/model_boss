@@ -515,6 +515,11 @@ class ChallengeTest extends TestCase
             'accepted_by_user_id' => $acceptor->id,
             'status' => ChallengeStatus::ACCEPTED->value,
         ]);
+        // ...one the user accepted but has since completed (excluded here)...
+        Challenge::factory()->create([
+            'accepted_by_user_id' => $acceptor->id,
+            'status' => ChallengeStatus::COMPLETED->value,
+        ]);
         // ...one accepted by someone else.
         Challenge::factory()->create([
             'accepted_by_user_id' => $other->id,
@@ -528,6 +533,39 @@ class ChallengeTest extends TestCase
         foreach ($response->json('data') as $row) {
             $this->assertSame($acceptor->id, $row['acceptor']['id']);
             $this->assertSame(ChallengeStatus::ACCEPTED->value, $row['status']);
+        }
+    }
+
+    public function test_profile_lists_challenges_completed_by_the_user(): void
+    {
+        $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+
+        $acceptor = $this->player('acceptor@example.com', balance: 1000);
+        $other = $this->player('other@example.com', balance: 1000);
+
+        // Two challenges this user accepted and completed...
+        Challenge::factory()->count(2)->create([
+            'accepted_by_user_id' => $acceptor->id,
+            'status' => ChallengeStatus::COMPLETED->value,
+        ]);
+        // ...one still in play (excluded here)...
+        Challenge::factory()->create([
+            'accepted_by_user_id' => $acceptor->id,
+            'status' => ChallengeStatus::ACCEPTED->value,
+        ]);
+        // ...one completed by someone else.
+        Challenge::factory()->create([
+            'accepted_by_user_id' => $other->id,
+            'status' => ChallengeStatus::COMPLETED->value,
+        ]);
+
+        $response = $this->getJson("/api/users/{$acceptor->id}/completed-challenges")
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2);
+
+        foreach ($response->json('data') as $row) {
+            $this->assertSame($acceptor->id, $row['acceptor']['id']);
+            $this->assertSame(ChallengeStatus::COMPLETED->value, $row['status']);
         }
     }
 

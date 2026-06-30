@@ -307,7 +307,7 @@ class ChallengeController extends Controller
     }
 
     /**
-     * Challenges accepted by a given user (for their profile).
+     * Challenges accepted by a given user that are still in play (for their profile).
      */
     public function acceptedChallenges(Request $request, $id)
     {
@@ -315,6 +315,7 @@ class ChallengeController extends Controller
 
         $paginator = Challenge::query()
             ->where('accepted_by_user_id', $id)
+            ->where('status', ChallengeStatus::ACCEPTED->value)
             ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
             ->orderBy('id', 'desc')
             ->paginate($perPage);
@@ -322,6 +323,26 @@ class ChallengeController extends Controller
         return $this->sendResponse(
             ChallengeResource::collection($paginator),
             'Accepted challenges retrieved successfully',
+        );
+    }
+
+    /**
+     * Challenges accepted by a given user that have since been completed (for their profile).
+     */
+    public function completedChallenges(Request $request, $id)
+    {
+        $perPage = $request->per_page ?? 10;
+
+        $paginator = Challenge::query()
+            ->where('accepted_by_user_id', $id)
+            ->where('status', ChallengeStatus::COMPLETED->value)
+            ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
+            ->orderBy('id', 'desc')
+            ->paginate($perPage);
+
+        return $this->sendResponse(
+            ChallengeResource::collection($paginator),
+            'Completed challenges retrieved successfully',
         );
     }
 
