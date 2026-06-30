@@ -84,6 +84,14 @@ Route::middleware(['auth:api', 'role:super_admin'])
             AdminSettingController::class,
             'auto_accept_withdraw',
         ]);
+        Route::get('settings/auto_offer_challenges', [
+            AdminSettingController::class,
+            'get_auto_offer_challenges',
+        ]);
+        Route::put('settings/auto_offer_challenges', [
+            AdminSettingController::class,
+            'auto_offer_challenges',
+        ]);
 
         // Promotional Terms Content
         Route::get('promotional-terms', [

@@ -51,6 +51,7 @@ Route::group(['middleware' => 'api'], function () {
     Route::get('challenges', [ChallengeController::class, 'index']);
     Route::get('challenges/{id}', [ChallengeController::class, 'show'])->whereNumber('id');
     Route::get('users/{id}/challenges', [ChallengeController::class, 'userChallenges'])->whereNumber('id');
+    Route::get('users/{id}/accepted-challenges', [ChallengeController::class, 'acceptedChallenges'])->whereNumber('id');
     Route::get('bigboss-challenger', [ChallengeController::class, 'leaderboard']);
 });
 
@@ -144,5 +145,5 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::delete('users/{user}/challenge-access', [AdminChallengeController::class, 'revokeAccess']);
 });
 
-require __DIR__ . '/backend.php';
-require __DIR__ . '/frontend.php';
+require __DIR__.'/backend.php';
+require __DIR__.'/frontend.php';

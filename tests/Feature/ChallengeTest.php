@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Jobs\ChallengeOfferExpiredJob;
 use App\Models\Challenge;
 use App\Models\Game;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserBalance;
 use App\Notifications\ChallengeAcceptedNotification;
@@ -69,6 +70,58 @@ class ChallengeTest extends TestCase
 
         // Not visible publicly until approved.
         $this->getJson('/api/challenges')->assertJsonPath('meta.total', 0);
+    }
+
+    public function test_auto_offer_setting_publishes_new_challenges_without_admin_approval(): void
+    {
+        $admin = $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+        $game = $this->createGame();
+        $challenger = $this->player('challenger@example.com', balance: 1000, canCreate: true);
+        $target = $this->player('target@example.com', balance: 1000);
+
+        Setting::create(['key' => 'auto_offer_challenges', 'value' => 'true']);
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson('/api/challenges', $this->offerPayload($game, $target, amount: 300))
+            ->assertCreated()
+            ->assertJsonPath('message', 'Challenge created and is now live.');
+
+        $challenge = Challenge::first();
+
+        $this->assertSame(ChallengeStatus::OFFERED->value, $challenge->status->value);
+        $this->assertNotNull($challenge->approved_at);
+
+        // Immediately visible/acceptable on the public list, no admin step.
+        $this->getJson('/api/challenges')->assertJsonPath('meta.total', 1);
+
+        Notification::assertSentTo($challenger, ChallengeApprovedNotification::class);
+        Notification::assertSentTo($target, ChallengeOfferNotification::class);
+        Notification::assertNotSentTo($admin, ChallengeCreatedAdminNotification::class);
+    }
+
+    public function test_admin_can_toggle_the_auto_offer_challenges_setting(): void
+    {
+        $admin = $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+
+        // Defaults to false when never set.
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->getJson('/api/admin/settings/auto_offer_challenges')
+            ->assertOk()
+            ->assertJsonPath('data.value', 'false');
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->putJson('/api/admin/settings/auto_offer_challenges', ['value' => 'true'])
+            ->assertOk()
+            ->assertJsonPath('data.value', 'true');
+
+        $this->assertDatabaseHas('settings', [
+            'key' => 'auto_offer_challenges',
+            'value' => 'true',
+        ]);
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->getJson('/api/admin/settings/auto_offer_challenges')
+            ->assertJsonPath('data.value', 'true');
     }
 
     public function test_users_without_permission_cannot_create_a_challenge(): void
@@ -268,6 +321,109 @@ class ChallengeTest extends TestCase
         $this->assertSame(1000.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
     }
 
+    public function test_expired_offer_cannot_be_accepted_and_exposes_expiry_state(): void
+    {
+        $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+        $challenger = $this->player('challenger@example.com', balance: 1000, canCreate: true);
+        $target = $this->player('target@example.com', balance: 1000);
+
+        // An offered challenge whose window has already closed (the background
+        // expiry job has not yet flipped the status).
+        $challenge = Challenge::factory()->offered()->create([
+            'challenger_id' => $challenger->id,
+            'target_player_id' => $target->id,
+            'amount' => 300,
+            'offer_expires_at' => now()->subMinute(),
+        ]);
+
+        // The dashboard payload tells the frontend to disable acceptance.
+        $this->withHeaders($this->authHeadersFor($target))
+            ->getJson('/api/challenges-for-me')
+            ->assertOk()
+            ->assertJsonPath('data.0.is_expired', true)
+            ->assertJsonPath('data.0.can_accept', false)
+            ->assertJsonPath('data.0.expiry_message', 'This challenge offer has expired.');
+
+        // And the server rejects a late acceptance attempt.
+        $this->withHeaders($this->authHeadersFor($target))
+            ->postJson("/api/challenges/{$challenge->id}/accept", ['terms_accepted' => true])
+            ->assertStatus(400)
+            ->assertJsonPath('message', 'This challenge offer has expired.');
+
+        // No stake was taken from the target.
+        $this->assertSame(1000.0, (float) UserBalance::where('user_id', $target->id)->value('total_balance'));
+    }
+
+    public function test_live_offer_can_be_accepted_and_reports_accept_state(): void
+    {
+        $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+        $target = $this->player('target@example.com', balance: 1000);
+
+        Challenge::factory()->offered()->create([
+            'target_player_id' => $target->id,
+            'offer_expires_at' => now()->addHour(),
+        ]);
+
+        $this->withHeaders($this->authHeadersFor($target))
+            ->getJson('/api/challenges-for-me')
+            ->assertOk()
+            ->assertJsonPath('data.0.is_expired', false)
+            ->assertJsonPath('data.0.can_accept', true)
+            ->assertJsonPath('data.0.expiry_message', null);
+    }
+
+    public function test_public_list_hides_expired_offers_but_incoming_dashboard_keeps_them(): void
+    {
+        $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+        $target = $this->player('target@example.com', balance: 1000);
+
+        // A live offer and an expired-but-not-yet-flipped offer, both addressed
+        // to the same target.
+        Challenge::factory()->offered()->create([
+            'target_player_id' => $target->id,
+            'amount' => 5000,
+            'offer_expires_at' => now()->addHour(),
+        ]);
+        Challenge::factory()->offered()->create([
+            'target_player_id' => $target->id,
+            'amount' => 7000,
+            'offer_expires_at' => now()->subMinute(),
+        ]);
+
+        // Public ranked list shows only the live offer.
+        $this->getJson('/api/challenges')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.amount', '5000.00');
+
+        // The target's own dashboard still shows both, the expired one disabled.
+        $this->withHeaders($this->authHeadersFor($target))
+            ->getJson('/api/challenges-for-me')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_public_list_shows_only_offered_challenges(): void
+    {
+        $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+
+        Challenge::factory()->offered()->create(['amount' => 5000]);
+        Challenge::factory()->create([
+            'status' => ChallengeStatus::ACCEPTED->value,
+            'amount' => 9000,
+        ]);
+        Challenge::factory()->create([
+            'status' => ChallengeStatus::COMPLETED->value,
+            'amount' => 8000,
+        ]);
+
+        $this->getJson('/api/challenges')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.amount', '5000.00')
+            ->assertJsonPath('data.0.status', ChallengeStatus::OFFERED->value);
+    }
+
     public function test_public_list_is_ordered_by_amount_desc_with_ranks(): void
     {
         $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
@@ -315,6 +471,34 @@ class ChallengeTest extends TestCase
         $this->withHeaders($this->authHeadersFor($target))
             ->getJson('/api/challenges-for-me?status=all')
             ->assertJsonPath('meta.total', 3);
+    }
+
+    public function test_profile_lists_challenges_accepted_by_the_user(): void
+    {
+        $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');
+
+        $acceptor = $this->player('acceptor@example.com', balance: 1000);
+        $other = $this->player('other@example.com', balance: 1000);
+
+        // Two challenges this user accepted...
+        Challenge::factory()->count(2)->create([
+            'accepted_by_user_id' => $acceptor->id,
+            'status' => ChallengeStatus::ACCEPTED->value,
+        ]);
+        // ...one accepted by someone else.
+        Challenge::factory()->create([
+            'accepted_by_user_id' => $other->id,
+            'status' => ChallengeStatus::ACCEPTED->value,
+        ]);
+
+        $response = $this->getJson("/api/users/{$acceptor->id}/accepted-challenges")
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2);
+
+        foreach ($response->json('data') as $row) {
+            $this->assertSame($acceptor->id, $row['acceptor']['id']);
+            $this->assertSame(ChallengeStatus::ACCEPTED->value, $row['status']);
+        }
     }
 
     public function test_player_payload_prefers_artist_name_then_falls_back_to_real_name(): void

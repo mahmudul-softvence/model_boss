@@ -8,10 +8,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ChallengeResource;
 use App\Jobs\ChallengeOfferExpiredJob;
 use App\Models\Challenge;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserBalance;
 use App\Notifications\ChallengeAcceptedNotification;
+use App\Notifications\ChallengeApprovedNotification;
 use App\Notifications\ChallengeCreatedAdminNotification;
+use App\Notifications\ChallengeOfferNotification;
 use App\Notifications\ChallengeRejectedNotification;
 use App\Services\ChallengeEscrowService;
 use Illuminate\Http\Request;
@@ -65,12 +68,13 @@ class ChallengeController extends Controller
 
         $durationHours = (int) ($request->duration_hours ?? 24);
         $amount = (float) $request->amount;
+        $autoOffer = Setting::isEnabled('auto_offer_challenges');
 
         $logoPath = $request->hasFile('logo')
             ? $request->file('logo')->store('logos', 'public')
             : null;
 
-        $challenge = DB::transaction(function () use ($request, $user, $amount, $durationHours, $logoPath) {
+        $challenge = DB::transaction(function () use ($request, $user, $amount, $durationHours, $logoPath, $autoOffer) {
 
             $challenge = Challenge::create([
                 'challenge_no' => $this->generateChallengeNo(),
@@ -86,9 +90,10 @@ class ChallengeController extends Controller
                 'show_real_name' => $request->boolean('show_real_name', true),
                 'match_date' => $request->match_date,
                 'match_time' => $request->match_time,
-                'status' => ChallengeStatus::PENDING,
+                'status' => $autoOffer ? ChallengeStatus::OFFERED : ChallengeStatus::PENDING,
                 'duration_hours' => $durationHours,
                 'offer_expires_at' => now()->addHours($durationHours),
+                'approved_at' => $autoOffer ? now() : null,
             ]);
 
             $this->escrow->hold($user->id, $amount, $challenge);
@@ -98,7 +103,15 @@ class ChallengeController extends Controller
 
         ChallengeOfferExpiredJob::dispatch($challenge->id)->delay($challenge->offer_expires_at);
 
-        $this->notifyAdmins(new ChallengeCreatedAdminNotification($challenge));
+        if ($autoOffer) {
+            $challenge->challenger?->notify(new ChallengeApprovedNotification($challenge));
+
+            if ($challenge->mode === ChallengeMode::UNIQUE && $challenge->targetPlayer) {
+                $challenge->targetPlayer->notify(new ChallengeOfferNotification($challenge));
+            }
+        } else {
+            $this->notifyAdmins(new ChallengeCreatedAdminNotification($challenge));
+        }
 
         $remaining = UserBalance::where('user_id', $user->id)->value('total_balance');
 
@@ -107,7 +120,9 @@ class ChallengeController extends Controller
             'amount_deducted' => $amount,
             'remaining_balance' => $remaining,
             'duration' => $durationHours.' Hours',
-        ], 'Challenge created and is awaiting admin approval.', 201);
+        ], $autoOffer
+            ? 'Challenge created and is now live.'
+            : 'Challenge created and is awaiting admin approval.', 201);
     }
 
     /**
@@ -236,7 +251,8 @@ class ChallengeController extends Controller
         $perPage = $request->per_page ?? 10;
 
         $paginator = Challenge::query()
-            ->visible()
+            ->where('status', ChallengeStatus::OFFERED->value)
+            ->excludingExpiredOffers()
             ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
             ->orderByAmountDesc()
             ->orderBy('id', 'desc')
@@ -287,6 +303,25 @@ class ChallengeController extends Controller
         return $this->sendResponse(
             ChallengeResource::collection($paginator),
             'User challenges retrieved successfully',
+        );
+    }
+
+    /**
+     * Challenges accepted by a given user (for their profile).
+     */
+    public function acceptedChallenges(Request $request, $id)
+    {
+        $perPage = $request->per_page ?? 10;
+
+        $paginator = Challenge::query()
+            ->where('accepted_by_user_id', $id)
+            ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
+            ->orderBy('id', 'desc')
+            ->paginate($perPage);
+
+        return $this->sendResponse(
+            ChallengeResource::collection($paginator),
+            'Accepted challenges retrieved successfully',
         );
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\ChallengeStatus;
 use App\Models\Challenge;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -35,6 +36,9 @@ class ChallengeResource extends JsonResource
             'match_date' => $this->match_date?->toDateString(),
             'match_time' => $this->match_time,
             'offer_expires_at' => $this->offer_expires_at?->toIso8601String(),
+            'is_expired' => $this->isExpired(),
+            'can_accept' => $this->status === ChallengeStatus::OFFERED && ! $this->isExpired(),
+            'expiry_message' => $this->isExpired() ? 'This challenge offer has expired.' : null,
             'game' => $this->whenLoaded('game', fn () => [
                 'id' => $this->game?->id,
                 'name' => $this->game?->name,

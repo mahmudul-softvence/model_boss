@@ -85,4 +85,33 @@ class AdminSettingController extends Controller
 
         return $this->sendResponse($data);
     }
+
+    public function auto_offer_challenges(Request $request)
+    {
+        $request->validate([
+            'value' => 'required|in:true,false',
+        ]);
+
+        Setting::updateOrCreate(
+            ['key' => 'auto_offer_challenges'],
+            ['value' => $request->value]
+        );
+
+        $data = [
+            'key' => 'auto_offer_challenges',
+            'value' => $request->value,
+        ];
+
+        return $this->sendResponse($data, 'Auto offer challenges updated');
+    }
+
+    public function get_auto_offer_challenges()
+    {
+        $data = [
+            'key' => 'auto_offer_challenges',
+            'value' => Setting::isEnabled('auto_offer_challenges') ? 'true' : 'false',
+        ];
+
+        return $this->sendResponse($data);
+    }
 }

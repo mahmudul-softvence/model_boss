@@ -99,6 +99,20 @@ class Challenge extends Model
         ]);
     }
 
+    /**
+     * Exclude offers whose acceptance window has already closed but have not yet
+     * been flipped to "expired" by the background job. Keeps the public list of
+     * acceptable offers clean.
+     */
+    public function scopeExcludingExpiredOffers(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q) {
+            $q->where('status', '!=', ChallengeStatus::OFFERED->value)
+                ->orWhereNull('offer_expires_at')
+                ->orWhere('offer_expires_at', '>', now());
+        });
+    }
+
     public function scopeOrderByAmountDesc(Builder $query): Builder
     {
         return $query->orderByDesc('amount');
