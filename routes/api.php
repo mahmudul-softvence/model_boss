@@ -141,6 +141,7 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::post('challenges/{id}/reject', [AdminChallengeController::class, 'reject']);
     Route::post('challenges/{id}/winner', [AdminChallengeController::class, 'winner']);
     Route::post('challenges/{id}/cancel', [AdminChallengeController::class, 'cancel']);
+    Route::post('challenges/{id}/publish-match', [AdminChallengeController::class, 'publishMatch']);
     Route::delete('challenges/{id}', [AdminChallengeController::class, 'destroy']);
     Route::post('users/{user}/challenge-access', [AdminChallengeController::class, 'grantAccess']);
     Route::delete('users/{user}/challenge-access', [AdminChallengeController::class, 'revokeAccess']);

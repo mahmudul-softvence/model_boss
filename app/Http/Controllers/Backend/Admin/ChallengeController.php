@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Backend\Admin;
 
 use App\Enums\ChallengeMode;
 use App\Enums\ChallengeStatus;
+use App\Events\MatchCreated;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ChallengeResource;
 use App\Models\Challenge;
+use App\Models\GameMatch;
 use App\Models\User;
 use App\Notifications\ChallengeApprovedNotification;
 use App\Notifications\ChallengeLostNotification;
@@ -15,8 +17,10 @@ use App\Notifications\ChallengeRejectedNotification;
 use App\Notifications\ChallengeWonNotification;
 use App\Services\ChallengeEscrowService;
 use App\Services\ChallengeSettlementService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class ChallengeController extends Controller
@@ -34,7 +38,7 @@ class ChallengeController extends Controller
         $perPage = $request->per_page ?? 10;
 
         $paginator = Challenge::query()
-            ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
+            ->with(['challenger', 'targetPlayer', 'acceptor', 'game', 'publishedMatch'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where('challenge_no', 'like', "%{$request->search}%");
@@ -125,7 +129,14 @@ class ChallengeController extends Controller
      */
     public function winner(Request $request, $id)
     {
-        $challenge = Challenge::findOrFail($id);
+        $challenge = Challenge::with('publishedMatch')->findOrFail($id);
+
+        if ($challenge->publishedMatch) {
+            return response()->json([
+                'status' => false,
+                'message' => 'This challenge has been published as a match. Select the winner from the match management.',
+            ], 400);
+        }
 
         $request->validate([
             'winner_id' => [
@@ -225,6 +236,126 @@ class ChallengeController extends Controller
             'status' => true,
             'message' => 'Challenge deleted.',
         ]);
+    }
+
+    /**
+     * Publish an accepted challenge as a match in game_matches.
+     */
+    public function publishMatch(Request $request, $id)
+    {
+        $challenge = Challenge::with(['challenger', 'acceptor', 'game'])->findOrFail($id);
+
+        if ($challenge->status !== ChallengeStatus::ACCEPTED) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Only accepted challenges can be published as a match.',
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'player_one_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'player_two_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'type' => 'nullable|string|in:upcoming',
+            'match_date' => 'nullable|date',
+            'match_time' => 'nullable|date_format:H:i',
+            'winner_percentage' => 'nullable|in:0,1',
+            'loser_percentage' => 'nullable|in:0,1',
+            'tiktok_link' => 'nullable|url',
+            'twitch_link' => 'nullable|url',
+            'rules' => 'nullable|string',
+            'voting_time' => 'nullable|date',
+            'confirmation_status' => 'nullable|in:0,1,2',
+            'pin_to_top' => 'nullable|in:0,1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $data = $request->all();
+
+        $data['player_one_id'] = $challenge->challenger_id;
+        $data['player_two_id'] = $challenge->accepted_by_user_id;
+        $data['game_id'] = $challenge->game_id;
+        $data['match_type'] = 'challenge';
+        $data['type'] = $request->type ?? 'upcoming';
+        $data['match_date'] = $request->match_date ?? $challenge->match_date;
+        $data['match_time'] = $request->match_time ?? $challenge->match_time;
+        $data['winner_percentage'] = $request->winner_percentage ?? 0;
+        $data['loser_percentage'] = $request->loser_percentage ?? 0;
+        $data['pin_to_top'] = $request->pin_to_top ?? 0;
+        $data['confirmation_status'] = $request->confirmation_status ?? 0;
+        $data['remove_status'] = 0;
+
+        if ($request->hasFile('player_one_logo')) {
+            $data['player_one_logo'] = $request->file('player_one_logo')->store('logos', 'public');
+        }
+
+        if ($request->hasFile('player_two_logo')) {
+            $data['player_two_logo'] = $request->file('player_two_logo')->store('logos', 'public');
+        }
+
+        do {
+            $matchNo = random_int(100000, 999999);
+        } while (GameMatch::where('match_no', $matchNo)->exists());
+
+        $data['challenge_id'] = $challenge->id;
+        $data['match_no'] = $matchNo;
+
+        $betAmount = (float) $challenge->amount;
+        $data['player_one_bet'] = $betAmount;
+        $data['player_two_bet'] = $betAmount;
+        $data['player_one_total'] = $betAmount;
+        $data['player_two_total'] = $betAmount;
+
+        if ($request->filled('voting_time')) {
+            $data['voting_time'] = Carbon::parse($request->voting_time);
+        }
+
+        $match = GameMatch::create($data);
+
+        $match->load([
+            'game:id,name',
+            'playerOne:id,name',
+            'playerTwo:id,name',
+        ]);
+
+        $users = User::role(['user', 'artist'])->pluck('id')->toArray();
+
+        $players = [
+            $data['player_one_id'],
+            $data['player_two_id'],
+        ];
+
+        $otherUsers = array_diff($users, $players);
+
+        broadcast(new MatchCreated(
+            $otherUsers,
+            'New match available! Go to home to support your favorite player.',
+            $players,
+            null
+        ))->toOthers();
+
+        broadcast(new MatchCreated(
+            $players,
+            'A match has been created and you have been selected as a player. Please review the rules carefully.',
+            $players,
+            $data['rules'] ?? null
+        ))->toOthers();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Challenge published as match successfully',
+            'data' => $match->load([
+                'game:id,name',
+                'playerOne:id,name',
+                'playerTwo:id,name',
+            ]),
+        ], 201);
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Enums\ChallengeMode;
 use App\Enums\ChallengeStatus;
 use Database\Factories\ChallengeFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -79,6 +80,22 @@ class Challenge extends Model
     public function game()
     {
         return $this->belongsTo(Game::class, 'game_id');
+    }
+
+    public function publishedMatch()
+    {
+        return $this->hasOne(GameMatch::class, 'challenge_id');
+    }
+
+    protected function isPublished(): Attribute
+    {
+        return Attribute::get(function () {
+            if ($this->relationLoaded('publishedMatch')) {
+                return $this->publishedMatch !== null;
+            }
+
+            return $this->publishedMatch()->exists();
+        });
     }
 
     public function scopeVisible(Builder $query): Builder

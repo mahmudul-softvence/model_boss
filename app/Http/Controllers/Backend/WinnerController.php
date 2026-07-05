@@ -2,20 +2,29 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Enums\ChallengeStatus;
 use App\Events\MatchCompleted;
 use App\Http\Controllers\Controller;
 use App\Jobs\PlatformFeeJob;
+use App\Models\Challenge;
 use App\Models\CoinTransaction;
 use App\Models\FinalSupport;
 use App\Models\GameMatch;
 use App\Models\User;
 use App\Models\UserBalance;
+use App\Notifications\ChallengeLostNotification;
+use App\Notifications\ChallengeWonNotification;
+use App\Services\ChallengeSettlementService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class WinnerController extends Controller
 {
+    public function __construct(
+        private ChallengeSettlementService $challengeSettlement,
+    ) {}
+
     public function winner(Request $request, $id)
     {
         try {
@@ -44,12 +53,30 @@ class WinnerController extends Controller
                     ],
                 ]);
 
-                $winnerId = $request->winner_id;
+                $winnerId = (int) $request->winner_id;
 
                 $match->update([
                     'winner_id' => $winnerId,
                     'type' => 'completed',
                 ]);
+
+                if ($match->match_type === 'challenge' && $match->challenge_id) {
+                    $challenge = Challenge::lockForUpdate()->find($match->challenge_id);
+
+                    if ($challenge && $challenge->status === ChallengeStatus::ACCEPTED) {
+                        $this->challengeSettlement->settle($challenge, $winnerId);
+
+                        $loserId = $winnerId === $challenge->challenger_id
+                            ? $challenge->accepted_by_user_id
+                            : $challenge->challenger_id;
+
+                        $winner = User::find($winnerId);
+                        $loser = User::find($loserId);
+
+                        $winner?->notify(new ChallengeWonNotification($challenge, (float) $challenge->amount * 2 * 0.85));
+                        $loser?->notify(new ChallengeLostNotification($challenge, (float) $challenge->amount));
+                    }
+                }
 
                 $totalWin = $winnerId == $match->player_one_id
                     ? ($match->player_one_total - $match->player_one_bet) * 2
