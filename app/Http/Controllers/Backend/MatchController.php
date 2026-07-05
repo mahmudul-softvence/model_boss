@@ -35,6 +35,10 @@ class MatchController extends Controller
             $query->where('type', $request->type);
         }
 
+        if ($request->filled('match_type')) {
+            $query->where('match_type', $request->match_type);
+        }
+
         if ($request->filled('player_id')) {
             $query->where(function ($q) use ($request) {
                 $q->where('player_one_id', $request->player_id)
@@ -46,8 +50,11 @@ class MatchController extends Controller
             $search = $request->search;
 
             $query->where(function ($q) use ($search) {
-                $q->where('match_no', 'like', "%{$search}%")
+                $q->where('id', $search)
+                    ->orWhere('challenge_id', $search)
+                    ->orWhere('match_no', 'like', "%{$search}%")
                     ->orWhere('type', 'like', "%{$search}%")
+                    ->orWhere('match_type', 'like', "%{$search}%")
                     ->orWhereHas('game', function ($gameQuery) use ($search) {
                         $gameQuery->where('name', 'like', "%{$search}%");
                     })
