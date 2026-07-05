@@ -941,6 +941,36 @@ class ChallengeTest extends TestCase
             ->assertJsonPath('data.0.published_match_id', null);
     }
 
+    public function test_admin_list_orders_pending_then_offered_then_accepted_then_completed_then_cancelled(): void
+    {
+        $admin = $this->platformAdmin();
+
+        // Created out of order on purpose; same amount so status decides the order.
+        foreach ([
+            ChallengeStatus::CANCELLED,
+            ChallengeStatus::COMPLETED,
+            ChallengeStatus::PENDING,
+            ChallengeStatus::ACCEPTED,
+            ChallengeStatus::OFFERED,
+        ] as $status) {
+            Challenge::factory()->create(['status' => $status->value, 'amount' => 500]);
+        }
+
+        $response = $this->withHeaders($this->authHeadersFor($admin))
+            ->getJson('/api/admin/challenges')
+            ->assertOk();
+
+        $statuses = collect($response->json('data'))->pluck('status')->all();
+
+        $this->assertSame([
+            ChallengeStatus::PENDING->value,
+            ChallengeStatus::OFFERED->value,
+            ChallengeStatus::ACCEPTED->value,
+            ChallengeStatus::COMPLETED->value,
+            ChallengeStatus::CANCELLED->value,
+        ], $statuses);
+    }
+
     // Helpers ---------------------------------------------------------------
 
     private function seedRoles(): void

@@ -138,11 +138,13 @@ class Challenge extends Model
     public function scopeOrderByStatusPriority(Builder $query): Builder
     {
         return $query->orderByRaw(
-            'CASE status WHEN ? THEN 0 WHEN ? THEN 1 WHEN ? THEN 2 ELSE 3 END',
+            'CASE status WHEN ? THEN 0 WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 ELSE 5 END',
             [
                 ChallengeStatus::PENDING->value,
                 ChallengeStatus::OFFERED->value,
+                ChallengeStatus::ACCEPTED->value,
                 ChallengeStatus::COMPLETED->value,
+                ChallengeStatus::CANCELLED->value,
             ]
         );
     }
