@@ -31,6 +31,8 @@ class GameMatch extends Model
         'rules',
         'voting_time',
         'vote_start_time',
+        'match_type',
+        'challenge_id',
         'pin_to_top',
         'remove_status',
     ];
@@ -69,5 +71,10 @@ class GameMatch extends Model
     public function game()
     {
         return $this->belongsTo(Game::class, 'game_id');
+    }
+
+    public function challenge()
+    {
+        return $this->belongsTo(Challenge::class, 'challenge_id');
     }
 }
