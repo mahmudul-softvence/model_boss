@@ -472,13 +472,7 @@ class MatchController extends Controller
                     ->where('type', 'live');
             })
             ->when($filter === 'past', function ($query) {
-                $query->where(function ($q) {
-                    $q->where(function ($sub) {
-                        $sub->where('confirmation_status', 1)
-                            ->where('type', '!=', 'live');
-                    })
-                        ->orWhere('confirmation_status', 2);
-                });
+                $query->where('type', 'completed');
             })
             ->when($filter === 'upcoming', function ($query) {
                 $query->where('confirmation_status', 0);
