@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Jobs\ChallengeOfferExpiredJob;
 use App\Models\Challenge;
 use App\Models\Game;
+use App\Models\GameMatch;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserBalance;
@@ -628,6 +629,182 @@ class ChallengeTest extends TestCase
                 && in_array('database', $channels, true)
                 && in_array('broadcast', $channels, true),
         );
+    }
+
+    public function test_publish_match_creates_game_match_from_accepted_challenge(): void
+    {
+        $admin = $this->platformAdmin();
+        $game = $this->createGame();
+        $challenger = $this->player('challenger@example.com', balance: 1000, canCreate: true);
+        $acceptor = $this->player('acceptor@example.com', balance: 1000);
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson('/api/challenges', $this->offerPayload($game, $acceptor, amount: 500));
+
+        $challenge = Challenge::first();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/approve");
+
+        $this->withHeaders($this->authHeadersFor($acceptor))
+            ->postJson("/api/challenges/{$challenge->id}/accept", ['terms_accepted' => true]);
+
+        $response = $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", [
+                'type' => 'upcoming',
+                'match_date' => now()->addDay()->toDateString(),
+                'match_time' => '18:00',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('data.match_type', 'challenge');
+
+        $this->assertDatabaseHas('game_matches', [
+            'challenge_id' => $challenge->id,
+            'player_one_id' => $challenger->id,
+            'player_two_id' => $acceptor->id,
+            'match_type' => 'challenge',
+            'player_one_bet' => 500,
+            'player_two_bet' => 500,
+        ]);
+
+        $this->assertDatabaseHas('challenges', [
+            'id' => $challenge->id,
+            'status' => ChallengeStatus::ACCEPTED->value,
+        ]);
+    }
+
+    public function test_published_challenge_includes_is_published_flag(): void
+    {
+        $admin = $this->platformAdmin();
+        $game = $this->createGame();
+        $challenger = $this->player('challenger@example.com', balance: 1000, canCreate: true);
+        $acceptor = $this->player('acceptor@example.com', balance: 1000);
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson('/api/challenges', $this->offerPayload($game, $acceptor, amount: 300));
+
+        $challenge = Challenge::first();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/approve");
+
+        $this->withHeaders($this->authHeadersFor($acceptor))
+            ->postJson("/api/challenges/{$challenge->id}/accept", ['terms_accepted' => true]);
+
+        // Before publish
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->getJson('/api/admin/challenges')
+            ->assertJsonPath('data.0.is_published', false)
+            ->assertJsonPath('data.0.published_match_id', null);
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", [
+                'type' => 'upcoming',
+                'match_date' => now()->addDay()->toDateString(),
+                'match_time' => '18:00',
+            ]);
+
+        // After publish
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->getJson('/api/admin/challenges')
+            ->assertJsonPath('data.0.is_published', true)
+            ->assertJsonPath('data.0.published_match_id', fn ($id) => is_int($id));
+    }
+
+    public function test_admin_challenge_winner_blocked_when_challenge_is_published(): void
+    {
+        $admin = $this->platformAdmin();
+        $game = $this->createGame();
+        $challenger = $this->player('challenger@example.com', balance: 1000, canCreate: true);
+        $acceptor = $this->player('acceptor@example.com', balance: 1000);
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson('/api/challenges', $this->offerPayload($game, $acceptor, amount: 300));
+
+        $challenge = Challenge::first();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/approve");
+
+        $this->withHeaders($this->authHeadersFor($acceptor))
+            ->postJson("/api/challenges/{$challenge->id}/accept", ['terms_accepted' => true]);
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", [
+                'type' => 'upcoming',
+                'match_date' => now()->addDay()->toDateString(),
+                'match_time' => '18:00',
+            ]);
+
+        $response = $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/winner", [
+                'winner_id' => $challenger->id,
+            ]);
+
+        $response->assertStatus(400)
+            ->assertJsonPath('message', 'This challenge has been published as a match. Select the winner from the match management.');
+    }
+
+    public function test_winner_selection_on_challenge_match_sets_challenge_completed(): void
+    {
+        $admin = $this->platformAdmin();
+        $game = $this->createGame();
+        $challenger = $this->player('challenger@example.com', balance: 1000, canCreate: true);
+        $acceptor = $this->player('acceptor@example.com', balance: 1000);
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson('/api/challenges', $this->offerPayload($game, $acceptor, amount: 300));
+
+        $challenge = Challenge::first();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/approve");
+
+        $this->withHeaders($this->authHeadersFor($acceptor))
+            ->postJson("/api/challenges/{$challenge->id}/accept", ['terms_accepted' => true]);
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", [
+                'type' => 'upcoming',
+                'match_date' => now()->addDay()->toDateString(),
+                'match_time' => '18:00',
+            ]);
+
+        $match = GameMatch::where('challenge_id', $challenge->id)->first();
+
+        $match->update(['confirmation_status' => 1]);
+
+        $response = $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/match-winner/{$match->id}", [
+                'winner_id' => $challenger->id,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', true);
+
+        $this->assertDatabaseHas('game_matches', [
+            'id' => $match->id,
+            'winner_id' => $challenger->id,
+            'type' => 'completed',
+        ]);
+
+        $this->assertDatabaseHas('challenges', [
+            'id' => $challenge->id,
+            'status' => ChallengeStatus::COMPLETED->value,
+            'winner_id' => $challenger->id,
+        ]);
+
+        $this->assertDatabaseHas('coin_transactions', [
+            'user_id' => $challenger->id,
+            'type' => 'challenge-win',
+        ]);
+
+        $this->assertDatabaseHas('coin_transactions', [
+            'user_id' => $admin->id,
+            'type' => 'challenge-fee',
+        ]);
     }
 
     // Helpers ---------------------------------------------------------------
