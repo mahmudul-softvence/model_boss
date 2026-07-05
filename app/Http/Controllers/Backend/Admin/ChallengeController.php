@@ -17,7 +17,6 @@ use App\Notifications\ChallengeRejectedNotification;
 use App\Notifications\ChallengeWonNotification;
 use App\Services\ChallengeEscrowService;
 use App\Services\ChallengeSettlementService;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -255,17 +254,11 @@ class ChallengeController extends Controller
         $validator = Validator::make($request->all(), [
             'player_one_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'player_two_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'type' => 'nullable|string|in:upcoming',
-            'match_date' => 'nullable|date',
-            'match_time' => 'nullable|date_format:H:i',
             'winner_percentage' => 'nullable|in:0,1',
             'loser_percentage' => 'nullable|in:0,1',
             'tiktok_link' => 'nullable|url',
             'twitch_link' => 'nullable|url',
             'rules' => 'nullable|string',
-            'voting_time' => 'nullable|date',
-            'confirmation_status' => 'nullable|in:0,1,2',
-            'pin_to_top' => 'nullable|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -283,12 +276,12 @@ class ChallengeController extends Controller
         $data['game_id'] = $challenge->game_id;
         $data['match_type'] = 'challenge';
         $data['type'] = $request->type ?? 'upcoming';
-        $data['match_date'] = $request->match_date ?? $challenge->match_date;
-        $data['match_time'] = $request->match_time ?? $challenge->match_time;
+        $data['match_date'] = $challenge->match_date;
+        $data['match_time'] = $challenge->match_time;
         $data['winner_percentage'] = $request->winner_percentage ?? 0;
         $data['loser_percentage'] = $request->loser_percentage ?? 0;
-        $data['pin_to_top'] = $request->pin_to_top ?? 0;
-        $data['confirmation_status'] = $request->confirmation_status ?? 0;
+        $data['pin_to_top'] = 0;
+        $data['confirmation_status'] = 0;
         $data['remove_status'] = 0;
 
         if ($request->hasFile('player_one_logo')) {
@@ -311,10 +304,6 @@ class ChallengeController extends Controller
         $data['player_two_bet'] = $betAmount;
         $data['player_one_total'] = $betAmount;
         $data['player_two_total'] = $betAmount;
-
-        if ($request->filled('voting_time')) {
-            $data['voting_time'] = Carbon::parse($request->voting_time);
-        }
 
         $match = GameMatch::create($data);
 

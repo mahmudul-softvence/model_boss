@@ -652,8 +652,6 @@ class ChallengeTest extends TestCase
         $response = $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", [
                 'type' => 'upcoming',
-                'match_date' => now()->addDay()->toDateString(),
-                'match_time' => '18:00',
             ]);
 
         $response->assertCreated()
@@ -702,8 +700,6 @@ class ChallengeTest extends TestCase
         $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", [
                 'type' => 'upcoming',
-                'match_date' => now()->addDay()->toDateString(),
-                'match_time' => '18:00',
             ]);
 
         // After publish
@@ -734,8 +730,6 @@ class ChallengeTest extends TestCase
         $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", [
                 'type' => 'upcoming',
-                'match_date' => now()->addDay()->toDateString(),
-                'match_time' => '18:00',
             ]);
 
         $response = $this->withHeaders($this->authHeadersFor($admin))
@@ -768,8 +762,6 @@ class ChallengeTest extends TestCase
         $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", [
                 'type' => 'upcoming',
-                'match_date' => now()->addDay()->toDateString(),
-                'match_time' => '18:00',
             ]);
 
         $match = GameMatch::where('challenge_id', $challenge->id)->first();
