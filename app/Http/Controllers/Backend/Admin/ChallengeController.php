@@ -192,6 +192,10 @@ class ChallengeController extends Controller
                 abort(400, 'This challenge can no longer be cancelled.');
             }
 
+            if ($this->hasActivePublishedMatch($challenge)) {
+                abort(400, 'This challenge has been published as a match. Manage it from the match management.');
+            }
+
             $this->escrow->refund($challenge->challenger_id, (float) $challenge->amount, $challenge);
 
             if ($challenge->status === ChallengeStatus::ACCEPTED && $challenge->accepted_by_user_id) {
@@ -221,6 +225,10 @@ class ChallengeController extends Controller
                 ChallengeStatus::OFFERED,
                 ChallengeStatus::ACCEPTED,
             ], true)) {
+                if ($this->hasActivePublishedMatch($challenge)) {
+                    abort(400, 'This challenge has been published as a match. Manage it from the match management.');
+                }
+
                 $this->escrow->refund($challenge->challenger_id, (float) $challenge->amount, $challenge);
 
                 if ($challenge->status === ChallengeStatus::ACCEPTED && $challenge->accepted_by_user_id) {
@@ -251,7 +259,15 @@ class ChallengeController extends Controller
             ], 400);
         }
 
+        if ($challenge->publishedMatch()->exists()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'This challenge has already been published as a match.',
+            ], 400);
+        }
+
         $validator = Validator::make($request->all(), [
+            'type' => 'nullable|string|in:upcoming',
             'player_one_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'player_two_logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'winner_percentage' => 'nullable|in:0,1',
@@ -269,20 +285,30 @@ class ChallengeController extends Controller
             ], 422);
         }
 
-        $data = $request->all();
+        $betAmount = (float) $challenge->amount;
 
-        $data['player_one_id'] = $challenge->challenger_id;
-        $data['player_two_id'] = $challenge->accepted_by_user_id;
-        $data['game_id'] = $challenge->game_id;
-        $data['match_type'] = 'challenge';
-        $data['type'] = $request->type ?? 'upcoming';
-        $data['match_date'] = $challenge->match_date;
-        $data['match_time'] = $challenge->match_time;
-        $data['winner_percentage'] = $request->winner_percentage ?? 0;
-        $data['loser_percentage'] = $request->loser_percentage ?? 0;
-        $data['pin_to_top'] = 0;
-        $data['confirmation_status'] = 0;
-        $data['remove_status'] = 0;
+        $data = [
+            'player_one_id' => $challenge->challenger_id,
+            'player_two_id' => $challenge->accepted_by_user_id,
+            'game_id' => $challenge->game_id,
+            'match_type' => 'challenge',
+            'challenge_id' => $challenge->id,
+            'type' => $request->type ?? 'upcoming',
+            'match_date' => $challenge->match_date,
+            'match_time' => $challenge->match_time,
+            'winner_percentage' => $request->winner_percentage ?? 0,
+            'loser_percentage' => $request->loser_percentage ?? 0,
+            'tiktok_link' => $request->tiktok_link,
+            'twitch_link' => $request->twitch_link,
+            'rules' => $request->rules,
+            'pin_to_top' => 0,
+            'confirmation_status' => 0,
+            'remove_status' => 0,
+            'player_one_bet' => $betAmount,
+            'player_two_bet' => $betAmount,
+            'player_one_total' => $betAmount,
+            'player_two_total' => $betAmount,
+        ];
 
         if ($request->hasFile('player_one_logo')) {
             $data['player_one_logo'] = $request->file('player_one_logo')->store('logos', 'public');
@@ -296,16 +322,29 @@ class ChallengeController extends Controller
             $matchNo = random_int(100000, 999999);
         } while (GameMatch::where('match_no', $matchNo)->exists());
 
-        $data['challenge_id'] = $challenge->id;
         $data['match_no'] = $matchNo;
 
-        $betAmount = (float) $challenge->amount;
-        $data['player_one_bet'] = $betAmount;
-        $data['player_two_bet'] = $betAmount;
-        $data['player_one_total'] = $betAmount;
-        $data['player_two_total'] = $betAmount;
+        try {
+            $match = DB::transaction(function () use ($id, $data) {
 
-        $match = GameMatch::create($data);
+                $challenge = Challenge::lockForUpdate()->find($id);
+
+                if (! $challenge || $challenge->status !== ChallengeStatus::ACCEPTED) {
+                    throw new \RuntimeException('Only accepted challenges can be published as a match.');
+                }
+
+                if ($challenge->publishedMatch()->exists()) {
+                    throw new \RuntimeException('This challenge has already been published as a match.');
+                }
+
+                return GameMatch::create($data);
+            });
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
 
         $match->load([
             'game:id,name',
@@ -409,5 +448,17 @@ class ChallengeController extends Controller
             'status' => true,
             'message' => 'Challenge creation access revoked.',
         ]);
+    }
+
+    /**
+     * Whether the challenge has a published match that is still in play.
+     * A declined match (confirmation_status 2) no longer blocks the challenge,
+     * so the admin can still cancel it and refund the held stakes.
+     */
+    private function hasActivePublishedMatch(Challenge $challenge): bool
+    {
+        $match = $challenge->publishedMatch()->first();
+
+        return $match !== null && (int) $match->confirmation_status !== 2;
     }
 }

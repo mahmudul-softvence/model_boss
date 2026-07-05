@@ -49,7 +49,7 @@ class ChallengeResource extends JsonResource
             'acceptor' => $this->playerPayload($this->whenLoaded('acceptor') ? $this->acceptor : null),
             'winner_id' => $this->winner_id,
             'is_published' => $this->is_published,
-            'published_match_id' => $this->publishedMatch?->id,
+            'published_match_id' => $this->publishedMatch?->match_no,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

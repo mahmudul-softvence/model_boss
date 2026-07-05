@@ -366,7 +366,8 @@ class MatchController extends Controller
             ], 404);
         }
 
-        if ($match->player_one_bet != $match->players_bet_amount) {
+        if ($match->player_one_total != $match->player_one_bet
+            || $match->player_two_total != $match->player_two_bet) {
             return response()->json([
                 'status' => false,
                 'message' => 'Cannot delete match with support data',

@@ -64,17 +64,21 @@ class WinnerController extends Controller
                     $challenge = Challenge::lockForUpdate()->find($match->challenge_id);
 
                     if ($challenge && $challenge->status === ChallengeStatus::ACCEPTED) {
-                        $this->challengeSettlement->settle($challenge, $winnerId);
+                        $result = $this->challengeSettlement->settle($challenge, $winnerId);
 
                         $loserId = $winnerId === $challenge->challenger_id
                             ? $challenge->accepted_by_user_id
                             : $challenge->challenger_id;
 
-                        $winner = User::find($winnerId);
-                        $loser = User::find($loserId);
+                        $winnerPayout = (float) $result['winner_payout'];
 
-                        $winner?->notify(new ChallengeWonNotification($challenge, (float) $challenge->amount * 2 * 0.85));
-                        $loser?->notify(new ChallengeLostNotification($challenge, (float) $challenge->amount));
+                        DB::afterCommit(function () use ($challenge, $winnerId, $loserId, $winnerPayout) {
+                            $winner = User::find($winnerId);
+                            $loser = User::find($loserId);
+
+                            $winner?->notify(new ChallengeWonNotification($challenge, $winnerPayout));
+                            $loser?->notify(new ChallengeLostNotification($challenge, (float) $challenge->amount));
+                        });
                     }
                 }
 

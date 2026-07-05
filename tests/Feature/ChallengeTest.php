@@ -702,11 +702,13 @@ class ChallengeTest extends TestCase
                 'type' => 'upcoming',
             ]);
 
-        // After publish
+        $match = GameMatch::where('challenge_id', $challenge->id)->first();
+
+        // After publish the challenge exposes the published match number.
         $this->withHeaders($this->authHeadersFor($admin))
             ->getJson('/api/admin/challenges')
             ->assertJsonPath('data.0.is_published', true)
-            ->assertJsonPath('data.0.published_match_id', fn ($id) => is_int($id));
+            ->assertJsonPath('data.0.published_match_id', $match->match_no);
     }
 
     public function test_admin_challenge_winner_blocked_when_challenge_is_published(): void
@@ -797,6 +799,146 @@ class ChallengeTest extends TestCase
             'user_id' => $admin->id,
             'type' => 'challenge-fee',
         ]);
+
+        // 300 stake each -> 600 pool, 15% fee -> 510 credited to the winner.
+        $this->assertSame(1210.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
+
+        Notification::assertSentTo($challenger, ChallengeWonNotification::class);
+        Notification::assertSentTo($acceptor, ChallengeLostNotification::class);
+    }
+
+    public function test_publish_match_cannot_publish_the_same_challenge_twice(): void
+    {
+        [$admin, , , $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming'])
+            ->assertCreated();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming'])
+            ->assertStatus(400)
+            ->assertJsonPath('message', 'This challenge has already been published as a match.');
+
+        $this->assertSame(1, GameMatch::where('challenge_id', $challenge->id)->count());
+    }
+
+    public function test_publish_match_ignores_injected_admin_fields(): void
+    {
+        [$admin, $challenger, , $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", [
+                'type' => 'upcoming',
+                'winner_id' => $challenger->id,
+                'confirmation_status' => 1,
+                'pin_to_top' => 1,
+                'remove_status' => 1,
+                'player_one_bet' => 5,
+                'voting_time' => now()->addDay()->toDateTimeString(),
+            ])
+            ->assertCreated();
+
+        $match = GameMatch::where('challenge_id', $challenge->id)->first();
+
+        $this->assertNull($match->winner_id);
+        $this->assertSame(0, (int) $match->confirmation_status);
+        $this->assertSame(0, (int) $match->pin_to_top);
+        $this->assertSame(0, (int) $match->remove_status);
+        $this->assertNull($match->voting_time);
+        $this->assertSame(300.0, (float) $match->player_one_bet);
+    }
+
+    public function test_publish_match_rejects_a_type_other_than_upcoming(): void
+    {
+        [$admin, , , $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'live'])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Validation failed');
+
+        $this->assertSame(0, GameMatch::where('challenge_id', $challenge->id)->count());
+    }
+
+    public function test_admin_cannot_cancel_a_challenge_with_an_active_published_match(): void
+    {
+        [$admin, $challenger, , $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming']);
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/cancel")
+            ->assertStatus(400);
+
+        $this->assertDatabaseHas('challenges', [
+            'id' => $challenge->id,
+            'status' => ChallengeStatus::ACCEPTED->value,
+        ]);
+
+        // Stakes remain held.
+        $this->assertSame(700.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
+    }
+
+    public function test_admin_can_cancel_a_challenge_after_its_published_match_was_declined(): void
+    {
+        [$admin, $challenger, $acceptor, $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming']);
+
+        GameMatch::where('challenge_id', $challenge->id)->first()
+            ->update(['confirmation_status' => 2, 'type' => 'unsettled']);
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/cancel")
+            ->assertOk();
+
+        $this->assertDatabaseHas('challenges', [
+            'id' => $challenge->id,
+            'status' => ChallengeStatus::CANCELLED->value,
+        ]);
+
+        $this->assertSame(1000.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
+        $this->assertSame(1000.0, (float) UserBalance::where('user_id', $acceptor->id)->value('total_balance'));
+    }
+
+    public function test_admin_cannot_delete_a_challenge_with_an_active_published_match(): void
+    {
+        [$admin, $challenger, , $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming']);
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->deleteJson("/api/admin/challenges/{$challenge->id}")
+            ->assertStatus(400);
+
+        $this->assertDatabaseHas('challenges', ['id' => $challenge->id]);
+        $this->assertSame(700.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
+    }
+
+    public function test_deleting_a_published_match_without_support_unpublishes_the_challenge(): void
+    {
+        [$admin, , , $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming']);
+
+        $match = GameMatch::where('challenge_id', $challenge->id)->first();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->deleteJson("/api/admin/matches/{$match->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('game_matches', ['id' => $match->id]);
+
+        // The challenge is intact and no longer marked as published.
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->getJson('/api/admin/challenges')
+            ->assertJsonPath('data.0.is_published', false)
+            ->assertJsonPath('data.0.published_match_id', null);
     }
 
     // Helpers ---------------------------------------------------------------
@@ -843,6 +985,32 @@ class ChallengeTest extends TestCase
         UserBalance::create(['user_id' => $user->id, 'total_balance' => $balance]);
 
         return $user;
+    }
+
+    /**
+     * Create an approved challenge whose stake has been matched by the acceptor.
+     *
+     * @return array{0: User, 1: User, 2: User, 3: Challenge} [admin, challenger, acceptor, challenge]
+     */
+    private function acceptedChallenge(float $amount = 300): array
+    {
+        $admin = $this->platformAdmin();
+        $game = $this->createGame();
+        $challenger = $this->player('challenger@example.com', balance: 1000, canCreate: true);
+        $acceptor = $this->player('acceptor@example.com', balance: 1000);
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson('/api/challenges', $this->offerPayload($game, $acceptor, amount: $amount));
+
+        $challenge = Challenge::first();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/approve");
+
+        $this->withHeaders($this->authHeadersFor($acceptor))
+            ->postJson("/api/challenges/{$challenge->id}/accept", ['terms_accepted' => true]);
+
+        return [$admin, $challenger, $acceptor, $challenge];
     }
 
     private function createGame(): Game
