@@ -483,6 +483,9 @@ class MatchController extends Controller
             ->when($filter === 'upcoming', function ($query) {
                 $query->where('confirmation_status', 0);
             })
+            ->when($filter === 'challenge', function ($query) {
+                $query->where('match_type', 'challenge');
+            })
             ->orderByRaw('
                 CASE 
                     WHEN id = (SELECT id FROM game_matches ORDER BY created_at DESC LIMIT 1)

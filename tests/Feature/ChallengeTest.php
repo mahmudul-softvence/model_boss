@@ -971,6 +971,38 @@ class ChallengeTest extends TestCase
         ], $statuses);
     }
 
+    public function test_public_match_list_can_filter_challenge_matches(): void
+    {
+        [$admin, $challenger, $acceptor, $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming']);
+
+        // A regular (non-challenge) match that must be excluded by the filter.
+        GameMatch::create([
+            'match_no' => '654321',
+            'player_one_id' => $challenger->id,
+            'player_two_id' => $acceptor->id,
+            'game_id' => $challenge->game_id,
+            'type' => 'upcoming',
+            'confirmation_status' => 0,
+            'player_one_bet' => 100,
+            'player_two_bet' => 100,
+            'player_one_total' => 100,
+            'player_two_total' => 100,
+        ]);
+
+        // Without the filter both matches are listed.
+        $this->getJson('/api/matches')->assertJsonPath('meta.total', 2);
+
+        $response = $this->getJson('/api/matches?type=challenge')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1);
+
+        $this->assertSame('challenge', $response->json('data.0.match_type'));
+        $this->assertSame($challenge->id, $response->json('data.0.challenge_id'));
+    }
+
     // Helpers ---------------------------------------------------------------
 
     private function seedRoles(): void
