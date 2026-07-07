@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Enums\ChallengeMode;
 use App\Enums\ChallengeStatus;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ChallengeResource;
 use App\Jobs\ChallengeOfferExpiredJob;
@@ -281,8 +282,10 @@ class ChallengeController extends Controller
             ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
             ->findOrFail($id);
 
+        $admin = User::role(UserRole::SUPER_ADMIN->value)->first();
+
         return $this->sendResponse(
-            new ChallengeResource($challenge),
+            (new ChallengeResource($challenge))->withModel($admin),
             'Challenge retrieved successfully',
         );
     }

@@ -606,6 +606,30 @@ class ChallengeTest extends TestCase
         $this->assertSame('Real Name', $realRow['name']);
     }
 
+    public function test_show_exposes_the_platform_admin_as_the_model(): void
+    {
+        $admin = $this->platformAdmin();
+        $admin->update([
+            'name' => 'Platform Boss',
+            'artist_name' => null,
+            'image' => 'admins/boss.png',
+        ]);
+        $admin->refresh();
+
+        $challenge = Challenge::factory()->offered()->create();
+
+        $response = $this->getJson("/api/challenges/{$challenge->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $challenge->id);
+
+        $response
+            ->assertJsonPath('data.model.id', $admin->id)
+            ->assertJsonPath('data.model.name', 'Platform Boss')
+            ->assertJsonPath('data.model.image', $admin->image_url);
+
+        $this->assertNotNull($admin->image_url);
+    }
+
     public function test_challenge_offer_notifies_the_target_via_mail_database_and_broadcast(): void
     {
         $admin = $this->createUserWithRole(UserRole::SUPER_ADMIN, 'admin@example.com');

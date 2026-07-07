@@ -14,6 +14,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class ChallengeResource extends JsonResource
 {
     /**
+     * The platform admin ("model") to expose alongside the challenge, when provided.
+     */
+    protected ?User $platformAdmin = null;
+
+    /**
+     * Attach the platform admin so it is exposed as the `model` on this challenge.
+     */
+    public function withModel(?User $admin): static
+    {
+        $this->platformAdmin = $admin;
+
+        return $this;
+    }
+
+    /**
      * Transform the resource into an array.
      *
      * @return array<string, mixed>
@@ -47,6 +62,10 @@ class ChallengeResource extends JsonResource
             'challenger' => $this->playerPayload($this->whenLoaded('challenger') ? $this->challenger : null),
             'target_player' => $this->playerPayload($this->whenLoaded('targetPlayer') ? $this->targetPlayer : null),
             'acceptor' => $this->playerPayload($this->whenLoaded('acceptor') ? $this->acceptor : null),
+            'model' => $this->when(
+                $this->platformAdmin !== null,
+                fn () => $this->playerPayload($this->platformAdmin),
+            ),
             'winner_id' => $this->winner_id,
             'is_published' => $this->is_published,
             'published_match_id' => $this->publishedMatch?->match_no,
