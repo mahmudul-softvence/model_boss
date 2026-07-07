@@ -7,6 +7,10 @@ use App\Http\Controllers\Payment\Stripe\WebhookController as StripeWebhookContro
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', function () {
+    return view('index');
+});
+
 Route::get('clear', function () {
     Artisan::call('optimize:clear');
 
