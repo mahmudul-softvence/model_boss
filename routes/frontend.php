@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Frontend\ChallengeRuleController;
 use App\Http\Controllers\Frontend\FollowController;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\PostController;
@@ -132,6 +133,9 @@ Route::middleware(['auth:api'])->group(function () {
         ProfileController::class,
         'show_artist_posts',
     ]);
+
+    // Global challenge rules (readable by any authenticated user)
+    Route::get('challenge-rules', [ChallengeRuleController::class, 'index']);
 });
 
 Route::middleware(['api'])->group(function () {

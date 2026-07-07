@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateChallengeRuleRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Setting;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -113,5 +115,20 @@ class AdminSettingController extends Controller
         ];
 
         return $this->sendResponse($data);
+    }
+
+    public function get_challenge_rules(): JsonResponse
+    {
+        return $this->sendResponse(['rules' => Setting::getChallengeRules()]);
+    }
+
+    public function update_challenge_rules(UpdateChallengeRuleRequest $request): JsonResponse
+    {
+        Setting::setChallengeRules($request->validated()['rules']);
+
+        return $this->sendResponse(
+            ['rules' => Setting::getChallengeRules()],
+            'Challenge rules updated successfully',
+        );
     }
 }

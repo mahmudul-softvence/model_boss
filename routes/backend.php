@@ -92,6 +92,14 @@ Route::middleware(['auth:api', 'role:super_admin'])
             AdminSettingController::class,
             'auto_offer_challenges',
         ]);
+        Route::get('settings/challenge_rules', [
+            AdminSettingController::class,
+            'get_challenge_rules',
+        ]);
+        Route::put('settings/challenge_rules', [
+            AdminSettingController::class,
+            'update_challenge_rules',
+        ]);
 
         // Promotional Terms Content
         Route::get('promotional-terms', [
