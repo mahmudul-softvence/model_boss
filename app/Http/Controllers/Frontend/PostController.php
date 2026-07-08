@@ -51,7 +51,7 @@ class PostController extends Controller
      */
     public function update(UpdatePostRequest $request, Post $post)
     {
-        $this->authorize('update', $post);
+        abort_unless($post->user_id === auth()->id(), 403, 'This action is unauthorized.');
 
         $validated = $request->validated();
 
@@ -74,7 +74,7 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        $this->authorize('delete', $post);
+        abort_unless($post->user_id === auth()->id(), 403, 'This action is unauthorized.');
 
         if ($post->image && Storage::disk('public')->exists($post->image)) {
             Storage::disk('public')->delete($post->image);
