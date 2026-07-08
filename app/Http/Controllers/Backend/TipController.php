@@ -56,56 +56,10 @@ class TipController extends Controller
                 ]);
 
                 if ($receiverId != 1) {
-
-                    $receiverShare = $amount * 0.5;
-                    $adminShare = $amount * 0.5;
-
-                    $receiverBalance = UserBalance::where('user_id', $receiverId)
-                        ->lockForUpdate()
-                        ->firstOrCreate(['user_id' => $receiverId]);
-
-                    $adminBalance = UserBalance::where('user_id', 1)
-                        ->lockForUpdate()
-                        ->firstOrCreate(['user_id' => 1]);
-
-                    $receiverBalance->total_balance += $receiverShare;
-                    $receiverBalance->total_tip_received += $receiverShare;
-                    $receiverBalance->save();
-
-                    CoinTransaction::create([
-                        'user_id' => $receiverId,
-                        'type' => 'tip',
-                        'amount' => $receiverShare,
-                        'balance_after' => $receiverBalance->total_balance,
-                        'reference' => 'Tip received from user #'.$senderId,
-                    ]);
-
-                    $adminBalance->total_balance += $adminShare;
-                    $adminBalance->total_tip_received += $adminShare;
-                    $adminBalance->save();
-                    CoinTransaction::create([
-                        'user_id' => 1,
-                        'type' => 'tip',
-                        'amount' => $adminShare,
-                        'balance_after' => $adminBalance->total_balance,
-                        'reference' => 'Admin share from tip sent by user #'.$senderId,
-                    ]);
+                    $this->creditTipShare($receiverId, $amount * 0.5, 'Tip received from user #'.$senderId);
+                    $this->creditTipShare(1, $amount * 0.5, 'Admin share from tip sent by user #'.$senderId);
                 } else {
-
-                    $adminBalance = UserBalance::where('user_id', 1)
-                        ->lockForUpdate()
-                        ->firstOrCreate(['user_id' => 1]);
-
-                    $adminBalance->total_balance += $amount;
-                    $adminBalance->total_tip_received += $amount;
-                    $adminBalance->save();
-                    CoinTransaction::create([
-                        'user_id' => 1,
-                        'type' => 'tip',
-                        'amount' => $amount,
-                        'balance_after' => $adminBalance->total_balance,
-                        'reference' => 'Tip received from user #'.$senderId,
-                    ]);
+                    $this->creditTipShare(1, $amount, 'Tip received from user #'.$senderId);
                 }
 
                 Tip::create([
@@ -240,6 +194,29 @@ class TipController extends Controller
                 'message' => 'Something went wrong.',
             ], 500);
         }
+    }
+
+    /**
+     * Lock the recipient's balance, credit the tip share, and record the transaction.
+     * Must be called inside a DB transaction.
+     */
+    private function creditTipShare(int $userId, float $share, string $reference): void
+    {
+        $balance = UserBalance::where('user_id', $userId)
+            ->lockForUpdate()
+            ->firstOrCreate(['user_id' => $userId]);
+
+        $balance->total_balance += $share;
+        $balance->total_tip_received += $share;
+        $balance->save();
+
+        CoinTransaction::create([
+            'user_id' => $userId,
+            'type' => 'tip',
+            'amount' => $share,
+            'balance_after' => $balance->total_balance,
+            'reference' => $reference,
+        ]);
     }
 
     private function calculateFee($amount)
