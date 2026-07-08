@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class GameMatch extends Model
@@ -51,6 +52,26 @@ class GameMatch extends Model
     public function getPlayerTwoLogoAttribute($value)
     {
         return $value ? asset('storage/'.$value) : null;
+    }
+
+    /**
+     * Newest-created match first, then pinned matches, then the rest newest first.
+     * The CASE ranks the single most recently created match 0 and all others 1.
+     */
+    public function scopeOrderByNewestThenPinned(Builder $query): Builder
+    {
+        $newestMatchFirst = <<<'SQL'
+            CASE
+                WHEN id = (SELECT id FROM game_matches ORDER BY created_at DESC LIMIT 1)
+                THEN 0
+                ELSE 1
+            END
+        SQL;
+
+        return $query
+            ->orderByRaw($newestMatchFirst)
+            ->orderByDesc('pin_to_top')
+            ->orderByDesc('id');
     }
 
     public function playerOne()

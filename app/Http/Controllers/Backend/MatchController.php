@@ -70,15 +70,7 @@ class MatchController extends Controller
         }
 
         $matches = $query
-            ->orderByRaw('
-                CASE 
-                    WHEN id = (SELECT id FROM game_matches ORDER BY created_at DESC LIMIT 1)
-                    THEN 0
-                    ELSE 1
-                END
-            ')
-            ->orderBy('pin_to_top', 'desc')
-            ->orderBy('id', 'desc')
+            ->orderByNewestThenPinned()
             ->paginate($perPage);
 
         $data = $matches->getCollection()->map(function ($match) {
@@ -174,12 +166,6 @@ class MatchController extends Controller
         }
 
         $match = GameMatch::create($data);
-
-        $match->load([
-            'game:id,name',
-            'playerOne:id,name',
-            'playerTwo:id,name',
-        ]);
 
         $users = User::role(['user', 'artist'])->pluck('id')->toArray();
 
@@ -480,15 +466,7 @@ class MatchController extends Controller
             ->when($filter === 'challenge', function ($query) {
                 $query->where('match_type', 'challenge');
             })
-            ->orderByRaw('
-                CASE 
-                    WHEN id = (SELECT id FROM game_matches ORDER BY created_at DESC LIMIT 1)
-                    THEN 0
-                    ELSE 1
-                END
-            ')
-            ->orderBy('pin_to_top', 'desc')
-            ->orderBy('id', 'desc')
+            ->orderByNewestThenPinned()
             ->paginate($perPage);
 
         $data = $matches->getCollection()->map(function ($match) {
@@ -516,7 +494,7 @@ class MatchController extends Controller
             'status' => true,
             'message' => 'Matches retrieved successfully',
             'data' => $data,
-            'model_picture' => $super->image ? asset('storage/'.$super->image) : null,
+            'model_picture' => $super?->image ? asset('storage/'.$super->image) : null,
             'meta' => [
                 'current_page' => $matches->currentPage(),
                 'last_page' => $matches->lastPage(),
@@ -683,7 +661,7 @@ class MatchController extends Controller
             'status' => true,
             'message' => 'Match retrieved successfully',
             'data' => $match,
-            'model_picture' => $super->image ? asset('storage/'.$super->image) : null,
+            'model_picture' => $super?->image ? asset('storage/'.$super->image) : null,
             'top_supporters' => $topSupporters,
             'top_voters' => $topVoters,
             'player_one_top_supporter' => $playerOneTopSupporter,
