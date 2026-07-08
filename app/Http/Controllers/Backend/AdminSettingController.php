@@ -82,7 +82,7 @@ class AdminSettingController extends Controller
     {
         $data = [
             'key' => 'auto_accept_withdrawals',
-            'value' => Setting::where('key', 'auto_accept_withdrawals')->first()->value,
+            'value' => Setting::where('key', 'auto_accept_withdrawals')->first()?->value,
         ];
 
         return $this->sendResponse($data);

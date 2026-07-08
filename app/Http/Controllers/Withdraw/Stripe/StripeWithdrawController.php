@@ -43,7 +43,7 @@ class StripeWithdrawController extends Controller
 
                 $setting = Setting::where('key', 'auto_accept_withdrawals')->first();
 
-                if ($setting->value === 'true') {
+                if ($setting?->value === 'true') {
                     if (! $user->stripe_account_id) {
                         throw new \Exception('User Stripe not connected.');
                     }

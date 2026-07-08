@@ -346,12 +346,6 @@ class ChallengeController extends Controller
             ], 400);
         }
 
-        $match->load([
-            'game:id,name',
-            'playerOne:id,name',
-            'playerTwo:id,name',
-        ]);
-
         $users = User::role(['user', 'artist'])->pluck('id')->toArray();
 
         $players = [
