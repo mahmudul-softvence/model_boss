@@ -35,11 +35,6 @@ class MatchVoteUpdated implements ShouldBroadcastNow
 
     public function broadcastWith()
     {
-        // Log::info('MatchVoteUpdated Broadcasting Data', [
-        //     'channel' => 'match.' . $this->data['match_id'],
-        //     'data' => $this->data,
-        // ]);
-
         return $this->data;
     }
 }

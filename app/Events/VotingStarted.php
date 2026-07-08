@@ -9,7 +9,6 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 class VotingStarted implements ShouldBroadcastNow
 {
@@ -48,8 +47,6 @@ class VotingStarted implements ShouldBroadcastNow
             'vote_start_time' => $match->vote_start_time,
             'voting_time' => $match->voting_time,
         ];
-
-        // Log::info($this->matchData);
     }
 
     public function broadcastOn()
