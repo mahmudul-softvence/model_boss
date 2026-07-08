@@ -362,7 +362,7 @@ class MatchForVotingController extends Controller
                 'user_id' => $userId,
                 'type' => 'vote',
                 'amount' => -$halfVote,
-                'balance_after' => $user_balance->fresh()->total_balance,
+                'balance_after' => $user_balance->total_balance,
                 'reference' => 'Vote for match ID: '.$match->id,
             ]);
 
@@ -370,15 +370,12 @@ class MatchForVotingController extends Controller
                 'user_id' => 1,
                 'type' => 'vote',
                 'amount' => $halfVote,
-                'balance_after' => $adminBalance->fresh()->total_balance,
+                'balance_after' => $adminBalance->total_balance,
                 'reference' => 'Received vote from user ID: '.$userId,
             ]);
 
             DB::commit();
 
-            $match = $match->fresh()->load(['playerOne', 'playerTwo']);
-
-            // ✅ NAME FIX (ONLY CHANGE)
             $match->playerOne->name = $match->playerOne->artist_name ?: $match->playerOne->first_name;
             $match->playerTwo->name = $match->playerTwo->artist_name ?: $match->playerTwo->first_name;
 

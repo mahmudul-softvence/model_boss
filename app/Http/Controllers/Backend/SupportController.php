@@ -72,11 +72,14 @@ class SupportController extends Controller
                     $match->increment('player_two_total', $request->coin_amount);
                 }
 
+                $balance->refresh();
+                $match->refresh();
+
                 CoinTransaction::create([
                     'user_id' => $user->id,
                     'type' => 'support',
                     'amount' => -$request->coin_amount,
-                    'balance_after' => $balance->fresh()->total_balance,
+                    'balance_after' => $balance->total_balance,
                     'reference' => 'Support for match #'.$match->match_no,
                 ]);
 
@@ -162,10 +165,10 @@ class SupportController extends Controller
 
                 return [
                     'support' => $support,
-                    'updated_balance' => $balance->fresh()->total_balance,
-                    'updated_total_bet' => $balance->fresh()->total_bet,
-                    'match_player_one_total' => $match->fresh()->player_one_total,
-                    'match_player_two_total' => $match->fresh()->player_two_total,
+                    'updated_balance' => $balance->total_balance,
+                    'updated_total_bet' => $balance->total_bet,
+                    'match_player_one_total' => $match->player_one_total,
+                    'match_player_two_total' => $match->player_two_total,
                     'top_supporters' => $topSupporters,
                     'player_one_top_supporter' => $playerOneTopSupporter,
                     'player_one_total_supporter' => $playerOneTotalSupporter,
