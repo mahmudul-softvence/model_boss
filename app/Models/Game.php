@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Game extends Model
@@ -23,10 +24,10 @@ class Game extends Model
 
         $imagePath = ltrim($value, '/');
         $imagePath = Str::startsWith($imagePath, 'storage/')
-            ? $imagePath
-            : 'storage/'.$imagePath;
+            ? Str::after($imagePath, 'storage/')
+            : $imagePath;
 
-        return url($imagePath);
+        return Storage::disk()->url($imagePath);
     }
 
     public function category()

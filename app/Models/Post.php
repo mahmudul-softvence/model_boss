@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Post extends Model
 {
@@ -19,6 +20,6 @@ class Post extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image ? asset('storage/'.$this->image) : null;
+        return $this->image ? Storage::disk()->url($this->image) : null;
     }
 }

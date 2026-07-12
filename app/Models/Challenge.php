@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Challenge extends Model
 {
@@ -54,7 +55,7 @@ class Challenge extends Model
 
     public function getLogoAttribute($value)
     {
-        return $value ? asset('storage/'.$value) : null;
+        return $value ? Storage::disk()->url($value) : null;
     }
 
     public function challenger()

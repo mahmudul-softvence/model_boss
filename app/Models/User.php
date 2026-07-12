@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
@@ -234,7 +235,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             return null;
         }
 
-        return $this->image ? asset('storage/'.$this->image) : null;
+        return $this->image ? Storage::disk()->url($this->image) : null;
     }
 
     public function getFullNameAttribute(): ?string

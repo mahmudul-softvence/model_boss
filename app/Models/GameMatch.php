@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class GameMatch extends Model
 {
@@ -46,12 +47,12 @@ class GameMatch extends Model
 
     public function getPlayerOneLogoAttribute($value)
     {
-        return $value ? asset('storage/'.$value) : null;
+        return $value ? Storage::disk()->url($value) : null;
     }
 
     public function getPlayerTwoLogoAttribute($value)
     {
-        return $value ? asset('storage/'.$value) : null;
+        return $value ? Storage::disk()->url($value) : null;
     }
 
     /**

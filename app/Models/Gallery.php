@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Gallery extends Model
 {
@@ -19,12 +20,12 @@ class Gallery extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->short_video_thumb ? asset('storage/'.$this->short_video_thumb) : null;
+        return $this->short_video_thumb ? Storage::disk()->url($this->short_video_thumb) : null;
     }
 
     public function getVideoUrlAttribute()
     {
-        return $this->short_video ? asset('storage/'.$this->short_video) : null;
+        return $this->short_video ? Storage::disk()->url($this->short_video) : null;
     }
 
     public function scopeFeatured($query)
