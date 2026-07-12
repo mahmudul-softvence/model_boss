@@ -6,13 +6,11 @@ use App\Events\SupportPlaced;
 use App\Models\GameMatch;
 use App\Models\User;
 use App\Models\UserBalance;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class SupportStoreTest extends TestCase
 {
-    use RefreshDatabase;
 
     private function createMatch(User $playerOne, User $playerTwo): GameMatch
     {

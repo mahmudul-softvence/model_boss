@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\PromotionalTerm;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -13,7 +12,6 @@ use Tests\TestCase;
 
 class PromotionalTermTest extends TestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {

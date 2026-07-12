@@ -3,12 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class TipUserListTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_user_list_can_search_by_artist_name(): void
     {

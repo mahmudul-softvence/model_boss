@@ -5,13 +5,11 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\UserBalance;
 use App\Notifications\CoinReceivedNotification;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class SendCoinNotificationTest extends TestCase
 {
-    use RefreshDatabase;
 
     /**
      * The controller treats user id 1 as the admin fee account, so it must exist.

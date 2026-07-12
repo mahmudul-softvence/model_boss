@@ -6,7 +6,6 @@ use App\Enums\UserRole;
 use App\Models\LoginOtp;
 use App\Models\User;
 use App\Notifications\LoginOtpNotification;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
@@ -15,7 +14,6 @@ use Tests\TestCase;
 
 class LoginOtpTest extends TestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {

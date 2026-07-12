@@ -6,13 +6,11 @@ use App\Events\MatchVoteUpdated;
 use App\Models\GameMatch;
 use App\Models\User;
 use App\Models\UserBalance;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class VotePlayerTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_voting_deducts_half_the_votes_from_balance_and_credits_admin(): void
     {

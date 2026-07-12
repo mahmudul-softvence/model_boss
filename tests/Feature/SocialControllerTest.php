@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
@@ -15,7 +14,6 @@ use Tests\TestCase;
 
 class SocialControllerTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_apple_redirect_returns_a_target_url(): void
     {
@@ -66,7 +64,7 @@ class SocialControllerTest extends TestCase
     public function test_google_login_stores_a_high_resolution_avatar(): void
     {
         Role::findOrCreate(UserRole::USER->value, 'api');
-        Storage::fake('public');
+        Storage::fake();
         Http::fake([
             'lh3.googleusercontent.com/*' => Http::response('fake-image-bytes', 200),
         ]);
@@ -95,6 +93,6 @@ class SocialControllerTest extends TestCase
 
         $user = User::where('email', 'newuser@example.com')->firstOrFail();
         $this->assertNotNull($user->image);
-        Storage::disk('public')->assertExists($user->image);
+        Storage::disk()->assertExists($user->image);
     }
 }

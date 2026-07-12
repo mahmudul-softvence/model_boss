@@ -4,12 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\GameMatch;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class MatchLandingTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_past_filter_returns_only_completed_matches(): void
     {

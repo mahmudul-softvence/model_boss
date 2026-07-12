@@ -6,7 +6,6 @@ use App\Enums\UserRole;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\CredentialSettings;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -14,7 +13,6 @@ use Tests\TestCase;
 
 class CredentialSettingTest extends TestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {

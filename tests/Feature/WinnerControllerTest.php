@@ -9,7 +9,6 @@ use App\Models\FinalSupport;
 use App\Models\GameMatch;
 use App\Models\User;
 use App\Models\UserBalance;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
@@ -19,7 +18,6 @@ use Tests\TestCase;
 
 class WinnerControllerTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_declaring_a_winner_broadcasts_match_completed_once_to_all_users(): void
     {

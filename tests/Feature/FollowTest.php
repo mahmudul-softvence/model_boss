@@ -5,13 +5,11 @@ namespace Tests\Feature;
 use App\Models\Follower;
 use App\Models\User;
 use App\Notifications\NewFollowerNotification;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class FollowTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_following_a_user_sends_notification_to_that_user()
     {

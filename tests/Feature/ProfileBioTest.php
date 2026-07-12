@@ -5,12 +5,10 @@ namespace Tests\Feature;
 use App\Enums\ChallengeStatus;
 use App\Models\Challenge;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ProfileBioTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_user_can_update_their_bio(): void
     {

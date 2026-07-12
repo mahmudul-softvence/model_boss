@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -12,7 +11,6 @@ use Tests\TestCase;
 
 class AdminUserChallengerFlagTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_admin_user_list_includes_is_challenger_flag(): void
     {

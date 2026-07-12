@@ -7,12 +7,10 @@ use App\Models\FinalSupport;
 use App\Models\GameMatch;
 use App\Models\User;
 use App\Models\UserBalance;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PlatformFeeJobTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_platform_fee_is_distributed_between_players_referrer_and_admin(): void
     {
