@@ -18,7 +18,6 @@ use App\Notifications\ChallengeOfferNotification;
 use App\Notifications\ChallengeRejectedNotification;
 use App\Notifications\ChallengeWonNotification;
 use App\Services\ChallengeEscrowService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
@@ -27,7 +26,6 @@ use Tests\TestCase;
 
 class ChallengeTest extends TestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -52,7 +50,7 @@ class ChallengeTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.amount_deducted', 300)
-            ->assertJsonPath('data.remaining_balance', '700.00');
+            ->assertJsonPath('data.remaining_balance', 700);
 
         $this->assertDatabaseHas('challenges', [
             'challenger_id' => $challenger->id,

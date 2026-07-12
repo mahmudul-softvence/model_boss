@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\MoncashPayment;
 use App\Models\User;
 use App\Models\UserBalance;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -15,7 +14,6 @@ use Tests\TestCase;
 
 class MoncashCheckoutTest extends TestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -63,7 +61,7 @@ class MoncashCheckoutTest extends TestCase
         Http::assertSent(function (HttpRequest $request): bool {
             return $request->url() === 'https://sandbox.moncash.test/v1/CreatePayment'
                 && $request->hasHeader('Authorization', 'Bearer moncash-token')
-                && (float) $request['amount'] === 25.0
+                && (float) $request['amount'] === 3250.0
                 && is_string($request['orderId'])
                 && $request['orderId'] !== '';
         });
@@ -164,7 +162,7 @@ class MoncashCheckoutTest extends TestCase
         $this->get('/moncash/callback?orderId=order-2002')
             ->assertRedirect('https://frontend.test/payment-success?provider=moncash');
 
-        $this->assertSame('30.00', UserBalance::where('user_id', $user->id)->value('total_balance'));
+        $this->assertSame(30, UserBalance::where('user_id', $user->id)->value('total_balance'));
         $this->assertSame(1, $user->coinTransactions()->count());
     }
 

@@ -4,12 +4,16 @@ namespace Tests\Feature;
 
 use App\Models\Post;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PostAuthorizationTest extends TestCase
 {
-    use RefreshDatabase;
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Storage::fake();
+    }
 
     public function test_owner_can_update_their_post(): void
     {

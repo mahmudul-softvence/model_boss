@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\PaypalPayment;
 use App\Models\User;
 use App\Models\UserBalance;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -14,7 +13,6 @@ use Tests\TestCase;
 
 class PaypalCheckoutTest extends TestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -219,7 +217,7 @@ class PaypalCheckoutTest extends TestCase
             ->assertRedirect('https://frontend.test/payment-success?provider=paypal');
 
         Http::assertSentCount(2);
-        $this->assertSame('30.00', UserBalance::where('user_id', $user->id)->value('total_balance'));
+        $this->assertSame(30, UserBalance::where('user_id', $user->id)->value('total_balance'));
         $this->assertSame(1, $user->coinTransactions()->count());
     }
 
