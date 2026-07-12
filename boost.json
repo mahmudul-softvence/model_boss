@@ -10,7 +10,6 @@
     "skills": [
         "cashier-stripe-development",
         "laravel-best-practices",
-        "socialite-development",
-        "tailwindcss-development"
+        "socialite-development"
     ]
 }
