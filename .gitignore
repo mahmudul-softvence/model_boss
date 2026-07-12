@@ -1,4 +1,6 @@
 /.phpunit.cache
+/model_boss_test
+/model_boss_test.sqlite
 /node_modules
 /public/build
 /public/upload
