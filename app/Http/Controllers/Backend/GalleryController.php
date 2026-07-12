@@ -35,12 +35,12 @@ class GalleryController extends Controller
 
         if ($request->hasFile('short_video')) {
             $validated['short_video'] = $request->file('short_video')
-                ->store('gallery/videos', 'public');
+                ->store('gallery/videos');
         }
 
         if ($request->hasFile('short_video_thumb')) {
             $validated['short_video_thumb'] = $request->file('short_video_thumb')
-                ->store('gallery/short_video_thumbs', 'public');
+                ->store('gallery/short_video_thumbs');
         }
 
         $gallery = Gallery::create($validated);
@@ -68,21 +68,21 @@ class GalleryController extends Controller
         if ($request->hasFile('short_video')) {
 
             if ($gallery->short_video) {
-                Storage::disk('public')->delete($gallery->short_video);
+                Storage::disk()->delete($gallery->short_video);
             }
 
             $validated['short_video'] = $request->file('short_video')
-                ->store('gallery/videos', 'public');
+                ->store('gallery/videos');
         }
 
         if ($request->hasFile('short_video_thumb')) {
 
             if ($gallery->short_video_thumb) {
-                Storage::disk('public')->delete($gallery->short_video_thumb);
+                Storage::disk()->delete($gallery->short_video_thumb);
             }
 
             $validated['short_video_thumb'] = $request->file('short_video_thumb')
-                ->store('gallery/short_video_thumbs', 'public');
+                ->store('gallery/short_video_thumbs');
         }
 
         $gallery->update($validated);
@@ -96,11 +96,11 @@ class GalleryController extends Controller
     public function destroy(Gallery $gallery)
     {
         if ($gallery->short_video) {
-            Storage::disk('public')->delete($gallery->short_video);
+            Storage::disk()->delete($gallery->short_video);
         }
 
         if ($gallery->short_video_thumb) {
-            Storage::disk('public')->delete($gallery->short_video_thumb);
+            Storage::disk()->delete($gallery->short_video_thumb);
         }
 
         $gallery->delete();

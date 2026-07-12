@@ -14,6 +14,7 @@ use App\Models\UserBalance;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SupportController extends Controller
@@ -113,7 +114,7 @@ class SupportController extends Controller
                             'supporter' => $supporter ? [
                                 'id' => $supporter->id,
                                 'name' => $supporter->artist_name ?: $supporter->first_name,
-                                'image' => $supporter->image ? asset('storage/'.$supporter->image) : null,
+                                'image' => $supporter->image ? Storage::disk()->url($supporter->image) : null,
                             ] : null,
                         ];
                     });
@@ -139,7 +140,7 @@ class SupportController extends Controller
                         'id' => $playerOneSupport->supporter->id,
                         'name' => $playerOneSupport->supporter->artist_name ?: $playerOneSupport->supporter->first_name,
                         'image' => $playerOneSupport->supporter->image
-                            ? asset('storage/'.$playerOneSupport->supporter->image)
+                            ? Storage::disk()->url($playerOneSupport->supporter->image)
                             : null,
                         'total_amount' => (int) $playerOneSupport->total_amount,
                     ]
@@ -150,7 +151,7 @@ class SupportController extends Controller
                         'id' => $playerTwoSupport->supporter->id,
                         'name' => $playerTwoSupport->supporter->artist_name ?: $playerTwoSupport->supporter->first_name,
                         'image' => $playerTwoSupport->supporter->image
-                            ? asset('storage/'.$playerTwoSupport->supporter->image)
+                            ? Storage::disk()->url($playerTwoSupport->supporter->image)
                             : null,
                         'total_amount' => (int) $playerTwoSupport->total_amount,
                     ]
@@ -543,11 +544,13 @@ class SupportController extends Controller
                 'player_one' => [
                     'name' => optional($match->playerOne)->name,
                     'image' => optional($match->playerOne)->image,
+                    'image_url' => optional($match->playerOne)->image ? Storage::disk()->url($match->playerOne->image) : null,
                 ],
 
                 'player_two' => [
                     'name' => optional($match->playerTwo)->name,
                     'image' => optional($match->playerTwo)->image,
+                    'image_url' => optional($match->playerTwo)->image ? Storage::disk()->url($match->playerTwo->image) : null,
                 ],
 
                 'coin_amount' => $coinAmount,

@@ -30,7 +30,7 @@ class NewsController extends Controller
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')
-                ->store('news/images', 'public');
+                ->store('news/images');
         }
 
         $news = News::create($data);
@@ -55,12 +55,12 @@ class NewsController extends Controller
 
         if ($request->hasFile('image')) {
 
-            if ($news->image && Storage::disk('public')->exists($news->image)) {
-                Storage::disk('public')->delete($news->image);
+            if ($news->image && Storage::disk()->exists($news->image)) {
+                Storage::disk()->delete($news->image);
             }
 
             $data['image'] = $request->file('image')
-                ->store('news/images', 'public');
+                ->store('news/images');
         }
 
         $news->update($data);
@@ -73,8 +73,8 @@ class NewsController extends Controller
      */
     public function destroy(News $news)
     {
-        if ($news->image && Storage::disk('public')->exists($news->image)) {
-            Storage::disk('public')->delete($news->image);
+        if ($news->image && Storage::disk()->exists($news->image)) {
+            Storage::disk()->delete($news->image);
         }
 
         $news->delete();

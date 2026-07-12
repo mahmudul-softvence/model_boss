@@ -27,11 +27,11 @@ class AdminSettingController extends Controller
 
         if ($request->hasFile('image')) {
 
-            if ($user->image && Storage::disk('public')->exists($user->image)) {
-                Storage::disk('public')->delete($user->image);
+            if ($user->image && Storage::disk()->exists($user->image)) {
+                Storage::disk()->delete($user->image);
             }
 
-            $validated['image'] = $request->file('image')->store('users', 'public');
+            $validated['image'] = $request->file('image')->store('users');
         }
 
         $user->update($validated);

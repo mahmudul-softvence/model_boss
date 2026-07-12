@@ -49,7 +49,7 @@ class CategoryController extends Controller
         $imagePath = null;
 
         if ($request->hasFile('image')) {
-            $storedPath = $request->file('image')->store('categories', 'public');
+            $storedPath = $request->file('image')->store('categories');
             $imagePath = 'storage/'.$storedPath;
         }
 
@@ -113,12 +113,12 @@ class CategoryController extends Controller
             if ($oldImage) {
                 $oldImagePath = ltrim(str_replace('storage/', '', $oldImage), '/');
 
-                if (Storage::disk('public')->exists($oldImagePath)) {
-                    Storage::disk('public')->delete($oldImagePath);
+                if (Storage::disk()->exists($oldImagePath)) {
+                    Storage::disk()->delete($oldImagePath);
                 }
             }
 
-            $storedPath = $request->file('image')->store('categories', 'public');
+            $storedPath = $request->file('image')->store('categories');
             $category->image = 'storage/'.$storedPath;
         }
 
@@ -154,8 +154,8 @@ class CategoryController extends Controller
         if ($image) {
             $imagePath = ltrim(str_replace('storage/', '', $image), '/');
 
-            if (Storage::disk('public')->exists($imagePath)) {
-                Storage::disk('public')->delete($imagePath);
+            if (Storage::disk()->exists($imagePath)) {
+                Storage::disk()->delete($imagePath);
             }
         }
 

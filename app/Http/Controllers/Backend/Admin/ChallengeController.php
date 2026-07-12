@@ -311,11 +311,11 @@ class ChallengeController extends Controller
         ];
 
         if ($request->hasFile('player_one_logo')) {
-            $data['player_one_logo'] = $request->file('player_one_logo')->store('logos', 'public');
+            $data['player_one_logo'] = $request->file('player_one_logo')->store('logos');
         }
 
         if ($request->hasFile('player_two_logo')) {
-            $data['player_two_logo'] = $request->file('player_two_logo')->store('logos', 'public');
+            $data['player_two_logo'] = $request->file('player_two_logo')->store('logos');
         }
 
         do {
