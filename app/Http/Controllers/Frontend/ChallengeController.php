@@ -157,8 +157,10 @@ class ChallengeController extends Controller
                 abort(400, 'You cannot accept your own challenge.');
             }
 
-            if ($challenge->mode === ChallengeMode::UNIQUE
-                && $challenge->target_player_id !== $user->id) {
+            if (
+                $challenge->mode === ChallengeMode::UNIQUE
+                && $challenge->target_player_id !== $user->id
+            ) {
                 abort(403, 'This challenge is reserved for another player.');
             }
 
@@ -196,8 +198,10 @@ class ChallengeController extends Controller
 
             $challenge = Challenge::lockForUpdate()->findOrFail($id);
 
-            if ($challenge->status !== ChallengeStatus::OFFERED
-                || $challenge->mode !== ChallengeMode::UNIQUE) {
+            if (
+                $challenge->status !== ChallengeStatus::OFFERED
+                || $challenge->mode !== ChallengeMode::UNIQUE
+            ) {
                 abort(400, 'This challenge cannot be declined.');
             }
 
