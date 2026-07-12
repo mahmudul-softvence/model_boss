@@ -28,7 +28,7 @@ class PostController extends Controller
     {
         $validated = $request->validated();
 
-        $imagePath = $request->file('image')->store('posts', 'public');
+        $imagePath = $request->file('image')->store('posts');
 
         $post = auth()->user()->posts()->create([
             'image' => $imagePath,
@@ -57,11 +57,11 @@ class PostController extends Controller
 
         if ($request->hasFile('image')) {
 
-            if ($post->image && Storage::disk('public')->exists($post->image)) {
-                Storage::disk('public')->delete($post->image);
+            if ($post->image && Storage::disk()->exists($post->image)) {
+                Storage::disk()->delete($post->image);
             }
 
-            $validated['image'] = $request->file('image')->store('posts', 'public');
+            $validated['image'] = $request->file('image')->store('posts');
         }
 
         $post->update($validated);
@@ -76,8 +76,8 @@ class PostController extends Controller
     {
         abort_unless($post->user_id === auth()->id(), 403, 'This action is unauthorized.');
 
-        if ($post->image && Storage::disk('public')->exists($post->image)) {
-            Storage::disk('public')->delete($post->image);
+        if ($post->image && Storage::disk()->exists($post->image)) {
+            Storage::disk()->delete($post->image);
         }
 
         $post->delete();

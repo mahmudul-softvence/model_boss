@@ -14,6 +14,7 @@ use App\Models\UserBalance;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class MatchForVotingController extends Controller
 {
@@ -66,12 +67,14 @@ class MatchForVotingController extends Controller
                 'id' => $match->playerOne->id,
                 'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
                 'image' => $match->playerOne->image,
+                'image_url' => $match->playerOne->image ? Storage::disk()->url($match->playerOne->image) : null,
             ] : null;
 
             $match->player_two = $match->playerTwo ? [
                 'id' => $match->playerTwo->id,
                 'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
                 'image' => $match->playerTwo->image,
+                'image_url' => $match->playerTwo->image ? Storage::disk()->url($match->playerTwo->image) : null,
             ] : null;
 
             unset($match->playerOne, $match->playerTwo);
@@ -261,12 +264,14 @@ class MatchForVotingController extends Controller
                 'id' => $match->playerOne->id,
                 'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
                 'image' => $match->playerOne->image,
+                'image_url' => $match->playerOne->image ? Storage::disk()->url($match->playerOne->image) : null,
             ] : null;
 
             $match->player_two = $match->playerTwo ? [
                 'id' => $match->playerTwo->id,
                 'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
                 'image' => $match->playerTwo->image,
+                'image_url' => $match->playerTwo->image ? Storage::disk()->url($match->playerTwo->image) : null,
             ] : null;
 
             unset($match->playerOne, $match->playerTwo);

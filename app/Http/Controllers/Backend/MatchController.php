@@ -79,18 +79,21 @@ class MatchController extends Controller
                 'id' => $match->playerOne->id,
                 'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
                 'image' => $match->playerOne->image,
+                'image_url' => $match->playerOne->image ? Storage::disk()->url($match->playerOne->image) : null,
             ] : null;
 
             $match->player_two = $match->playerTwo ? [
                 'id' => $match->playerTwo->id,
                 'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
                 'image' => $match->playerTwo->image,
+                'image_url' => $match->playerTwo->image ? Storage::disk()->url($match->playerTwo->image) : null,
             ] : null;
 
             $match->winner = $match->winner ? [
                 'id' => $match->winner->id,
                 'name' => $match->winner->artist_name ?: $match->winner->first_name,
                 'image' => $match->winner->image,
+                'image_url' => $match->winner->image ? Storage::disk()->url($match->winner->image) : null,
             ] : null;
 
             unset($match->playerOne, $match->playerTwo);
@@ -144,11 +147,11 @@ class MatchController extends Controller
         $data = $request->all();
 
         if ($request->hasFile('player_one_logo')) {
-            $data['player_one_logo'] = $request->file('player_one_logo')->store('logos', 'public');
+            $data['player_one_logo'] = $request->file('player_one_logo')->store('logos');
         }
 
         if ($request->hasFile('player_two_logo')) {
-            $data['player_two_logo'] = $request->file('player_two_logo')->store('logos', 'public');
+            $data['player_two_logo'] = $request->file('player_two_logo')->store('logos');
         }
 
         do {
@@ -278,24 +281,24 @@ class MatchController extends Controller
 
             $oldPath = $match->getRawOriginal('player_one_logo');
 
-            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-                Storage::disk('public')->delete($oldPath);
+            if ($oldPath && Storage::disk()->exists($oldPath)) {
+                Storage::disk()->delete($oldPath);
             }
 
             $data['player_one_logo'] = $request->file('player_one_logo')
-                ->store('logos', 'public');
+                ->store('logos');
         }
 
         if ($request->hasFile('player_two_logo')) {
 
             $oldPath = $match->getRawOriginal('player_two_logo');
 
-            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-                Storage::disk('public')->delete($oldPath);
+            if ($oldPath && Storage::disk()->exists($oldPath)) {
+                Storage::disk()->delete($oldPath);
             }
 
             $data['player_two_logo'] = $request->file('player_two_logo')
-                ->store('logos', 'public');
+                ->store('logos');
         }
 
         $data['match_no'] = $match->match_no;
@@ -362,14 +365,14 @@ class MatchController extends Controller
 
         $playerOneLogo = $match->getRawOriginal('player_one_logo');
 
-        if ($playerOneLogo && Storage::disk('public')->exists($playerOneLogo)) {
-            Storage::disk('public')->delete($playerOneLogo);
+        if ($playerOneLogo && Storage::disk()->exists($playerOneLogo)) {
+            Storage::disk()->delete($playerOneLogo);
         }
 
         $playerTwoLogo = $match->getRawOriginal('player_two_logo');
 
-        if ($playerTwoLogo && Storage::disk('public')->exists($playerTwoLogo)) {
-            Storage::disk('public')->delete($playerTwoLogo);
+        if ($playerTwoLogo && Storage::disk()->exists($playerTwoLogo)) {
+            Storage::disk()->delete($playerTwoLogo);
         }
 
         $match->delete();
@@ -475,14 +478,14 @@ class MatchController extends Controller
                 'id' => $match->playerOne->id,
                 'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
                 'image' => $match->playerOne->image,
-                'image_url' => $match->playerOne->image ? asset('storage/'.$match->playerOne->image) : null,
+                'image_url' => $match->playerOne->image ? Storage::disk()->url($match->playerOne->image) : null,
             ] : null;
 
             $match->player_two = $match->playerTwo ? [
                 'id' => $match->playerTwo->id,
                 'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
                 'image' => $match->playerTwo->image,
-                'image_url' => $match->playerTwo->image ? asset('storage/'.$match->playerTwo->image) : null,
+                'image_url' => $match->playerTwo->image ? Storage::disk()->url($match->playerTwo->image) : null,
             ] : null;
 
             unset($match->playerOne, $match->playerTwo);
@@ -494,7 +497,7 @@ class MatchController extends Controller
             'status' => true,
             'message' => 'Matches retrieved successfully',
             'data' => $data,
-            'model_picture' => $super?->image ? asset('storage/'.$super->image) : null,
+            'model_picture' => $super?->image ? Storage::disk()->url($super->image) : null,
             'meta' => [
                 'current_page' => $matches->currentPage(),
                 'last_page' => $matches->lastPage(),
@@ -563,7 +566,7 @@ class MatchController extends Controller
                     'user' => $user ? [
                         'id' => $user->id,
                         'name' => $user->artist_name ?: $user->first_name,
-                        'image' => $user->image ? asset('storage/'.$user->image) : null,
+                        'image' => $user->image ? Storage::disk()->url($user->image) : null,
                     ] : null,
                 ];
             });
@@ -591,7 +594,7 @@ class MatchController extends Controller
                         'supporter' => $u ? [
                             'id' => $u->id,
                             'name' => $u->artist_name ?: $u->first_name,
-                            'image' => $u->image ? asset('storage/'.$u->image) : null,
+                            'image' => $u->image ? Storage::disk()->url($u->image) : null,
                         ] : null,
                     ];
                 });
@@ -612,7 +615,7 @@ class MatchController extends Controller
         $playerOneTopSupporter = $p1 ? [
             'id' => $p1->id,
             'name' => $p1->artist_name ?: $p1->first_name,
-            'image' => $p1->image ? asset('storage/'.$p1->image) : null,
+            'image' => $p1->image ? Storage::disk()->url($p1->image) : null,
             'total_amount' => (int) $playerOneSupport->total_amount,
         ] : null;
 
@@ -629,7 +632,7 @@ class MatchController extends Controller
         $playerTwoTopSupporter = $p2 ? [
             'id' => $p2->id,
             'name' => $p2->artist_name ?: $p2->first_name,
-            'image' => $p2->image ? asset('storage/'.$p2->image) : null,
+            'image' => $p2->image ? Storage::disk()->url($p2->image) : null,
             'total_amount' => (int) $playerTwoSupport->total_amount,
         ] : null;
 
@@ -645,14 +648,14 @@ class MatchController extends Controller
             'id' => $match->playerOne->id,
             'name' => $match->playerOne->artist_name ?: $match->playerOne->first_name,
             'image' => $match->playerOne->image,
-            'image_url' => $match->playerOne->image ? asset('storage/'.$match->playerOne->image) : null,
+            'image_url' => $match->playerOne->image ? Storage::disk()->url($match->playerOne->image) : null,
         ] : null;
 
         $match->player_two = $match->playerTwo ? [
             'id' => $match->playerTwo->id,
             'name' => $match->playerTwo->artist_name ?: $match->playerTwo->first_name,
             'image' => $match->playerTwo->image,
-            'image_url' => $match->playerTwo->image ? asset('storage/'.$match->playerTwo->image) : null,
+            'image_url' => $match->playerTwo->image ? Storage::disk()->url($match->playerTwo->image) : null,
         ] : null;
 
         unset($match->playerOne, $match->playerTwo);
@@ -661,7 +664,7 @@ class MatchController extends Controller
             'status' => true,
             'message' => 'Match retrieved successfully',
             'data' => $match,
-            'model_picture' => $super?->image ? asset('storage/'.$super->image) : null,
+            'model_picture' => $super?->image ? Storage::disk()->url($super->image) : null,
             'top_supporters' => $topSupporters,
             'top_voters' => $topVoters,
             'player_one_top_supporter' => $playerOneTopSupporter,

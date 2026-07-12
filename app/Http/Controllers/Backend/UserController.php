@@ -54,7 +54,7 @@ class UserController extends Controller
 
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')
-                ->store('users/images', 'public');
+                ->store('users/images');
         }
 
         $user = DB::transaction(function () use ($validated, $imagePath) {
@@ -131,11 +131,11 @@ class UserController extends Controller
         if ($request->hasFile('image')) {
 
             if ($user->image) {
-                Storage::disk('public')->delete($user->image);
+                Storage::disk()->delete($user->image);
             }
 
             $user->image = $request->file('image')
-                ->store('users/images', 'public');
+                ->store('users/images');
         }
 
         $user->save();
