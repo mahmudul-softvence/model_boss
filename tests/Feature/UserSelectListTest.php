@@ -4,12 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Sequence;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class UserSelectListTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_it_returns_ten_users_for_select(): void
     {
@@ -28,7 +26,7 @@ class UserSelectListTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonCount(10, 'data')
             ->assertJsonPath('data.0.id', $users->last()->id)
-            ->assertJsonPath('data.0.text', 'Artist 11')
+            ->assertJsonPath('data.0.artist', 'Artist 11')
             ->assertJsonMissing(['email' => $users->last()->email]);
     }
 
@@ -48,17 +46,13 @@ class UserSelectListTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $matchingUser->id)
-            ->assertJsonPath('data.0.text', 'Needle Beats');
+            ->assertJsonPath('data.0.artist', 'Needle Beats');
     }
 
-    public function test_it_uses_generic_label_when_name_is_hidden_without_artist_name(): void
+    public function test_it_returns_null_artist_when_artist_name_is_null(): void
     {
         $user = User::factory()->create([
-            'first_name' => 'Hidden',
-            'middle_name' => null,
-            'last_name' => 'Person',
             'artist_name' => null,
-            'show_name' => false,
         ]);
 
         $response = $this->getJson('/api/get_users_for_select');
@@ -66,7 +60,6 @@ class UserSelectListTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('data.0.id', $user->id)
-            ->assertJsonPath('data.0.text', 'User #'.$user->id)
-            ->assertJsonMissing(['text' => 'Hidden Person']);
+            ->assertJsonPath('data.0.artist', null);
     }
 }

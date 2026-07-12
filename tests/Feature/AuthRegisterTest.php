@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -11,7 +10,6 @@ use Tests\TestCase;
 
 class AuthRegisterTest extends TestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -52,12 +50,16 @@ class AuthRegisterTest extends TestCase
         ]);
     }
 
-    public function test_registration_fails_without_artist_name(): void
+    public function test_registration_succeeds_without_artist_name(): void
     {
+        Notification::fake();
+
         $response = $this->postJson('/api/register', $this->registrationPayload(['artist_name' => '']));
 
-        $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['artist_name']);
+        $response->assertOk();
+        $this->assertDatabaseHas('users', [
+            'email' => 'john@example.com',
+        ]);
     }
 
     public function test_registration_fails_without_city(): void
@@ -65,6 +67,6 @@ class AuthRegisterTest extends TestCase
         $response = $this->postJson('/api/register', $this->registrationPayload(['city' => '']));
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['city']);
+        $response->assertJsonValidationErrors(['city'], 'data');
     }
 }

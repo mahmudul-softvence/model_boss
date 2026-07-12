@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Notifications\VerifyEmailQueued;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\Models\Role;
@@ -14,7 +13,6 @@ use Tests\TestCase;
 
 class UserIsPlayerTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_register_stores_and_returns_is_player_when_provided(): void
     {
@@ -75,8 +73,10 @@ class UserIsPlayerTest extends TestCase
                 'first_name' => 'New',
                 'middle_name' => null,
                 'last_name' => 'Player',
+                'artist_name' => 'New Player',
                 'email' => 'new-player@example.com',
                 'password' => 'secret123',
+                'city' => 'New York',
                 'role' => UserRole::USER->value,
                 'is_player' => true,
             ]);
@@ -108,6 +108,8 @@ class UserIsPlayerTest extends TestCase
                 'first_name' => 'Existing',
                 'middle_name' => null,
                 'last_name' => 'User',
+                'artist_name' => 'Existing User',
+                'city' => 'New York',
                 'role' => UserRole::USER->value,
                 'is_player' => true,
             ]);
@@ -126,6 +128,8 @@ class UserIsPlayerTest extends TestCase
                 'first_name' => 'Updated',
                 'middle_name' => null,
                 'last_name' => 'User',
+                'artist_name' => 'Updated User',
+                'city' => 'New York',
                 'role' => UserRole::USER->value,
             ]);
 

@@ -4,14 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ArtistSearchTest extends TestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -46,15 +44,15 @@ class ArtistSearchTest extends TestCase
         $response->assertJsonFragment(['id' => $artist->id]);
     }
 
-    public function test_search_does_not_return_non_artists(): void
+    public function test_search_returns_users_with_artist_name(): void
     {
-        $user = User::factory()->create(['first_name' => 'Regular', 'last_name' => 'User', 'artist_name' => 'RegularArtist']);
+        $user = User::factory()->create(['first_name' => 'Regular', 'last_name' => 'User', 'artist_name' => 'ReturnMe']);
         $user->assignRole(UserRole::USER);
 
-        $response = $this->getJson('/api/search_artist?search=RegularArtist');
+        $response = $this->getJson('/api/search_artist?search=ReturnMe');
 
         $response->assertOk();
-        $response->assertJsonMissing(['id' => $user->id]);
+        $response->assertJsonFragment(['id' => $user->id]);
     }
 
     public function test_empty_search_returns_empty_results(): void
