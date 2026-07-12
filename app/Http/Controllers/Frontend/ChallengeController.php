@@ -72,7 +72,7 @@ class ChallengeController extends Controller
         $autoOffer = Setting::isEnabled('auto_offer_challenges');
 
         $logoPath = $request->hasFile('logo')
-            ? $request->file('logo')->store('logos', 'public')
+            ? $request->file('logo')->store('logos')
             : null;
 
         $challenge = DB::transaction(function () use ($request, $user, $amount, $durationHours, $logoPath, $autoOffer) {

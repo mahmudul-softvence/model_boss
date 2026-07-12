@@ -192,7 +192,7 @@ class SocialController extends Controller
         }
 
         $path = 'users/images/'.Str::random(40).'.jpg';
-        Storage::disk('public')->put($path, $response->body());
+        Storage::disk()->put($path, $response->body());
 
         return $path;
     }
