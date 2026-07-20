@@ -15,16 +15,19 @@ class MatchCreated implements ShouldBroadcast
 
     public $rules;
 
+    public $matchId;
+
     protected $userIds;
 
     protected $playerIds;
 
-    public function __construct($userIds, $message, $playerIds, $rules = null)
+    public function __construct($userIds, $message, $playerIds, $rules = null, $matchId = null)
     {
         $this->userIds = $userIds;
         $this->message = $message;
         $this->playerIds = $playerIds;
         $this->rules = $rules;
+        $this->matchId = $matchId;
     }
 
     public function broadcastOn()
@@ -37,6 +40,7 @@ class MatchCreated implements ShouldBroadcast
     public function broadcastWith()
     {
         return [
+            'match_id' => $this->matchId,
             'message' => $this->message,
             'rules' => $this->rules,
             'player_ids' => $this->playerIds,
