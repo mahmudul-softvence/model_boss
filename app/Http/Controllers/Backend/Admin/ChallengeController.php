@@ -219,6 +219,7 @@ class ChallengeController extends Controller
                 ChallengeStatus::PENDING,
                 ChallengeStatus::OFFERED,
                 ChallengeStatus::ACCEPTED,
+                ChallengeStatus::UNDER_REVIEW,
             ], true)) {
                 abort(400, 'This challenge can no longer be cancelled.');
             }
@@ -229,7 +230,7 @@ class ChallengeController extends Controller
 
             $this->escrow->refund($challenge->challenger_id, (float) $challenge->amount, $challenge);
 
-            if ($challenge->status === ChallengeStatus::ACCEPTED && $challenge->accepted_by_user_id) {
+            if (in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW], true) && $challenge->accepted_by_user_id) {
                 $this->escrow->refund($challenge->accepted_by_user_id, (float) $challenge->amount, $challenge);
             }
 
@@ -255,6 +256,7 @@ class ChallengeController extends Controller
                 ChallengeStatus::PENDING,
                 ChallengeStatus::OFFERED,
                 ChallengeStatus::ACCEPTED,
+                ChallengeStatus::UNDER_REVIEW,
             ], true)) {
                 if ($this->hasActivePublishedMatch($challenge)) {
                     abort(400, 'This challenge has been published as a match. Manage it from the match management.');
@@ -262,7 +264,7 @@ class ChallengeController extends Controller
 
                 $this->escrow->refund($challenge->challenger_id, (float) $challenge->amount, $challenge);
 
-                if ($challenge->status === ChallengeStatus::ACCEPTED && $challenge->accepted_by_user_id) {
+                if (in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW], true) && $challenge->accepted_by_user_id) {
                     $this->escrow->refund($challenge->accepted_by_user_id, (float) $challenge->amount, $challenge);
                 }
             }

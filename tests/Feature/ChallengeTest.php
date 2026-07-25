@@ -1062,7 +1062,6 @@ class ChallengeTest extends TestCase
 
         $this->withHeaders($this->authHeadersFor($challenger) + ['Accept' => 'application/json'])
             ->post("/api/challenges/{$challenge->id}/submit-result", [
-                'submission_type' => 'result',
                 'score' => '21-18',
                 'notes' => 'I won the match.',
                 'evidence_image' => UploadedFile::fake()->image('score.jpg'),
@@ -1072,7 +1071,6 @@ class ChallengeTest extends TestCase
 
         $this->withHeaders($this->authHeadersFor($acceptor) + ['Accept' => 'application/json'])
             ->post("/api/challenges/{$challenge->id}/submit-result", [
-                'submission_type' => 'report',
                 'score' => '18-21',
                 'notes' => 'Opponent score is correct.',
                 'evidence_video' => UploadedFile::fake()->create('recording.mp4', 1000, 'video/mp4'),
@@ -1115,7 +1113,6 @@ class ChallengeTest extends TestCase
 
         $this->withHeaders($this->authHeadersFor($challenger))
             ->postJson("/api/challenges/{$challenge->id}/submit-result", [
-                'submission_type' => 'result',
                 'score' => '1-0',
             ])
             ->assertStatus(400)
@@ -1133,13 +1130,11 @@ class ChallengeTest extends TestCase
 
         $this->withHeaders($this->authHeadersFor($challenger))
             ->postJson("/api/challenges/{$challenge->id}/submit-result", [
-                'submission_type' => 'result',
                 'score' => '21-18',
             ]);
 
         $this->withHeaders($this->authHeadersFor($acceptor))
             ->postJson("/api/challenges/{$challenge->id}/submit-result", [
-                'submission_type' => 'report',
                 'notes' => 'The submitted result is correct.',
             ]);
 
