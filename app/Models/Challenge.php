@@ -24,6 +24,11 @@ class Challenge extends Model
         'target_player_id',
         'accepted_by_user_id',
         'accepted_at',
+        'challenger_ready_at',
+        'acceptor_ready_at',
+        'started_at',
+        'submitted_for_review_at',
+        'admin_reviewed_at',
         'game_id',
         'amount',
         'logo',
@@ -47,6 +52,11 @@ class Challenge extends Model
         'duration_hours' => 'integer',
         'match_date' => 'date',
         'accepted_at' => 'datetime',
+        'challenger_ready_at' => 'datetime',
+        'acceptor_ready_at' => 'datetime',
+        'started_at' => 'datetime',
+        'submitted_for_review_at' => 'datetime',
+        'admin_reviewed_at' => 'datetime',
         'offer_expires_at' => 'datetime',
         'approved_at' => 'datetime',
         'settled_at' => 'datetime',
@@ -75,6 +85,11 @@ class Challenge extends Model
     public function winner()
     {
         return $this->belongsTo(User::class, 'winner_id');
+    }
+
+    public function submissions()
+    {
+        return $this->hasMany(ChallengeSubmission::class);
     }
 
     public function game()
