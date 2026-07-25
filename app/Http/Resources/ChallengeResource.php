@@ -80,9 +80,12 @@ class ChallengeResource extends JsonResource
                 'notes' => $submission->notes,
                 'evidence_image' => $submission->evidence_image,
                 'evidence_video' => $submission->evidence_video,
+                'has_evidence_image' => $submission->getRawOriginal('evidence_image') !== null,
+                'has_evidence_video' => $submission->getRawOriginal('evidence_video') !== null,
                 'created_at' => $submission->created_at?->toIso8601String(),
                 'updated_at' => $submission->updated_at?->toIso8601String(),
             ])->values()),
+
             'winner_id' => $this->winner_id,
             'is_published' => $this->is_published,
             'published_match_id' => $this->publishedMatch?->match_no,
