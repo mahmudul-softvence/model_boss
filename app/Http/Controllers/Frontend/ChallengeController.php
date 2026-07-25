@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ChallengeResource;
 use App\Jobs\ChallengeOfferExpiredJob;
 use App\Models\Challenge;
+use App\Models\ChallengeSubmission;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserBalance;
@@ -20,6 +21,7 @@ use App\Notifications\ChallengeRejectedNotification;
 use App\Services\ChallengeEscrowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ChallengeController extends Controller
@@ -219,6 +221,132 @@ class ChallengeController extends Controller
         $challenge->challenger?->notify(new ChallengeRejectedNotification($challenge));
 
         return $this->sendResponse([], 'Challenge declined.');
+    }
+
+    /**
+     * Player confirms their pre-match checklist. The challenge starts when both
+     * accepted players are ready.
+     */
+    public function ready(Request $request, $id)
+    {
+        $request->validate([
+            'battery_confirmed' => 'accepted',
+            'internet_confirmed' => 'accepted',
+            'camera_confirmed' => 'accepted',
+            'rules_confirmed' => 'accepted',
+        ]);
+
+        $user = auth('api')->user();
+
+        $challenge = DB::transaction(function () use ($user, $id) {
+
+            $challenge = Challenge::with('publishedMatch')->lockForUpdate()->findOrFail($id);
+
+            $this->ensureRegularAcceptedChallenge($challenge);
+
+            $readyColumn = $this->readyColumnFor($challenge, $user->id);
+
+            if (! $readyColumn) {
+                abort(403, 'Only challenge players can mark ready.');
+            }
+
+            if (! $challenge->{$readyColumn}) {
+                $challenge->{$readyColumn} = now();
+            }
+
+            if ($challenge->challenger_ready_at && $challenge->acceptor_ready_at && ! $challenge->started_at) {
+                $challenge->started_at = now();
+            }
+
+            $challenge->save();
+
+            return $challenge;
+        });
+
+        return $this->sendResponse(
+            $this->challengeFlowPayload($challenge->fresh()),
+            $challenge->started_at
+                ? 'Both players are ready. Challenge match started.'
+                : 'Ready confirmed. Waiting for the other player.'
+        );
+    }
+
+    /**
+     * Submit the player's result or report for admin review.
+     */
+    public function submitResult(Request $request, $id)
+    {
+        $request->validate([
+            'submission_type' => ['required', Rule::in(['result', 'report'])],
+            'score' => 'nullable|string|max:50',
+            'notes' => 'nullable|string|max:2000',
+            'evidence_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'evidence_video' => 'nullable|file|mimes:mp4,mov,webm,avi|max:51200',
+        ]);
+
+        if (
+            ! $request->filled('score')
+            && ! $request->filled('notes')
+            && ! $request->hasFile('evidence_image')
+            && ! $request->hasFile('evidence_video')
+        ) {
+            abort(422, 'Submit a score, note, photo, or video for admin review.');
+        }
+
+        $user = auth('api')->user();
+
+        $challenge = DB::transaction(function () use ($request, $user, $id) {
+
+            $challenge = Challenge::with('publishedMatch')->lockForUpdate()->findOrFail($id);
+
+            $this->ensureRegularAcceptedChallenge($challenge);
+
+            if (! $challenge->started_at) {
+                abort(400, 'Both players must be ready before submitting a result.');
+            }
+
+            if (! $this->isChallengePlayer($challenge, $user->id)) {
+                abort(403, 'Only challenge players can submit results.');
+            }
+
+            $existingSubmission = ChallengeSubmission::where('challenge_id', $challenge->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            $data = [
+                'submission_type' => $request->submission_type,
+                'score' => $request->score,
+                'notes' => $request->notes,
+            ];
+
+            if ($request->hasFile('evidence_image')) {
+                $this->deleteEvidence($existingSubmission?->getRawOriginal('evidence_image'));
+                $data['evidence_image'] = $request->file('evidence_image')
+                    ->store('challenge-evidence');
+            }
+
+            if ($request->hasFile('evidence_video')) {
+                $this->deleteEvidence($existingSubmission?->getRawOriginal('evidence_video'));
+                $data['evidence_video'] = $request->file('evidence_video')
+                    ->store('challenge-evidence');
+            }
+
+            ChallengeSubmission::updateOrCreate([
+                'challenge_id' => $challenge->id,
+                'user_id' => $user->id,
+            ], $data);
+
+            if (! $challenge->submitted_for_review_at) {
+                $challenge->update(['submitted_for_review_at' => now()]);
+            }
+
+            return $challenge;
+        });
+
+        return $this->sendResponse(
+            $this->challengeFlowPayload($challenge->fresh()),
+            'Challenge result submitted for admin review.'
+        );
     }
 
     /**
@@ -426,5 +554,60 @@ class ChallengeController extends Controller
     {
         User::role('super_admin')->get()
             ->each(fn ($admin) => $admin->notify($notification));
+    }
+
+    private function ensureRegularAcceptedChallenge(Challenge $challenge): void
+    {
+        if ($challenge->publishedMatch) {
+            abort(400, 'This challenge is published as an official match. Use match management instead.');
+        }
+
+        if ($challenge->status !== ChallengeStatus::ACCEPTED) {
+            abort(400, 'This challenge is not ready for match flow.');
+        }
+    }
+
+    private function readyColumnFor(Challenge $challenge, int $userId): ?string
+    {
+        if ($challenge->challenger_id === $userId) {
+            return 'challenger_ready_at';
+        }
+
+        if ($challenge->accepted_by_user_id === $userId) {
+            return 'acceptor_ready_at';
+        }
+
+        return null;
+    }
+
+    private function isChallengePlayer(Challenge $challenge, int $userId): bool
+    {
+        return in_array($userId, [
+            $challenge->challenger_id,
+            $challenge->accepted_by_user_id,
+        ], true);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function challengeFlowPayload(Challenge $challenge): array
+    {
+        return [
+            'challenge_id' => $challenge->id,
+            'status' => $challenge->status?->value,
+            'challenger_ready_at' => $challenge->challenger_ready_at?->toIso8601String(),
+            'acceptor_ready_at' => $challenge->acceptor_ready_at?->toIso8601String(),
+            'both_players_ready' => $challenge->challenger_ready_at !== null && $challenge->acceptor_ready_at !== null,
+            'started_at' => $challenge->started_at?->toIso8601String(),
+            'submitted_for_review_at' => $challenge->submitted_for_review_at?->toIso8601String(),
+        ];
+    }
+
+    private function deleteEvidence(?string $path): void
+    {
+        if ($path && Storage::exists($path)) {
+            Storage::delete($path);
+        }
     }
 }
