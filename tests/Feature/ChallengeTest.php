@@ -1097,8 +1097,8 @@ class ChallengeTest extends TestCase
         $response = $this->withHeaders($this->authHeadersFor($admin))
             ->getJson("/api/admin/challenges/{$challenge->id}/submissions")
             ->assertOk()
-            ->assertJsonPath('data.submissions.0.score', '21-18')
-            ->assertJsonPath('data.submissions.1.score', '18-21');
+            ->assertJsonPath('data.submissions.0.user.id', $challenger->id)
+            ->assertJsonPath('data.submissions.1.user.id', $acceptor->id);
 
         $this->assertCount(2, $response->json('data.submissions'));
     }

@@ -38,7 +38,7 @@ class ChallengeController extends Controller
 
         $paginator = Challenge::query()
             ->with(['challenger', 'targetPlayer', 'acceptor', 'game', 'publishedMatch', 'submissions.user'])
-            ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where('challenge_no', 'like', "%{$request->search}%");
             })
