@@ -279,20 +279,17 @@ class ChallengeController extends Controller
     public function submitResult(Request $request, $id)
     {
         $request->validate([
-
-            'score' => 'nullable|string|max:50',
             'notes' => 'nullable|string|max:2000',
             'evidence_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'evidence_video' => 'nullable|file|mimes:mp4,mov,webm,avi|max:51200',
         ]);
 
         if (
-            ! $request->filled('score')
-            && ! $request->filled('notes')
+            ! $request->filled('notes')
             && ! $request->hasFile('evidence_image')
             && ! $request->hasFile('evidence_video')
         ) {
-            abort(422, 'Submit a score, note, photo, or video for admin review.');
+            abort(422, 'Submit a note, photo, or video for admin review.');
         }
 
         $user = auth('api')->user();
@@ -323,7 +320,6 @@ class ChallengeController extends Controller
 
             $data = [
                 'submission_type' => 'result',
-                'score' => $request->score,
                 'notes' => $request->notes,
             ];
 

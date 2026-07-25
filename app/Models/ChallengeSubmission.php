@@ -12,7 +12,6 @@ class ChallengeSubmission extends Model
         'challenge_id',
         'user_id',
         'submission_type',
-        'score',
         'notes',
         'evidence_image',
         'evidence_video',
