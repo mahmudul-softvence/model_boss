@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Enums\ChallengeMode;
 use App\Enums\ChallengeStatus;
 use App\Enums\UserRole;
+use App\Events\ChallengeUnderReview;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ChallengeResource;
 use App\Jobs\ChallengeOfferExpiredJob;
@@ -18,6 +19,7 @@ use App\Notifications\ChallengeApprovedNotification;
 use App\Notifications\ChallengeCreatedAdminNotification;
 use App\Notifications\ChallengeOfferNotification;
 use App\Notifications\ChallengeRejectedNotification;
+use App\Notifications\ChallengeSubmittedForReviewNotification;
 use App\Services\ChallengeEscrowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -277,7 +279,7 @@ class ChallengeController extends Controller
     public function submitResult(Request $request, $id)
     {
         $request->validate([
-            'submission_type' => ['required', Rule::in(['result', 'report'])],
+
             'score' => 'nullable|string|max:50',
             'notes' => 'nullable|string|max:2000',
             'evidence_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
@@ -320,7 +322,7 @@ class ChallengeController extends Controller
                 ->first();
 
             $data = [
-                'submission_type' => $request->submission_type,
+                'submission_type' => 'result',
                 'score' => $request->score,
                 'notes' => $request->notes,
             ];
@@ -337,7 +339,7 @@ class ChallengeController extends Controller
                     ->store('challenge-evidence');
             }
 
-            ChallengeSubmission::updateOrCreate([
+            $submission = ChallengeSubmission::updateOrCreate([
                 'challenge_id' => $challenge->id,
                 'user_id' => $user->id,
             ], $data);
@@ -349,6 +351,13 @@ class ChallengeController extends Controller
             if (! $challenge->submitted_for_review_at) {
                 $challenge->update(['submitted_for_review_at' => now()]);
             }
+
+            DB::afterCommit(function () use ($challenge, $submission) {
+                $this->notifyAdmins(new ChallengeSubmittedForReviewNotification($challenge, $submission));
+
+                $adminIds = User::role('super_admin')->pluck('id')->toArray();
+                broadcast(new ChallengeUnderReview($challenge, $adminIds))->toOthers();
+            });
 
             return $challenge;
         });
