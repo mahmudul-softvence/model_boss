@@ -11,7 +11,6 @@ use Tests\TestCase;
 
 class PlatformFeeJobTest extends TestCase
 {
-
     public function test_platform_fee_is_distributed_between_players_referrer_and_admin(): void
     {
         $admin = User::factory()->create(['id' => 1, 'email' => 'admin@example.com']);

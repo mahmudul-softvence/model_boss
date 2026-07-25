@@ -19,7 +19,6 @@ use App\Notifications\ChallengeOfferNotification;
 use App\Notifications\ChallengeRejectedNotification;
 use App\Notifications\ChallengeWonNotification;
 use App\Services\ChallengeEscrowService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Notification;
@@ -30,7 +29,6 @@ use Tests\TestCase;
 
 class ChallengeTest extends TestCase
 {
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -451,10 +449,10 @@ class ChallengeTest extends TestCase
 
         $this->artisan('challenges:process-due')->assertSuccessful();
 
-        Bus::assertDispatched(ChallengeOfferExpiredJob::class, fn($job) => $job->challengeId === $overdueOffered->id);
-        Bus::assertDispatched(ChallengeOfferExpiredJob::class, fn($job) => $job->challengeId === $overduePending->id);
-        Bus::assertNotDispatched(ChallengeOfferExpiredJob::class, fn($job) => $job->challengeId === $stillOpen->id);
-        Bus::assertNotDispatched(ChallengeOfferExpiredJob::class, fn($job) => $job->challengeId === $accepted->id);
+        Bus::assertDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $overdueOffered->id);
+        Bus::assertDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $overduePending->id);
+        Bus::assertNotDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $stillOpen->id);
+        Bus::assertNotDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $accepted->id);
     }
 
     public function test_public_list_is_ordered_by_amount_desc_with_ranks(): void
@@ -467,7 +465,7 @@ class ChallengeTest extends TestCase
 
         $response = $this->getJson('/api/challenges')->assertOk();
 
-        $amounts = collect($response->json('data'))->pluck('amount')->map(fn($a) => (float) $a)->all();
+        $amounts = collect($response->json('data'))->pluck('amount')->map(fn ($a) => (float) $a)->all();
         $ranks = collect($response->json('data'))->pluck('rank')->all();
 
         $this->assertSame([10000.0, 7500.0, 5000.0], $amounts);
@@ -651,7 +649,7 @@ class ChallengeTest extends TestCase
         Notification::assertSentTo(
             $target,
             ChallengeOfferNotification::class,
-            fn($notification, array $channels) => in_array('mail', $channels, true)
+            fn ($notification, array $channels) => in_array('mail', $channels, true)
                 && in_array('database', $channels, true)
                 && in_array('broadcast', $channels, true),
         );
@@ -967,7 +965,7 @@ class ChallengeTest extends TestCase
             ->assertJsonPath('data.0.published_match_id', null);
     }
 
-    public function test_admin_list_orders_pending_then_offered_then_accepted_then_completed_then_cancelled(): void
+    public function test_admin_list_orders_pending_then_offered_then_accepted_then_under_review_then_completed_then_cancelled(): void
     {
         $admin = $this->platformAdmin();
 
@@ -976,6 +974,7 @@ class ChallengeTest extends TestCase
             [
                 ChallengeStatus::CANCELLED,
                 ChallengeStatus::COMPLETED,
+                ChallengeStatus::UNDER_REVIEW,
                 ChallengeStatus::PENDING,
                 ChallengeStatus::ACCEPTED,
                 ChallengeStatus::OFFERED,
@@ -994,6 +993,7 @@ class ChallengeTest extends TestCase
             ChallengeStatus::PENDING->value,
             ChallengeStatus::OFFERED->value,
             ChallengeStatus::ACCEPTED->value,
+            ChallengeStatus::UNDER_REVIEW->value,
             ChallengeStatus::COMPLETED->value,
             ChallengeStatus::CANCELLED->value,
         ], $statuses);
@@ -1068,7 +1068,7 @@ class ChallengeTest extends TestCase
                 'evidence_image' => UploadedFile::fake()->image('score.jpg'),
             ])
             ->assertOk()
-            ->assertJsonPath('data.submitted_for_review_at', fn($v) => $v !== null);
+            ->assertJsonPath('data.submitted_for_review_at', fn ($v) => $v !== null);
 
         $this->withHeaders($this->authHeadersFor($acceptor) + ['Accept' => 'application/json'])
             ->post("/api/challenges/{$challenge->id}/submit-result", [
@@ -1251,7 +1251,7 @@ class ChallengeTest extends TestCase
     private function createGame(): Game
     {
         return Game::create([
-            'name' => 'Test Game ' . uniqid(),
+            'name' => 'Test Game '.uniqid(),
             'category_id' => 1,
         ]);
     }

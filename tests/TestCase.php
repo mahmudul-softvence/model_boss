@@ -3,13 +3,13 @@
 namespace Tests;
 
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Testing\RefreshDatabaseState;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
-    use \Illuminate\Foundation\Testing\RefreshDatabase {
+    use RefreshDatabase {
         refreshTestDatabase as protected traitRefreshTestDatabase;
     }
 

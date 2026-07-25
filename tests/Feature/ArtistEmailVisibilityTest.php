@@ -10,7 +10,6 @@ use Tests\TestCase;
 
 class ArtistEmailVisibilityTest extends TestCase
 {
-
     protected function setUp(): void
     {
         parent::setUp();

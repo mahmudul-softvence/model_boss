@@ -299,7 +299,13 @@ class ChallengeController extends Controller
 
             $challenge = Challenge::with('publishedMatch')->lockForUpdate()->findOrFail($id);
 
-            $this->ensureRegularAcceptedChallenge($challenge);
+            if ($challenge->publishedMatch) {
+                abort(400, 'This challenge is published as an official match. Use match management instead.');
+            }
+
+            if (! in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW], true)) {
+                abort(400, 'This challenge is not ready for result submission.');
+            }
 
             if (! $challenge->started_at) {
                 abort(400, 'Both players must be ready before submitting a result.');
@@ -335,6 +341,10 @@ class ChallengeController extends Controller
                 'challenge_id' => $challenge->id,
                 'user_id' => $user->id,
             ], $data);
+
+            if ($challenge->status === ChallengeStatus::ACCEPTED) {
+                $challenge->update(['status' => ChallengeStatus::UNDER_REVIEW]);
+            }
 
             if (! $challenge->submitted_for_review_at) {
                 $challenge->update(['submitted_for_review_at' => now()]);

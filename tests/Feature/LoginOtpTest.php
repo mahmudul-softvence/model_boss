@@ -14,7 +14,6 @@ use Tests\TestCase;
 
 class LoginOtpTest extends TestCase
 {
-
     protected function setUp(): void
     {
         parent::setUp();

@@ -63,7 +63,7 @@ class WinnerController extends Controller
                 if ($match->match_type === 'challenge' && $match->challenge_id) {
                     $challenge = Challenge::lockForUpdate()->find($match->challenge_id);
 
-                    if ($challenge && $challenge->status === ChallengeStatus::ACCEPTED) {
+                    if ($challenge && in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW], true)) {
                         $result = $this->challengeSettlement->settle($challenge, $winnerId);
 
                         $loserId = $winnerId === $challenge->challenger_id

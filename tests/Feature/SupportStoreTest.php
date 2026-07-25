@@ -11,7 +11,6 @@ use Tests\TestCase;
 
 class SupportStoreTest extends TestCase
 {
-
     private function createMatch(User $playerOne, User $playerTwo): GameMatch
     {
         return GameMatch::create([

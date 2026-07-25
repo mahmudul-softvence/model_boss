@@ -8,7 +8,6 @@ use Tests\TestCase;
 
 class UserSelectListTest extends TestCase
 {
-
     public function test_it_returns_ten_users_for_select(): void
     {
         $users = User::factory()

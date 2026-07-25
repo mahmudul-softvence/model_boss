@@ -14,7 +14,6 @@ use Tests\TestCase;
 
 class SocialControllerTest extends TestCase
 {
-
     public function test_apple_redirect_returns_a_target_url(): void
     {
         $provider = Mockery::mock();

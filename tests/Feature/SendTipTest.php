@@ -10,7 +10,6 @@ use Tests\TestCase;
 
 class SendTipTest extends TestCase
 {
-
     /**
      * The controller treats user id 1 as the admin fee account, so it must exist.
      */

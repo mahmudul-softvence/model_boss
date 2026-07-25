@@ -119,6 +119,7 @@ class Challenge extends Model
         return $query->whereIn('status', [
             ChallengeStatus::OFFERED->value,
             ChallengeStatus::ACCEPTED->value,
+            ChallengeStatus::UNDER_REVIEW->value,
             ChallengeStatus::COMPLETED->value,
         ]);
     }
@@ -129,6 +130,7 @@ class Challenge extends Model
             ChallengeStatus::PENDING->value,
             ChallengeStatus::OFFERED->value,
             ChallengeStatus::ACCEPTED->value,
+            ChallengeStatus::UNDER_REVIEW->value,
         ]);
     }
 
@@ -154,11 +156,12 @@ class Challenge extends Model
     public function scopeOrderByStatusPriority(Builder $query): Builder
     {
         return $query->orderByRaw(
-            'CASE status WHEN ? THEN 0 WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 ELSE 5 END',
+            'CASE status WHEN ? THEN 0 WHEN ? THEN 1 WHEN ? THEN 2 WHEN ? THEN 3 WHEN ? THEN 4 WHEN ? THEN 5 ELSE 6 END',
             [
                 ChallengeStatus::PENDING->value,
                 ChallengeStatus::OFFERED->value,
                 ChallengeStatus::ACCEPTED->value,
+                ChallengeStatus::UNDER_REVIEW->value,
                 ChallengeStatus::COMPLETED->value,
                 ChallengeStatus::CANCELLED->value,
             ]

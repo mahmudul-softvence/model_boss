@@ -8,7 +8,6 @@ use Tests\TestCase;
 
 class MatchLandingTest extends TestCase
 {
-
     public function test_past_filter_returns_only_completed_matches(): void
     {
         User::factory()->create(); // id 1 — supplies the landing page model_picture

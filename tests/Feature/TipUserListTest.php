@@ -7,7 +7,6 @@ use Tests\TestCase;
 
 class TipUserListTest extends TestCase
 {
-
     public function test_user_list_can_search_by_artist_name(): void
     {
         $auth = User::factory()->create();

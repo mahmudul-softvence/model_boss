@@ -18,7 +18,6 @@ use Tests\TestCase;
 
 class WinnerControllerTest extends TestCase
 {
-
     public function test_declaring_a_winner_broadcasts_match_completed_once_to_all_users(): void
     {
         Event::fake([MatchCompleted::class]);

@@ -11,7 +11,6 @@ use Tests\TestCase;
 
 class AdminUserChallengerFlagTest extends TestCase
 {
-
     public function test_admin_user_list_includes_is_challenger_flag(): void
     {
         $this->seedRoles();

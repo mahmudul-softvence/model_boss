@@ -13,7 +13,6 @@ use Tests\TestCase;
 
 class PaypalCheckoutTest extends TestCase
 {
-
     protected function setUp(): void
     {
         parent::setUp();

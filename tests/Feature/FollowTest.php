@@ -10,7 +10,6 @@ use Tests\TestCase;
 
 class FollowTest extends TestCase
 {
-
     public function test_following_a_user_sends_notification_to_that_user()
     {
         Notification::fake();

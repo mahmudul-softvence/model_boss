@@ -7,6 +7,7 @@ enum ChallengeStatus: string
     case PENDING = 'pending';
     case OFFERED = 'offered';
     case ACCEPTED = 'accepted';
+    case UNDER_REVIEW = 'under_review';
     case REJECTED = 'rejected';
     case DECLINED = 'declined';
     case CANCELLED = 'cancelled';

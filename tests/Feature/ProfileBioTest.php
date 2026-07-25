@@ -9,7 +9,6 @@ use Tests\TestCase;
 
 class ProfileBioTest extends TestCase
 {
-
     public function test_user_can_update_their_bio(): void
     {
         $user = User::factory()->create(['bio' => null]);

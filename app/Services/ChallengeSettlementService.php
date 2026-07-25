@@ -39,7 +39,7 @@ class ChallengeSettlementService
                 throw new \RuntimeException('Challenge has already been settled.');
             }
 
-            if ($challenge->status !== ChallengeStatus::ACCEPTED) {
+            if (! in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW], true)) {
                 throw new \RuntimeException('Challenge is not ready to be settled.');
             }
 

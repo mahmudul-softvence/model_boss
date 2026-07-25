@@ -13,7 +13,6 @@ use Tests\TestCase;
 
 class UserIsPlayerTest extends TestCase
 {
-
     public function test_register_stores_and_returns_is_player_when_provided(): void
     {
         Notification::fake();

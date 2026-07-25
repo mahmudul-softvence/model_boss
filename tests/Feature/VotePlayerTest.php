@@ -11,7 +11,6 @@ use Tests\TestCase;
 
 class VotePlayerTest extends TestCase
 {
-
     public function test_voting_deducts_half_the_votes_from_balance_and_credits_admin(): void
     {
         Event::fake([MatchVoteUpdated::class]);
