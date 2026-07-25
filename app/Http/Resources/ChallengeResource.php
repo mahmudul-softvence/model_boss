@@ -74,6 +74,7 @@ class ChallengeResource extends JsonResource
             ),
             'submissions' => $this->whenLoaded('submissions', fn () => $this->submissions->map(fn ($submission) => [
                 'user' => $this->playerPayload($submission->user),
+                'player_type' => $submission->user_id === $this->challenger_id ? 'challenger' : 'acceptor',
                 'evidence_image' => $submission->evidence_image,
                 'evidence_video' => $submission->evidence_video,
                 'created_at' => $submission->created_at?->toIso8601String(),
