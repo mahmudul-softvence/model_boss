@@ -37,8 +37,8 @@ class ChallengeController extends Controller
         $perPage = $request->per_page ?? 10;
 
         $paginator = Challenge::query()
-            ->with(['challenger', 'targetPlayer', 'acceptor', 'game', 'publishedMatch'])
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->with(['challenger', 'targetPlayer', 'acceptor', 'game', 'publishedMatch', 'submissions.user'])
+            ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where('challenge_no', 'like', "%{$request->search}%");
             })
