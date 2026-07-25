@@ -6,6 +6,7 @@ use App\Enums\ChallengeStatus;
 use App\Enums\UserRole;
 use App\Jobs\ChallengeOfferExpiredJob;
 use App\Models\Challenge;
+use App\Models\ChallengeSubmission;
 use App\Models\Game;
 use App\Models\GameMatch;
 use App\Models\Setting;
@@ -18,8 +19,11 @@ use App\Notifications\ChallengeOfferNotification;
 use App\Notifications\ChallengeRejectedNotification;
 use App\Notifications\ChallengeWonNotification;
 use App\Services\ChallengeEscrowService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -447,10 +451,10 @@ class ChallengeTest extends TestCase
 
         $this->artisan('challenges:process-due')->assertSuccessful();
 
-        Bus::assertDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $overdueOffered->id);
-        Bus::assertDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $overduePending->id);
-        Bus::assertNotDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $stillOpen->id);
-        Bus::assertNotDispatched(ChallengeOfferExpiredJob::class, fn ($job) => $job->challengeId === $accepted->id);
+        Bus::assertDispatched(ChallengeOfferExpiredJob::class, fn($job) => $job->challengeId === $overdueOffered->id);
+        Bus::assertDispatched(ChallengeOfferExpiredJob::class, fn($job) => $job->challengeId === $overduePending->id);
+        Bus::assertNotDispatched(ChallengeOfferExpiredJob::class, fn($job) => $job->challengeId === $stillOpen->id);
+        Bus::assertNotDispatched(ChallengeOfferExpiredJob::class, fn($job) => $job->challengeId === $accepted->id);
     }
 
     public function test_public_list_is_ordered_by_amount_desc_with_ranks(): void
@@ -463,7 +467,7 @@ class ChallengeTest extends TestCase
 
         $response = $this->getJson('/api/challenges')->assertOk();
 
-        $amounts = collect($response->json('data'))->pluck('amount')->map(fn ($a) => (float) $a)->all();
+        $amounts = collect($response->json('data'))->pluck('amount')->map(fn($a) => (float) $a)->all();
         $ranks = collect($response->json('data'))->pluck('rank')->all();
 
         $this->assertSame([10000.0, 7500.0, 5000.0], $amounts);
@@ -647,7 +651,7 @@ class ChallengeTest extends TestCase
         Notification::assertSentTo(
             $target,
             ChallengeOfferNotification::class,
-            fn ($notification, array $channels) => in_array('mail', $channels, true)
+            fn($notification, array $channels) => in_array('mail', $channels, true)
                 && in_array('database', $channels, true)
                 && in_array('broadcast', $channels, true),
         );
@@ -831,7 +835,7 @@ class ChallengeTest extends TestCase
 
     public function test_publish_match_cannot_publish_the_same_challenge_twice(): void
     {
-        [$admin, , , $challenge] = $this->acceptedChallenge();
+        [$admin,,, $challenge] = $this->acceptedChallenge();
 
         $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming'])
@@ -847,7 +851,7 @@ class ChallengeTest extends TestCase
 
     public function test_publish_match_ignores_injected_admin_fields(): void
     {
-        [$admin, $challenger, , $challenge] = $this->acceptedChallenge();
+        [$admin, $challenger,, $challenge] = $this->acceptedChallenge();
 
         $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", [
@@ -873,7 +877,7 @@ class ChallengeTest extends TestCase
 
     public function test_publish_match_rejects_a_type_other_than_upcoming(): void
     {
-        [$admin, , , $challenge] = $this->acceptedChallenge();
+        [$admin,,, $challenge] = $this->acceptedChallenge();
 
         $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'live'])
@@ -885,7 +889,7 @@ class ChallengeTest extends TestCase
 
     public function test_admin_cannot_cancel_a_challenge_with_an_active_published_match(): void
     {
-        [$admin, $challenger, , $challenge] = $this->acceptedChallenge();
+        [$admin, $challenger,, $challenge] = $this->acceptedChallenge();
 
         $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming']);
@@ -928,7 +932,7 @@ class ChallengeTest extends TestCase
 
     public function test_admin_cannot_delete_a_challenge_with_an_active_published_match(): void
     {
-        [$admin, $challenger, , $challenge] = $this->acceptedChallenge();
+        [$admin, $challenger,, $challenge] = $this->acceptedChallenge();
 
         $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming']);
@@ -943,7 +947,7 @@ class ChallengeTest extends TestCase
 
     public function test_deleting_a_published_match_without_support_unpublishes_the_challenge(): void
     {
-        [$admin, , , $challenge] = $this->acceptedChallenge();
+        [$admin,,, $challenge] = $this->acceptedChallenge();
 
         $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming']);
@@ -968,13 +972,15 @@ class ChallengeTest extends TestCase
         $admin = $this->platformAdmin();
 
         // Created out of order on purpose; same amount so status decides the order.
-        foreach ([
-            ChallengeStatus::CANCELLED,
-            ChallengeStatus::COMPLETED,
-            ChallengeStatus::PENDING,
-            ChallengeStatus::ACCEPTED,
-            ChallengeStatus::OFFERED,
-        ] as $status) {
+        foreach (
+            [
+                ChallengeStatus::CANCELLED,
+                ChallengeStatus::COMPLETED,
+                ChallengeStatus::PENDING,
+                ChallengeStatus::ACCEPTED,
+                ChallengeStatus::OFFERED,
+            ] as $status
+        ) {
             Challenge::factory()->create(['status' => $status->value, 'amount' => 500]);
         }
 
@@ -1023,6 +1029,135 @@ class ChallengeTest extends TestCase
 
         $this->assertSame('challenge', $response->json('data.0.match_type'));
         $this->assertSame($challenge->id, $response->json('data.0.challenge_id'));
+    }
+
+    public function test_regular_challenge_match_starts_when_both_players_are_ready(): void
+    {
+        [, $challenger, $acceptor, $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload())
+            ->assertOk()
+            ->assertJsonPath('data.both_players_ready', false)
+            ->assertJsonPath('data.started_at', null);
+
+        $this->withHeaders($this->authHeadersFor($acceptor))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload())
+            ->assertOk()
+            ->assertJsonPath('data.both_players_ready', true);
+
+        $challenge->refresh();
+
+        $this->assertNotNull($challenge->challenger_ready_at);
+        $this->assertNotNull($challenge->acceptor_ready_at);
+        $this->assertNotNull($challenge->started_at);
+    }
+
+    public function test_players_submit_regular_challenge_results_for_admin_review(): void
+    {
+        Storage::fake('s3');
+        config(['filesystems.default' => 's3']);
+
+        [$admin, $challenger, $acceptor, $challenge] = $this->acceptedStartedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($challenger) + ['Accept' => 'application/json'])
+            ->post("/api/challenges/{$challenge->id}/submit-result", [
+                'submission_type' => 'result',
+                'score' => '21-18',
+                'notes' => 'I won the match.',
+                'evidence_image' => UploadedFile::fake()->image('score.jpg'),
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.submitted_for_review_at', fn($v) => $v !== null);
+
+        $this->withHeaders($this->authHeadersFor($acceptor) + ['Accept' => 'application/json'])
+            ->post("/api/challenges/{$challenge->id}/submit-result", [
+                'submission_type' => 'report',
+                'score' => '18-21',
+                'notes' => 'Opponent score is correct.',
+                'evidence_video' => UploadedFile::fake()->create('recording.mp4', 1000, 'video/mp4'),
+            ])
+            ->assertOk();
+
+        $this->assertSame(2, ChallengeSubmission::where('challenge_id', $challenge->id)->count());
+        $this->assertNotNull($challenge->fresh()->submitted_for_review_at);
+
+        ChallengeSubmission::where('challenge_id', $challenge->id)->get()
+            ->each(function (ChallengeSubmission $submission) {
+                $imagePath = $submission->getRawOriginal('evidence_image');
+                $videoPath = $submission->getRawOriginal('evidence_video');
+
+                if ($imagePath) {
+                    Storage::disk('s3')->assertExists($imagePath);
+                }
+
+                if ($videoPath) {
+                    Storage::disk('s3')->assertExists($videoPath);
+                }
+            });
+
+        $response = $this->withHeaders($this->authHeadersFor($admin))
+            ->getJson("/api/admin/challenges/{$challenge->id}/submissions")
+            ->assertOk()
+            ->assertJsonPath('data.submissions.0.score', '21-18')
+            ->assertJsonPath('data.submissions.1.score', '18-21');
+
+        $this->assertCount(2, $response->json('data.submissions'));
+    }
+
+    public function test_regular_challenge_submission_flow_is_blocked_after_publishing_as_official_match(): void
+    {
+        [$admin, $challenger,, $challenge] = $this->acceptedStartedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/publish-match", ['type' => 'upcoming'])
+            ->assertCreated();
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/submit-result", [
+                'submission_type' => 'result',
+                'score' => '1-0',
+            ])
+            ->assertStatus(400)
+            ->assertJsonPath('message', 'This challenge is published as an official match. Use match management instead.');
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->getJson("/api/admin/challenges/{$challenge->id}/submissions")
+            ->assertStatus(400)
+            ->assertJsonPath('message', 'This challenge is published as a match. Review it from match management.');
+    }
+
+    public function test_admin_declares_winner_after_regular_challenge_submissions(): void
+    {
+        [$admin, $challenger, $acceptor, $challenge] = $this->acceptedStartedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/submit-result", [
+                'submission_type' => 'result',
+                'score' => '21-18',
+            ]);
+
+        $this->withHeaders($this->authHeadersFor($acceptor))
+            ->postJson("/api/challenges/{$challenge->id}/submit-result", [
+                'submission_type' => 'report',
+                'notes' => 'The submitted result is correct.',
+            ]);
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/winner", [
+                'winner_id' => $challenger->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Winner declared and pool settled successfully.');
+
+        $this->assertDatabaseHas('challenges', [
+            'id' => $challenge->id,
+            'status' => ChallengeStatus::COMPLETED->value,
+            'winner_id' => $challenger->id,
+        ]);
+
+        $this->assertNotNull($challenge->fresh()->admin_reviewed_at);
+        $this->assertSame(1210.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
     }
 
     // Helpers ---------------------------------------------------------------
@@ -1097,10 +1232,26 @@ class ChallengeTest extends TestCase
         return [$admin, $challenger, $acceptor, $challenge];
     }
 
+    /**
+     * @return array{0: User, 1: User, 2: User, 3: Challenge} [admin, challenger, acceptor, challenge]
+     */
+    private function acceptedStartedChallenge(float $amount = 300): array
+    {
+        [$admin, $challenger, $acceptor, $challenge] = $this->acceptedChallenge($amount);
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload());
+
+        $this->withHeaders($this->authHeadersFor($acceptor))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload());
+
+        return [$admin, $challenger, $acceptor, $challenge->fresh()];
+    }
+
     private function createGame(): Game
     {
         return Game::create([
-            'name' => 'Test Game '.uniqid(),
+            'name' => 'Test Game ' . uniqid(),
             'category_id' => 1,
         ]);
     }
@@ -1119,6 +1270,19 @@ class ChallengeTest extends TestCase
             'target_player_id' => $target->id,
             'show_real_name' => true,
             'memo' => 'Lets go',
+        ];
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    private function readyPayload(): array
+    {
+        return [
+            'battery_confirmed' => true,
+            'internet_confirmed' => true,
+            'camera_confirmed' => true,
+            'rules_confirmed' => true,
         ];
     }
 
