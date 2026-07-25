@@ -433,6 +433,18 @@ class ChallengeController extends Controller
             ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
             ->findOrFail($id);
 
+        $challenge->rank = Challenge::query()
+            ->where('status', ChallengeStatus::OFFERED->value)
+            ->excludingExpiredOffers()
+            ->where(function ($q) use ($challenge) {
+                $q->where('amount', '>', $challenge->amount)
+                    ->orWhere(function ($q) use ($challenge) {
+                        $q->where('amount', $challenge->amount)
+                            ->where('id', '>', $challenge->id);
+                    });
+            })
+            ->count() + 1;
+
         $admin = User::role(UserRole::SUPER_ADMIN->value)->first();
 
         return $this->sendResponse(
