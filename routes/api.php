@@ -81,6 +81,8 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('challenges', [ChallengeController::class, 'store']);
     Route::post('challenges/{id}/accept', [ChallengeController::class, 'accept']);
     Route::post('challenges/{id}/decline', [ChallengeController::class, 'decline']);
+    Route::post('challenges/{id}/ready', [ChallengeController::class, 'ready']);
+    Route::post('challenges/{id}/submit-result', [ChallengeController::class, 'submitResult']);
     Route::post('challenges/{id}/cancel', [ChallengeController::class, 'cancel']);
 });
 
@@ -139,6 +141,7 @@ Route::group(['middleware' => ['auth:api', 'role:super_admin'], 'prefix' => 'adm
     Route::get('challenge-stats', [AdminChallengeController::class, 'stats']);
     Route::post('challenges/{id}/approve', [AdminChallengeController::class, 'approve']);
     Route::post('challenges/{id}/reject', [AdminChallengeController::class, 'reject']);
+    Route::get('challenges/{id}/submissions', [AdminChallengeController::class, 'submissions']);
     Route::post('challenges/{id}/winner', [AdminChallengeController::class, 'winner']);
     Route::post('challenges/{id}/cancel', [AdminChallengeController::class, 'cancel']);
     Route::post('challenges/{id}/publish-match', [AdminChallengeController::class, 'publishMatch']);

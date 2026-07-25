@@ -156,6 +156,8 @@ class ChallengeController extends Controller
             ], 400);
         }
 
+        $challenge->forceFill(['admin_reviewed_at' => now()])->save();
+
         $loserId = $winnerId === $challenge->challenger_id
             ? $challenge->accepted_by_user_id
             : $challenge->challenger_id;
@@ -172,6 +174,35 @@ class ChallengeController extends Controller
             'status' => true,
             'message' => 'Winner declared and pool settled successfully.',
             'data' => $result,
+        ]);
+    }
+
+    /**
+     * Show both player submissions for a regular challenge match.
+     */
+    public function submissions($id)
+    {
+        $challenge = Challenge::query()
+            ->with([
+                'challenger',
+                'acceptor',
+                'game',
+                'publishedMatch',
+                'submissions.user',
+            ])
+            ->findOrFail($id);
+
+        if ($challenge->publishedMatch) {
+            return response()->json([
+                'status' => false,
+                'message' => 'This challenge is published as a match. Review it from match management.',
+            ], 400);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Challenge submissions retrieved successfully',
+            'data' => new ChallengeResource($challenge),
         ]);
     }
 
