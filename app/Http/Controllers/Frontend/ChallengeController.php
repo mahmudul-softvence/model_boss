@@ -342,8 +342,10 @@ class ChallengeController extends Controller
                 abort(400, 'This challenge is not ready for result submission.');
             }
 
-            if (! $challenge->started_at) {
-                abort(400, 'Both players must be ready before submitting a result.');
+            $readyColumn = $this->readyColumnFor($challenge, $user->id);
+
+            if (! $readyColumn || ! $challenge->{$readyColumn}) {
+                abort(400, 'You must mark yourself as ready before submitting a result.');
             }
 
             if (! $this->isChallengePlayer($challenge, $user->id)) {

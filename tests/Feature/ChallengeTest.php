@@ -1221,6 +1221,67 @@ class ChallengeTest extends TestCase
         $this->assertSame(1210.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
     }
 
+    public function test_ready_player_can_submit_result_when_opponent_is_not_ready(): void
+    {
+        [$admin, $challenger, $acceptor, $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload())
+            ->assertOk()
+            ->assertJsonPath('data.both_players_ready', false);
+
+        $this->assertNull($challenge->fresh()->acceptor_ready_at);
+        $this->assertNull($challenge->fresh()->started_at);
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/submit-result", [
+                'notes' => 'Opponent did not show up. I am ready and claim the win.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.submitted_for_review_at', fn ($v) => $v !== null);
+
+        $this->assertDatabaseHas('challenges', [
+            'id' => $challenge->id,
+            'status' => ChallengeStatus::UNDER_REVIEW->value,
+        ]);
+
+        $response = $this->withHeaders($this->authHeadersFor($admin))
+            ->getJson("/api/admin/challenges/{$challenge->id}/submissions")
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data.submissions'));
+        $this->assertSame($challenger->id, $response->json('data.submissions.0.user.id'));
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/winner", [
+                'winner_id' => $challenger->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Winner declared and pool settled successfully.');
+
+        $this->assertDatabaseHas('challenges', [
+            'id' => $challenge->id,
+            'status' => ChallengeStatus::COMPLETED->value,
+            'winner_id' => $challenger->id,
+        ]);
+    }
+
+    public function test_non_ready_player_cannot_submit_result(): void
+    {
+        [$admin, $challenger, $acceptor, $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload())
+            ->assertOk();
+
+        $this->withHeaders($this->authHeadersFor($acceptor))
+            ->postJson("/api/challenges/{$challenge->id}/submit-result", [
+                'notes' => 'I was not ready but trying to submit.',
+            ])
+            ->assertStatus(400)
+            ->assertJsonPath('message', 'You must mark yourself as ready before submitting a result.');
+    }
+
     // Helpers ---------------------------------------------------------------
 
     private function seedRoles(): void
