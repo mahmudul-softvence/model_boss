@@ -158,10 +158,6 @@ class ChallengeController extends Controller
                 abort(400, 'This challenge offer has expired.');
             }
 
-            if (! $challenge->matchTimeHasPassed()) {
-                abort(400, 'The match time has not arrived yet.');
-            }
-
             if ($challenge->challenger_id === $user->id) {
                 abort(400, 'You cannot accept your own challenge.');
             }
