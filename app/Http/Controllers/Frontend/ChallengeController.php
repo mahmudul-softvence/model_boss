@@ -18,6 +18,7 @@ use App\Notifications\ChallengeAcceptedNotification;
 use App\Notifications\ChallengeApprovedNotification;
 use App\Notifications\ChallengeCreatedAdminNotification;
 use App\Notifications\ChallengeOfferNotification;
+use App\Notifications\ChallengeOpponentReadyNotification;
 use App\Notifications\ChallengeRejectedNotification;
 use App\Notifications\ChallengeSubmittedForReviewNotification;
 use App\Services\ChallengeEscrowService;
@@ -260,8 +261,20 @@ class ChallengeController extends Controller
                 abort(403, 'Only challenge players can mark ready.');
             }
 
-            if (! $challenge->{$readyColumn}) {
-                $challenge->{$readyColumn} = now();
+            if ($challenge->{$readyColumn}) {
+                abort(400, 'You have already marked yourself as ready.');
+            }
+
+            if ($challenge->ready_expires_at && $challenge->ready_expires_at->isPast()) {
+                abort(400, 'The ready window has expired. You can no longer join this match.');
+            }
+
+            $firstToReady = ! $challenge->challenger_ready_at && ! $challenge->acceptor_ready_at;
+
+            $challenge->{$readyColumn} = now();
+
+            if ($firstToReady) {
+                $challenge->ready_expires_at = now()->addMinutes(10);
             }
 
             if ($challenge->challenger_ready_at && $challenge->acceptor_ready_at && ! $challenge->started_at) {
@@ -270,8 +283,23 @@ class ChallengeController extends Controller
 
             $challenge->save();
 
-            return $challenge;
+            return [$challenge, $firstToReady, $readyColumn];
         });
+
+        [$challenge, $firstToReady, $readyColumn] = $challenge;
+
+        if ($firstToReady) {
+            $opponentId = $challenge->challenger_id === $user->id
+                ? $challenge->accepted_by_user_id
+                : $challenge->challenger_id;
+
+            $opponent = User::find($opponentId);
+
+            if ($opponent) {
+                $playerName = $user->artist_name ?: $user->name;
+                $opponent->notify(new ChallengeOpponentReadyNotification($challenge, $playerName));
+            }
+        }
 
         return $this->sendResponse(
             $this->challengeFlowPayload($challenge->fresh()),
@@ -635,6 +663,7 @@ class ChallengeController extends Controller
             'acceptor_ready_at' => $challenge->acceptor_ready_at?->toIso8601String(),
             'both_players_ready' => $challenge->challenger_ready_at !== null && $challenge->acceptor_ready_at !== null,
             'started_at' => $challenge->started_at?->toIso8601String(),
+            'ready_expires_at' => $challenge->ready_expires_at?->toIso8601String(),
             'submitted_for_review_at' => $challenge->submitted_for_review_at?->toIso8601String(),
         ];
     }
