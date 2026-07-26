@@ -510,8 +510,11 @@ class ChallengeController extends Controller
         $perPage = $request->per_page ?? 10;
 
         $paginator = Challenge::query()
-            ->where('accepted_by_user_id', $id)
             ->where('status', ChallengeStatus::ACCEPTED->value)
+            ->where(function ($q) use ($id) {
+                $q->where('accepted_by_user_id', $id)
+                    ->orWhere('challenger_id', $id);
+            })
             ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
             ->orderBy('id', 'desc')
             ->paginate($perPage);
