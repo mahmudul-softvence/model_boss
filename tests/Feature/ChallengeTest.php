@@ -16,6 +16,7 @@ use App\Notifications\ChallengeAcceptedNotification;
 use App\Notifications\ChallengeApprovedNotification;
 use App\Notifications\ChallengeLostNotification;
 use App\Notifications\ChallengeOfferNotification;
+use App\Notifications\ChallengeOpponentReadyNotification;
 use App\Notifications\ChallengeRejectedNotification;
 use App\Notifications\ChallengeWonNotification;
 use App\Services\ChallengeEscrowService;
@@ -1051,6 +1052,73 @@ class ChallengeTest extends TestCase
         $this->assertNotNull($challenge->challenger_ready_at);
         $this->assertNotNull($challenge->acceptor_ready_at);
         $this->assertNotNull($challenge->started_at);
+    }
+
+    public function test_ready_window_notifies_the_other_player_via_mail_database_and_broadcast(): void
+    {
+        Notification::fake();
+
+        [, $challenger, $acceptor, $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload())
+            ->assertOk()
+            ->assertJsonPath('data.ready_expires_at', fn ($v) => $v !== null);
+
+        Notification::assertSentTo(
+            $acceptor,
+            ChallengeOpponentReadyNotification::class,
+            function (ChallengeOpponentReadyNotification $notification, array $channels) {
+                return $channels === ['mail', 'database', 'broadcast'];
+            }
+        );
+
+        $this->assertNotNull($challenge->fresh()->ready_expires_at);
+    }
+
+    public function test_ready_window_expires_and_blocks_the_other_player(): void
+    {
+        [, $challenger, $acceptor, $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload())
+            ->assertOk();
+
+        $challenge->fresh()->update(['ready_expires_at' => now()->subMinute()]);
+
+        $this->withHeaders($this->authHeadersFor($acceptor))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload())
+            ->assertStatus(400)
+            ->assertJsonPath('message', 'The ready window has expired. You can no longer join this match.');
+    }
+
+    public function test_ready_window_is_set_to_10_minutes_when_first_player_readies(): void
+    {
+        [, $challenger,, $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload())
+            ->assertOk();
+
+        $readyExpiresAt = $challenge->fresh()->ready_expires_at;
+
+        $this->assertNotNull($readyExpiresAt);
+        $this->assertTrue($readyExpiresAt->isFuture());
+        $this->assertLessThanOrEqual(10, $readyExpiresAt->diffInMinutes(null, true));
+    }
+
+    public function test_second_player_cannot_ready_twice(): void
+    {
+        [, $challenger,, $challenge] = $this->acceptedChallenge();
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload())
+            ->assertOk();
+
+        $this->withHeaders($this->authHeadersFor($challenger))
+            ->postJson("/api/challenges/{$challenge->id}/ready", $this->readyPayload())
+            ->assertStatus(400)
+            ->assertJsonPath('message', 'You have already marked yourself as ready.');
     }
 
     public function test_players_submit_regular_challenge_results_for_admin_review(): void
