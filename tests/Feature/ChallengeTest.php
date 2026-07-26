@@ -1252,13 +1252,13 @@ class ChallengeTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function offerPayload(Game $game, User $target, float $amount = 300): array
+    private function offerPayload(Game $game, User $target, float $amount = 300, ?string $matchDate = null): array
     {
         return [
             'game_id' => $game->id,
             'amount' => $amount,
-            'match_date' => now()->addDay()->toDateString(),
-            'match_time' => '18:00',
+            'match_date' => $matchDate ?? now()->toDateString(),
+            'match_time' => '00:01',
             'mode' => 'unique',
             'target_player_id' => $target->id,
             'show_real_name' => true,

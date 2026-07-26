@@ -173,4 +173,15 @@ class Challenge extends Model
         return $this->offer_expires_at !== null
             && $this->offer_expires_at->isPast();
     }
+
+    public function matchTimeHasPassed(): bool
+    {
+        if (! $this->match_date) {
+            return true;
+        }
+
+        $matchDateTime = $this->match_date->format('Y-m-d').' '.($this->match_time ?? '00:00');
+
+        return now()->parse($matchDateTime)->isPast();
+    }
 }
