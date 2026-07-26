@@ -510,7 +510,7 @@ class ChallengeController extends Controller
         $perPage = $request->per_page ?? 10;
 
         $paginator = Challenge::query()
-            ->where('status', ChallengeStatus::ACCEPTED->value)
+            ->whereIn('status', [ChallengeStatus::ACCEPTED->value, ChallengeStatus::UNDER_REVIEW->value])
             ->where(function ($q) use ($id) {
                 $q->where('accepted_by_user_id', $id)
                     ->orWhere('challenger_id', $id);
@@ -521,7 +521,7 @@ class ChallengeController extends Controller
 
         return $this->sendResponse(
             ChallengeResource::collection($paginator),
-            'Accepted challenges retrieved successfully',
+            'Active challenges retrieved successfully',
         );
     }
 
