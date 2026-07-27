@@ -16,6 +16,7 @@ class ChallengeOpponentReadyNotification extends Notification implements ShouldQ
     public function __construct(
         protected Challenge $challenge,
         protected string $readyPlayerName,
+        protected bool $matchStarted = false,
     ) {}
 
     public function via(object $notifiable): array
@@ -25,13 +26,18 @@ class ChallengeOpponentReadyNotification extends Notification implements ShouldQ
 
     public function toMail(object $notifiable): MailMessage
     {
+        $subject = $this->matchStarted
+            ? 'Match started on Model Boss'
+            : 'Your opponent is ready on Model Boss';
+
         return (new MailMessage)
-            ->subject('Your opponent is ready on Model Boss')
+            ->subject($subject)
             ->view('emails.challenge-opponent-ready', [
                 'notifiable_name' => $notifiable->name,
                 'opponent_name' => $this->readyPlayerName,
                 'challenge_no' => $this->challenge->challenge_no,
                 'ready_expires_at' => $this->challenge->ready_expires_at,
+                'match_started' => $this->matchStarted,
             ]);
     }
 
@@ -52,13 +58,17 @@ class ChallengeOpponentReadyNotification extends Notification implements ShouldQ
 
     protected function payload(object $notifiable): array
     {
+        $message = $this->matchStarted
+            ? "{$this->readyPlayerName} is ready. The match has started!"
+            : "{$this->readyPlayerName} is ready. You have 10 minutes to ready up.";
+
         return [
             'type' => 'challenge.opponent_ready',
             'challenge_id' => $this->challenge->id,
             'challenge_no' => $this->challenge->challenge_no,
             'opponent_name' => $this->readyPlayerName,
             'ready_expires_at' => $this->challenge->ready_expires_at?->toIso8601String(),
-            'message' => "{$this->readyPlayerName} is ready. You have 10 minutes to join.",
+            'message' => $message,
         ];
     }
 }

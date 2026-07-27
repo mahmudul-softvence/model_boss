@@ -284,6 +284,8 @@ class ChallengeController extends Controller
 
         [$challenge, $firstToReady, $readyColumn] = $challenge;
 
+        $playerName = $user->artist_name ?: $user->name;
+
         if ($firstToReady) {
             $opponentId = $challenge->challenger_id === $user->id
                 ? $challenge->accepted_by_user_id
@@ -292,8 +294,17 @@ class ChallengeController extends Controller
             $opponent = User::find($opponentId);
 
             if ($opponent) {
-                $playerName = $user->artist_name ?: $user->name;
                 $opponent->notify(new ChallengeOpponentReadyNotification($challenge, $playerName));
+            }
+        } elseif ($challenge->started_at) {
+            $firstPlayerId = $challenge->challenger_id === $user->id
+                ? $challenge->accepted_by_user_id
+                : $challenge->challenger_id;
+
+            $firstPlayer = User::find($firstPlayerId);
+
+            if ($firstPlayer) {
+                $firstPlayer->notify(new ChallengeOpponentReadyNotification($challenge, $playerName, matchStarted: true));
             }
         }
 

@@ -47,7 +47,7 @@ class ChallengeResource extends JsonResource
             'memo' => $this->memo,
             'show_real_name' => $this->show_real_name,
             'duration_hours' => $this->duration_hours,
-            'duration_label' => $this->duration_hours . ' Hours',
+            'duration_label' => $this->duration_hours.' Hours',
             'match_date' => $this->match_date?->toDateString(),
             'match_time' => $this->match_time,
             'challenger_ready_at' => $this->challenger_ready_at?->toIso8601String(),
@@ -61,7 +61,7 @@ class ChallengeResource extends JsonResource
             'is_expired' => $this->isExpired(),
             'can_accept' => $this->status === ChallengeStatus::OFFERED && ! $this->isExpired(),
             'expiry_message' => $this->isExpired() ? 'This challenge offer has expired.' : null,
-            'game' => $this->whenLoaded('game', fn() => [
+            'game' => $this->whenLoaded('game', fn () => [
                 'id' => $this->game?->id,
                 'name' => $this->game?->name,
                 'image' => $this->game?->image,
@@ -71,9 +71,9 @@ class ChallengeResource extends JsonResource
             'acceptor' => $this->playerPayload($this->whenLoaded('acceptor') ? $this->acceptor : null),
             'model' => $this->when(
                 $this->platformAdmin !== null,
-                fn() => $this->playerPayload($this->platformAdmin),
+                fn () => $this->playerPayload($this->platformAdmin),
             ),
-            'submissions' => $this->whenLoaded('submissions', fn() => $this->submissions->map(fn($submission) => [
+            'submissions' => $this->whenLoaded('submissions', fn () => $this->submissions->map(fn ($submission) => [
                 'user' => $this->playerPayload($submission->user),
                 'player_type' => $submission->user_id === $this->challenger_id ? 'challenger' : 'acceptor',
                 'evidence_image' => $submission->evidence_image,
