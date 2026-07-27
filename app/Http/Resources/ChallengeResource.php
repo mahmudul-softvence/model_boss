@@ -57,7 +57,7 @@ class ChallengeResource extends JsonResource
             'submitted_for_review_at' => $this->submitted_for_review_at?->toIso8601String(),
             'admin_reviewed_at' => $this->admin_reviewed_at?->toIso8601String(),
             'offer_expires_at' => $this->offer_expires_at?->toIso8601String(),
-            'ready_expires_at' => $this->ready_expires_at->toIso8601String(),
+            'ready_expires_at' => $this->ready_expires_at?->toIso8601String(),
             'is_expired' => $this->isExpired(),
             'can_accept' => $this->status === ChallengeStatus::OFFERED && ! $this->isExpired(),
             'expiry_message' => $this->isExpired() ? 'This challenge offer has expired.' : null,
