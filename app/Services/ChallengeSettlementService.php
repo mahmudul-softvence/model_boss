@@ -39,7 +39,7 @@ class ChallengeSettlementService
                 throw new \RuntimeException('Challenge has already been settled.');
             }
 
-            if (! in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW], true)) {
+            if (! in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW, ChallengeStatus::WINNER_PENDING], true)) {
                 throw new \RuntimeException('Challenge is not ready to be settled.');
             }
 
@@ -66,7 +66,7 @@ class ChallengeSettlementService
                 'type' => 'challenge-win',
                 'amount' => $winnerPayout,
                 'balance_after' => $winnerBalance->fresh()->total_balance,
-                'reference' => 'Challenge Win #'.$challenge->challenge_no,
+                'reference' => 'Challenge Win #' . $challenge->challenge_no,
             ]);
 
             $adminBalance = UserBalance::where('user_id', self::ADMIN_USER_ID)
@@ -82,7 +82,7 @@ class ChallengeSettlementService
                     'type' => 'challenge-fee',
                     'amount' => $adminFee,
                     'balance_after' => $adminBalance->fresh()->total_balance,
-                    'reference' => 'Challenge Fee #'.$challenge->challenge_no,
+                    'reference' => 'Challenge Fee #' . $challenge->challenge_no,
                 ]);
             }
 
