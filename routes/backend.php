@@ -1,12 +1,19 @@
 <?php
 
 use App\Http\Controllers\Backend\AdminSettingController;
+use App\Http\Controllers\Backend\CategoryController;
+use App\Http\Controllers\Backend\ChallengeController as AdminChallengeController;
 use App\Http\Controllers\Backend\CredentialSettingController;
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\GalleryController;
+use App\Http\Controllers\Backend\GameController;
+use App\Http\Controllers\Backend\MatchController;
+use App\Http\Controllers\Backend\MatchForVotingController;
 use App\Http\Controllers\Backend\NewsController;
 use App\Http\Controllers\Backend\PromotionalTermController;
+use App\Http\Controllers\Backend\SupportController;
 use App\Http\Controllers\Backend\UserController;
+use App\Http\Controllers\Backend\WinnerController;
 use App\Http\Controllers\Backend\WithdrawController;
 use App\Http\Controllers\Notifications\NotificationController;
 use Illuminate\Support\Facades\Route;
@@ -120,6 +127,68 @@ Route::middleware(['auth:api', 'role:super_admin'])
             CredentialSettingController::class,
             'update',
         ]);
+
+        // Category
+        Route::get('categories', [CategoryController::class, 'index']);
+        Route::post('categories', [CategoryController::class, 'store']);
+        Route::get('categories/{id}', [CategoryController::class, 'edit']);
+        Route::post('categories/{id}', [CategoryController::class, 'update']);
+        Route::delete('categories/{id}', [CategoryController::class, 'destroy']);
+
+        // Game
+        Route::get('games', [GameController::class, 'index']);
+        Route::post('games', [GameController::class, 'store']);
+        Route::get('games/{id}', [GameController::class, 'edit']);
+        Route::post('games/{id}', [GameController::class, 'update']);
+        Route::delete('games/{id}', [GameController::class, 'destroy']);
+        Route::get('all-games', [GameController::class, 'allGames']);
+
+        // Match
+        Route::get('matches', [MatchController::class, 'index']);
+        Route::post('matches', [MatchController::class, 'store']);
+        Route::get('matches/{id}', [MatchController::class, 'edit']);
+        Route::post('matches/{id}', [MatchController::class, 'update']);
+        Route::delete('matches/{id}', [MatchController::class, 'destroy']);
+
+        Route::patch('/pin-unpin-match/{id}', [MatchController::class, 'togglePin']);
+        Route::patch('/remove-view-match/{id}', [MatchController::class, 'toggleRemove']);
+        // match confirmation
+        Route::post('match-confirm/{id}', [SupportController::class, 'confirm']);
+
+        // vote Start
+        Route::post('start-vote/{match_id}', [MatchForVotingController::class, 'startVote']);
+
+        Route::get('match-players/{id}', [MatchController::class, 'players']);
+
+        Route::get('all-players', [MatchController::class, 'allPlayers']);
+        Route::post('match-winner/{id}', [WinnerController::class, 'winner']);
+
+        // Dashboard
+        Route::get('earnings', [DashboardController::class, 'earnings']);
+        Route::get('recent-streams', [DashboardController::class, 'recentStreams']);
+        Route::get('running-matches', [DashboardController::class, 'runningMatches']);
+
+        // match voting
+        Route::get('match-voting/', [MatchForVotingController::class, 'index']);
+        Route::post('match-voting/', [MatchForVotingController::class, 'store']);
+        Route::get('match-voting/{id}', [MatchForVotingController::class, 'edit']);
+        Route::post('match-voting/{id}', [MatchForVotingController::class, 'update']);
+        Route::delete('match-voting/{id}', [MatchForVotingController::class, 'destroy']);
+
+        Route::get('all-transaction', [WinnerController::class, 'adminTransactions']);
+
+        // Big Boss Challenge (admin)
+        Route::get('challenges', [AdminChallengeController::class, 'index']);
+        Route::get('challenge-stats', [AdminChallengeController::class, 'stats']);
+        Route::post('challenges/{id}/approve', [AdminChallengeController::class, 'approve']);
+        Route::post('challenges/{id}/reject', [AdminChallengeController::class, 'reject']);
+        Route::get('challenges/{id}/submissions', [AdminChallengeController::class, 'submissions']);
+        Route::post('challenges/{id}/winner', [AdminChallengeController::class, 'winner']);
+        Route::post('challenges/{id}/cancel', [AdminChallengeController::class, 'cancel']);
+        Route::post('challenges/{id}/publish-match', [AdminChallengeController::class, 'publishMatch']);
+        Route::delete('challenges/{id}', [AdminChallengeController::class, 'destroy']);
+        Route::post('users/{user}/challenge-access', [AdminChallengeController::class, 'grantAccess']);
+        Route::delete('users/{user}/challenge-access', [AdminChallengeController::class, 'revokeAccess']);
     });
 
 Route::middleware('auth:api')->group(function () {
