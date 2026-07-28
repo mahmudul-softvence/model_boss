@@ -12,5 +12,6 @@ enum ChallengeStatus: string
     case DECLINED = 'declined';
     case CANCELLED = 'cancelled';
     case EXPIRED = 'expired';
+    case WINNER_PENDING = 'winner_pending';
     case COMPLETED = 'completed';
 }
