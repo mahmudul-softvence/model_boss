@@ -29,7 +29,9 @@ use Illuminate\Validation\Rule;
 
 class ChallengeController extends Controller
 {
-    public function __construct(private ChallengeEscrowService $escrow) {}
+    public function __construct(
+        private ChallengeEscrowService $escrow,
+    ) {}
 
     /**
      * Whether the authenticated user is allowed to create challenges.
@@ -521,12 +523,17 @@ class ChallengeController extends Controller
         $perPage = $request->per_page ?? 10;
 
         $paginator = Challenge::query()
-            ->whereIn('status', [ChallengeStatus::ACCEPTED->value, ChallengeStatus::UNDER_REVIEW->value])
+            ->whereIn('status', [ChallengeStatus::ACCEPTED->value, ChallengeStatus::UNDER_REVIEW->value, ChallengeStatus::WINNER_PENDING->value])
             ->where(function ($q) use ($id) {
                 $q->where('accepted_by_user_id', $id)
                     ->orWhere('challenger_id', $id);
             })
             ->with(['challenger', 'targetPlayer', 'acceptor', 'game'])
+            ->orderByRaw('CASE status WHEN ? THEN 0 WHEN ? THEN 1 WHEN ? THEN 2 END', [
+                ChallengeStatus::UNDER_REVIEW->value,
+                ChallengeStatus::ACCEPTED->value,
+                ChallengeStatus::WINNER_PENDING->value,
+            ])
             ->orderBy('id', 'desc')
             ->paginate($perPage);
 

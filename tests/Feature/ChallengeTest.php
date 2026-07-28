@@ -18,6 +18,7 @@ use App\Notifications\ChallengeLostNotification;
 use App\Notifications\ChallengeOfferNotification;
 use App\Notifications\ChallengeOpponentReadyNotification;
 use App\Notifications\ChallengeRejectedNotification;
+use App\Notifications\ChallengeWinnerDeclaredNotification;
 use App\Notifications\ChallengeWonNotification;
 use App\Services\ChallengeEscrowService;
 use Illuminate\Http\UploadedFile;
@@ -222,13 +223,11 @@ class ChallengeTest extends TestCase
 
     public function test_winner_settlement_pays_pool_minus_fifteen_percent(): void
     {
-        $admin = $this->platformAdmin(); // user id 1 — the account that collects the fee
-
+        $admin = $this->platformAdmin();
         $game = $this->createGame();
         $challenger = $this->player('challenger@example.com', balance: 1000, canCreate: true);
         $acceptor = $this->player('acceptor@example.com', balance: 1000);
 
-        // Create -> approve -> accept -> declare winner
         $this->withHeaders($this->authHeadersFor($challenger))
             ->postJson('/api/challenges', $this->offerPayload($game, $acceptor, amount: 300))
             ->assertCreated();
@@ -246,10 +245,32 @@ class ChallengeTest extends TestCase
         Notification::assertSentTo($challenger, ChallengeAcceptedNotification::class);
         $this->assertSame(700.0, (float) UserBalance::where('user_id', $acceptor->id)->value('total_balance'));
 
+        // Admin declares winner — status becomes WINNER_PENDING, no payout yet
         $response = $this->withHeaders($this->authHeadersFor($admin))
             ->postJson("/api/admin/challenges/{$challenge->id}/winner", [
                 'winner_id' => $challenger->id,
             ]);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Winner declared')
+            ->assertJsonMissingPath('data');
+
+        $this->assertDatabaseHas('challenges', [
+            'id' => $challenge->id,
+            'status' => ChallengeStatus::WINNER_PENDING->value,
+            'winner_id' => $challenger->id,
+        ]);
+
+        $this->assertNotNull($challenge->fresh()->admin_reviewed_at);
+
+        // Balance should NOT have changed yet
+        $this->assertSame(700.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
+
+        Notification::assertSentTo($challenger, ChallengeWinnerDeclaredNotification::class);
+
+        // Admin releases the payout
+        $response = $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/release-payout");
 
         $response->assertOk()
             ->assertJsonPath('data.pool', 600)
@@ -258,10 +279,7 @@ class ChallengeTest extends TestCase
 
         // Winner: 700 (after own hold) + 510 = 1210
         $this->assertSame(1210.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
-        // Admin keeps the 15% = 90
         $this->assertSame(90.0, (float) UserBalance::where('user_id', $admin->id)->value('total_balance'));
-        // Conservation: 510 + 90 == 600
-        $this->assertSame(600.0, 510.0 + 90.0);
 
         $this->assertDatabaseHas('challenges', [
             'id' => $challenge->id,
@@ -1209,7 +1227,23 @@ class ChallengeTest extends TestCase
                 'winner_id' => $challenger->id,
             ])
             ->assertOk()
-            ->assertJsonPath('message', 'Winner declared and pool settled successfully.');
+            ->assertJsonPath('message', 'Winner declared');
+
+        $this->assertDatabaseHas('challenges', [
+            'id' => $challenge->id,
+            'status' => ChallengeStatus::WINNER_PENDING->value,
+            'winner_id' => $challenger->id,
+        ]);
+
+        $this->assertNotNull($challenge->fresh()->admin_reviewed_at);
+
+        // Balance should NOT have changed yet — payout is on hold
+        $this->assertSame(700.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
+
+        // Release the payout
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->postJson("/api/admin/challenges/{$challenge->id}/release-payout")
+            ->assertOk();
 
         $this->assertDatabaseHas('challenges', [
             'id' => $challenge->id,
@@ -1217,7 +1251,6 @@ class ChallengeTest extends TestCase
             'winner_id' => $challenger->id,
         ]);
 
-        $this->assertNotNull($challenge->fresh()->admin_reviewed_at);
         $this->assertSame(1210.0, (float) UserBalance::where('user_id', $challenger->id)->value('total_balance'));
     }
 
@@ -1257,11 +1290,11 @@ class ChallengeTest extends TestCase
                 'winner_id' => $challenger->id,
             ])
             ->assertOk()
-            ->assertJsonPath('message', 'Winner declared and pool settled successfully.');
+            ->assertJsonPath('message', 'Winner declared');
 
         $this->assertDatabaseHas('challenges', [
             'id' => $challenge->id,
-            'status' => ChallengeStatus::COMPLETED->value,
+            'status' => ChallengeStatus::WINNER_PENDING->value,
             'winner_id' => $challenger->id,
         ]);
     }
