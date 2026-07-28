@@ -14,6 +14,7 @@ use App\Notifications\ChallengeApprovedNotification;
 use App\Notifications\ChallengeLostNotification;
 use App\Notifications\ChallengeOfferNotification;
 use App\Notifications\ChallengeRejectedNotification;
+use App\Notifications\ChallengeWinnerDeclaredNotification;
 use App\Notifications\ChallengeWonNotification;
 use App\Services\ChallengeEscrowService;
 use App\Services\ChallengeSettlementService;
@@ -125,6 +126,13 @@ class ChallengeController extends Controller
             ], 400);
         }
 
+        if (! in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW, ChallengeStatus::WINNER_PENDING], true)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Challenge must be accepted or under review to declare a winner.',
+            ], 400);
+        }
+
         $request->validate([
             'winner_id' => [
                 'required',
@@ -135,16 +143,11 @@ class ChallengeController extends Controller
 
         $winnerId = (int) $request->winner_id;
 
-        try {
-            $result = $this->settlement->settle($challenge, $winnerId);
-        } catch (\RuntimeException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
-
-        $challenge->forceFill(['admin_reviewed_at' => now()])->save();
+        $challenge->update([
+            'winner_id' => $winnerId,
+            'status' => ChallengeStatus::WINNER_PENDING,
+            'admin_reviewed_at' => now(),
+        ]);
 
         $loserId = $winnerId === $challenge->challenger_id
             ? $challenge->accepted_by_user_id
@@ -155,12 +158,51 @@ class ChallengeController extends Controller
         $winner = User::find($winnerId);
         $loser = User::find($loserId);
 
-        $winner?->notify(new ChallengeWonNotification($challenge, (float) $result['winner_payout']));
+        $winner?->notify(new ChallengeWinnerDeclaredNotification($challenge));
         $loser?->notify(new ChallengeLostNotification($challenge, (float) $challenge->amount));
 
         return response()->json([
             'status' => true,
-            'message' => 'Winner declared and pool settled successfully.',
+            'message' => 'Winner declared',
+        ]);
+    }
+
+    public function releasePayout($id)
+    {
+        $challenge = Challenge::findOrFail($id);
+
+        if ($challenge->status !== ChallengeStatus::WINNER_PENDING) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Payout can only be released for challenges with a declared winner waiting for settlement.',
+            ], 400);
+        }
+
+        if (! $challenge->winner_id) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No winner has been declared for this challenge.',
+            ], 400);
+        }
+
+        try {
+            $result = $this->settlement->settle($challenge, $challenge->winner_id);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+
+        $challenge->loadMissing(['challenger', 'acceptor']);
+
+        $winner = User::find($challenge->winner_id);
+
+        $winner?->notify(new ChallengeWonNotification($challenge, (float) $result['winner_payout']));
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Payout released successfully.',
             'data' => $result,
         ]);
     }
@@ -202,6 +244,7 @@ class ChallengeController extends Controller
                 ChallengeStatus::OFFERED,
                 ChallengeStatus::ACCEPTED,
                 ChallengeStatus::UNDER_REVIEW,
+                ChallengeStatus::WINNER_PENDING,
             ], true)) {
                 abort(400, 'This challenge can no longer be cancelled.');
             }
@@ -212,7 +255,7 @@ class ChallengeController extends Controller
 
             $this->escrow->refund($challenge->challenger_id, (float) $challenge->amount, $challenge);
 
-            if (in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW], true) && $challenge->accepted_by_user_id) {
+            if (in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW, ChallengeStatus::WINNER_PENDING], true) && $challenge->accepted_by_user_id) {
                 $this->escrow->refund($challenge->accepted_by_user_id, (float) $challenge->amount, $challenge);
             }
 
@@ -236,6 +279,7 @@ class ChallengeController extends Controller
                 ChallengeStatus::OFFERED,
                 ChallengeStatus::ACCEPTED,
                 ChallengeStatus::UNDER_REVIEW,
+                ChallengeStatus::WINNER_PENDING,
             ], true)) {
                 if ($this->hasActivePublishedMatch($challenge)) {
                     abort(400, 'This challenge has been published as a match. Manage it from the match management.');
@@ -243,7 +287,7 @@ class ChallengeController extends Controller
 
                 $this->escrow->refund($challenge->challenger_id, (float) $challenge->amount, $challenge);
 
-                if (in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW], true) && $challenge->accepted_by_user_id) {
+                if (in_array($challenge->status, [ChallengeStatus::ACCEPTED, ChallengeStatus::UNDER_REVIEW, ChallengeStatus::WINNER_PENDING], true) && $challenge->accepted_by_user_id) {
                     $this->escrow->refund($challenge->accepted_by_user_id, (float) $challenge->amount, $challenge);
                 }
             }
