@@ -3,7 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\SocialController;
-use App\Http\Controllers\Backend\Admin\ChallengeController as AdminChallengeController;
+use App\Http\Controllers\Backend\ChallengeController as AdminChallengeController;
 use App\Http\Controllers\Backend\CategoryController;
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\GameController;

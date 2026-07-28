@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Backend\Admin;
+namespace App\Http\Controllers\Backend;
 
 use App\Enums\ChallengeMode;
 use App\Enums\ChallengeStatus;
@@ -29,9 +29,6 @@ class ChallengeController extends Controller
         private ChallengeSettlementService $settlement,
     ) {}
 
-    /**
-     * List challenges for admin management.
-     */
     public function index(Request $request)
     {
         $perPage = $request->per_page ?? 10;
@@ -62,9 +59,6 @@ class ChallengeController extends Controller
         ]);
     }
 
-    /**
-     * Approve a pending challenge so it becomes visible/acceptable on the frontend.
-     */
     public function approve($id)
     {
         $challenge = DB::transaction(function () use ($id) {
@@ -95,9 +89,6 @@ class ChallengeController extends Controller
         ]);
     }
 
-    /**
-     * Reject a pending challenge and refund the challenger.
-     */
     public function reject($id)
     {
         $challenge = DB::transaction(function () use ($id) {
@@ -123,9 +114,6 @@ class ChallengeController extends Controller
         ]);
     }
 
-    /**
-     * Declare the winner of an accepted challenge and settle the pool.
-     */
     public function winner(Request $request, $id)
     {
         $challenge = Challenge::with('publishedMatch')->findOrFail($id);
@@ -177,9 +165,6 @@ class ChallengeController extends Controller
         ]);
     }
 
-    /**
-     * Show both player submissions for a regular challenge match.
-     */
     public function submissions($id)
     {
         $challenge = Challenge::query()
@@ -206,9 +191,6 @@ class ChallengeController extends Controller
         ]);
     }
 
-    /**
-     * Admin cancels a challenge and refunds every held stake.
-     */
     public function cancel($id)
     {
         DB::transaction(function () use ($id) {
@@ -243,9 +225,6 @@ class ChallengeController extends Controller
         ]);
     }
 
-    /**
-     * Delete a challenge, refunding any stakes still held.
-     */
     public function destroy($id)
     {
         DB::transaction(function () use ($id) {
@@ -278,9 +257,6 @@ class ChallengeController extends Controller
         ]);
     }
 
-    /**
-     * Publish an accepted challenge as a match in game_matches.
-     */
     public function publishMatch(Request $request, $id)
     {
         $challenge = Challenge::with(['challenger', 'acceptor', 'game'])->findOrFail($id);
@@ -415,9 +391,6 @@ class ChallengeController extends Controller
         ], 201);
     }
 
-    /**
-     * Challenge dashboard stats for the admin.
-     */
     public function stats()
     {
         $pendingInvested = Challenge::holding()->sum('amount');
@@ -447,9 +420,6 @@ class ChallengeController extends Controller
         ]);
     }
 
-    /**
-     * Grant a user permission to create challenges.
-     */
     public function grantAccess($userId)
     {
         $user = User::findOrFail($userId);
@@ -463,9 +433,6 @@ class ChallengeController extends Controller
         ]);
     }
 
-    /**
-     * Revoke a user's permission to create challenges.
-     */
     public function revokeAccess($userId)
     {
         $user = User::findOrFail($userId);
@@ -479,11 +446,6 @@ class ChallengeController extends Controller
         ]);
     }
 
-    /**
-     * Whether the challenge has a published match that is still in play.
-     * A declined match (confirmation_status 2) no longer blocks the challenge,
-     * so the admin can still cancel it and refund the held stakes.
-     */
     private function hasActivePublishedMatch(Challenge $challenge): bool
     {
         $match = $challenge->publishedMatch()->first();
