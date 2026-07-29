@@ -44,20 +44,20 @@ class ChallengeWinnerDeclaredNotification extends Notification implements Should
 
     public function broadcastType(): string
     {
-        return 'challenge.winner_declared';
+        return 'challenge.won';
     }
 
     protected function payload(object $notifiable): array
     {
         return [
-            'type' => 'challenge.winner_declared',
+            'type' => 'challenge.won',
             'challenge_id' => $this->challenge->id,
             'challenge_no' => $this->challenge->challenge_no,
             'opponent_name' => $this->opponentName($notifiable),
-            'amount' => (float) $this->challenge->amount,
-            'message' => 'You won challenge #'.$this->challenge->challenge_no.'! Your payout of '
-                .number_format((float) $this->challenge->amount * 2 * 0.85, 2)
-                .' coins will be available within 2 days. Claim it early from the challenge page.',
+            'payout' => (float) $this->challenge->amount,
+            'message' => 'You won challenge #' . $this->challenge->challenge_no . '! Your payout of '
+                . number_format((float) $this->challenge->amount * 2 * 0.85, 2)
+                . ' coins will be available within 2 days. Claim it early from the challenge page.',
         ];
     }
 
