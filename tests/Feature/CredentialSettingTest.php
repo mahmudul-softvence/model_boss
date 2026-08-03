@@ -68,8 +68,38 @@ class CredentialSettingTest extends TestCase
 
         $this->assertDatabaseHas('settings', ['key' => 'credential.mail.host', 'value' => 'smtp.example.com']);
         $this->assertDatabaseHas('settings', ['key' => 'credential.mail.port', 'value' => '587']);
+        $this->assertDatabaseHas('settings', ['key' => 'credential.mail.encryption', 'value' => 'tls']);
         $this->assertSame('smtp.example.com', config('mail.mailers.smtp.host'));
         $this->assertSame('587', config('mail.mailers.smtp.port'));
+        $this->assertSame('smtp', config('mail.mailers.smtp.scheme'));
+    }
+
+    public function test_mail_encryption_ssl_is_mapped_to_smtps_scheme(): void
+    {
+        $admin = $this->createAdmin();
+
+        $this->withHeaders($this->authHeadersFor($admin))
+            ->putJson('/api/admin/credentials/mail', [
+                'port' => '465',
+                'encryption' => 'ssl',
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('settings', ['key' => 'credential.mail.encryption', 'value' => 'ssl']);
+        $this->assertSame('smtps', config('mail.mailers.smtp.scheme'));
+    }
+
+    public function test_mail_encryption_values_are_normalized_for_symfony_mailer(): void
+    {
+        $encryptionKey = CredentialSettings::settingKey('mail', 'encryption');
+
+        $this->assertSame('smtps', CredentialSettings::toConfigValue($encryptionKey, 'ssl'));
+        $this->assertSame('smtp', CredentialSettings::toConfigValue($encryptionKey, 'tls'));
+        $this->assertSame('smtps', CredentialSettings::toConfigValue($encryptionKey, 'SMTPS'));
+        $this->assertSame('smtp.example.com', CredentialSettings::toConfigValue(
+            CredentialSettings::settingKey('mail', 'host'),
+            'smtp.example.com'
+        ));
     }
 
     public function test_admin_can_update_stripe_credentials(): void

@@ -19,7 +19,8 @@ class CredentialSettingController extends Controller
         foreach (CredentialSettings::groups() as $group => $fields) {
             foreach ($fields as $field => $configKey) {
                 $settingKey = CredentialSettings::settingKey($group, $field);
-                $groups[$group][$field] = $stored->get($settingKey) ?? config($configKey);
+                $groups[$group][$field] = $stored->get($settingKey)
+                    ?? CredentialSettings::fromConfigValue($settingKey, config($configKey));
             }
         }
 
@@ -45,12 +46,14 @@ class CredentialSettingController extends Controller
                 continue;
             }
 
+            $settingKey = CredentialSettings::settingKey($group, $field);
+
             Setting::updateOrCreate(
-                ['key' => CredentialSettings::settingKey($group, $field)],
+                ['key' => $settingKey],
                 ['value' => $value]
             );
 
-            config([$fields[$field] => $value]);
+            config([$fields[$field] => CredentialSettings::toConfigValue($settingKey, $value)]);
         }
 
         if ($group === 'stripe') {

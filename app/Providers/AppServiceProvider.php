@@ -41,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
                 ->pluck('value', 'key')
                 ->each(function (string $value, string $settingKey) use ($configMap): void {
                     if (isset($configMap[$settingKey])) {
-                        config([$configMap[$settingKey] => $value]);
+                        config([$configMap[$settingKey] => CredentialSettings::toConfigValue($settingKey, $value)]);
                     }
                 });
         } catch (\Throwable) {

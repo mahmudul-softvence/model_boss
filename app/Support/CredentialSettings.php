@@ -80,4 +80,39 @@ class CredentialSettings
     {
         return "credential.{$group}.{$field}";
     }
+
+    /**
+     * Convert a stored credential value into the value Laravel config expects.
+     *
+     * Admin UI still stores legacy encryption labels (ssl/tls); Symfony Mailer
+     * only accepts smtp/smtps as the transport scheme.
+     */
+    public static function toConfigValue(string $settingKey, string $value): string
+    {
+        if ($settingKey !== static::settingKey('mail', 'encryption')) {
+            return $value;
+        }
+
+        return match (strtolower(trim($value))) {
+            'ssl', 'smtps' => 'smtps',
+            'tls', 'smtp', 'none', 'null', '' => 'smtp',
+            default => strtolower(trim($value)),
+        };
+    }
+
+    /**
+     * Convert a Laravel mail scheme back to the admin encryption label.
+     */
+    public static function fromConfigValue(string $settingKey, mixed $value): mixed
+    {
+        if ($settingKey !== static::settingKey('mail', 'encryption') || ! is_string($value)) {
+            return $value;
+        }
+
+        return match (strtolower(trim($value))) {
+            'smtps' => 'ssl',
+            'smtp' => 'tls',
+            default => $value,
+        };
+    }
 }
