@@ -65,12 +65,14 @@ return [
     ],
 
     'stripe' => [
+        // Kept in sync with cashier.secret via AppServiceProvider.
         'secret' => env('STRIPE_SECRET'),
     ],
 
     'moncash' => [
-        'base_url' => env('MONCASH_BASE_URL', 'https://sandbox.moncashbutton.digicelgroup.com/Api'),
-        'gateway_base' => env('MONCASH_GATEWAY_BASE', 'https://sandbox.moncashbutton.digicelgroup.com/Moncash-middleware'),
+        // Set live URLs via Admin Credentials or .env — no sandbox default.
+        'base_url' => env('MONCASH_BASE_URL'),
+        'gateway_base' => env('MONCASH_GATEWAY_BASE'),
         'client_id' => env('MONCASH_CLIENT_ID'),
         'client_secret' => env('MONCASH_CLIENT_SECRET'),
         'api_key' => env('MONCASH_API_KEY'),
@@ -82,7 +84,8 @@ return [
     ],
 
     'paypal' => [
-        'base_url' => env('PAYPAL_BASE_URL', 'https://api-m.sandbox.paypal.com'),
+        // Set live URL via Admin Credentials or .env — no sandbox default.
+        'base_url' => env('PAYPAL_BASE_URL'),
         'client_id' => env('PAYPAL_CLIENT_ID'),
         'client_secret' => env('PAYPAL_CLIENT_SECRET'),
     ],

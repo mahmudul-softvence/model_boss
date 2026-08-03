@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Enums\UserRole;
 use App\Models\User;
-use App\Models\UserBalance;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -14,33 +13,32 @@ class RoleSeeder extends Seeder
     public function run(): void
     {
         foreach (UserRole::cases() as $role) {
-            Role::firstOrCreate([
-                'name' => $role->value,
-            ]);
+            Role::findOrCreate($role->value, 'api');
         }
 
-        $adminEmail = 'admin@gmail.com';
+        $email = config('app.admin_email');
+        $password = config('app.admin_password');
+
+        if (! is_string($email) || trim($email) === '' || ! is_string($password) || $password === '') {
+            return;
+        }
+
         $admin = User::firstOrCreate(
-            ['email' => $adminEmail],
+            ['email' => trim($email)],
             [
-                'name' => 'Admin',
-                'password' => Hash::make('12345678'),
-                'referral_no' => 'ahfjkh',
+                'name' => config('app.admin_name', 'Admin'),
+                'password' => Hash::make($password),
             ]
         );
 
-        $admin->userBalance()->create();
+        $admin->userBalance()->firstOrCreate([], [
+            'total_balance' => 0,
+        ]);
 
         $admin->markEmailAsVerified();
 
-        if (! $admin->hasRole(UserRole::SUPER_ADMIN)) {
-            $admin->assignRole(UserRole::SUPER_ADMIN);
+        if (! $admin->hasRole(UserRole::SUPER_ADMIN->value)) {
+            $admin->assignRole(UserRole::SUPER_ADMIN->value);
         }
-
-        UserBalance::firstOrCreate([
-            'user_id' => $admin->id,
-        ], [
-            'total_balance' => 0,
-        ]);
     }
 }

@@ -53,6 +53,10 @@ class CredentialSettingController extends Controller
             config([$fields[$field] => $value]);
         }
 
+        if ($group === 'stripe') {
+            config(['services.stripe.secret' => config('cashier.secret')]);
+        }
+
         return $this->sendResponse([], ucfirst($group).' credentials updated');
     }
 }

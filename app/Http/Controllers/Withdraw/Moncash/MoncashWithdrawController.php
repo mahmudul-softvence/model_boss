@@ -10,6 +10,7 @@ use App\Notifications\AdminWithdrawalNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 class MoncashWithdrawController extends Controller
 {
@@ -45,7 +46,7 @@ class MoncashWithdrawController extends Controller
                     'user_id' => $user->id,
                     'payment_method' => 'moncash',
                     'payout_account' => $user->moncash_phone,
-                    'withdraw_no' => 'WD'.now()->timestamp.rand(100, 999),
+                    'withdraw_no' => 'WD'.Str::ulid(),
                     'coin_amount' => $request->coin_amount,
                     'usd_amount' => $request->coin_amount,
                     'status' => WithdrawalStatus::PENDING,

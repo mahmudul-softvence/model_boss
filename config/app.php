@@ -128,4 +128,17 @@ return [
     'frontend_account_connect' => env('FRONTEND_ACCOUNT_CONNECT'),
     'frontend_account_connect_failed' => env('FRONTEND_ACCOUNT_CONNECT_FAILED'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Initial Super Admin (seeding only)
+    |--------------------------------------------------------------------------
+    |
+    | RoleSeeder creates a super admin only when both email and password are set.
+    | Leave these empty on production and create the admin manually instead.
+    |
+    */
+    'admin_email' => env('ADMIN_EMAIL'),
+    'admin_password' => env('ADMIN_PASSWORD'),
+    'admin_name' => env('ADMIN_NAME', 'Admin'),
+
 ];

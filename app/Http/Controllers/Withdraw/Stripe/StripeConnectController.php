@@ -16,7 +16,7 @@ class StripeConnectController extends Controller
     {
         $user = $request->user();
 
-        Stripe::setApiKey(config('services.stripe.secret'));
+        Stripe::setApiKey(config('cashier.secret'));
 
         if (! $user->stripe_account_id) {
 
@@ -67,7 +67,7 @@ class StripeConnectController extends Controller
     {
         $user = $request->user();
 
-        Stripe::setApiKey(config('services.stripe.secret'));
+        Stripe::setApiKey(config('cashier.secret'));
 
         $account = Account::retrieve($user->stripe_account_id);
 

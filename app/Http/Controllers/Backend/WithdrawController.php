@@ -28,7 +28,7 @@ class WithdrawController extends Controller
     public function accept($id)
     {
         try {
-            DB::transaction(function () use ($id) {
+            $withdraw = DB::transaction(function () use ($id) {
                 $withdraw = Withdrawal::with('user')
                     ->lockForUpdate()
                     ->findOrFail($id);
@@ -37,84 +37,47 @@ class WithdrawController extends Controller
                     throw new \Exception('Already processed.');
                 }
 
-                $user = $withdraw->user;
-
-                $userBalance = $user->userBalance()
-                    ->lockForUpdate()
-                    ->first();
-
-                if (! $userBalance) {
+                if (! $withdraw->user->userBalance()->lockForUpdate()->exists()) {
                     throw new \Exception('User balance not found.');
                 }
 
-                if ($withdraw->payment_method === 'stripe') {
-                    Stripe::setApiKey(config('services.stripe.secret'));
-
-                    if (! $user->stripe_account_id) {
-                        throw new \Exception('User Stripe not connected.');
-                    }
-
-                    $account = Account::retrieve($user->stripe_account_id);
-
-                    if (! $account->payouts_enabled) {
-                        throw new \Exception('Stripe account not ready.');
-                    }
-
-                    $transfer = Transfer::create([
-                        'amount' => (int) ($withdraw->usd_amount * 100),
-                        'currency' => 'usd',
-                        'destination' => $user->stripe_account_id,
-                        'description' => 'Withdrawal '.$withdraw->withdraw_no,
-                    ]);
-
-                    $withdraw->update([
-                        'status' => WithdrawalStatus::ACCEPTED,
-                        'stripe_transfer_id' => $transfer->id,
-                    ]);
-
-                    $user->coinTransactions()->create([
-                        'type' => TransactionType::WITHDRAW,
-                        'amount' => $withdraw->coin_amount,
-                        'balance_after' => $userBalance->total_balance,
-                        'reference' => $transfer->id,
-                    ]);
-                } elseif ($withdraw->payment_method === 'paypal') {
-                    if (! $user->paypal_email) {
-                        throw new \Exception('User PayPal not connected.');
-                    }
-
-                    $batchId = app(PaypalService::class)->sendPayout(
-                        $user->paypal_email,
-                        (float) $withdraw->usd_amount,
-                        $withdraw->withdraw_no,
-                    );
-
-                    $withdraw->update([
-                        'status' => WithdrawalStatus::ACCEPTED,
-                        'paypal_payout_id' => $batchId,
-                    ]);
-
-                    $user->coinTransactions()->create([
-                        'type' => TransactionType::WITHDRAW,
-                        'amount' => $withdraw->coin_amount,
-                        'balance_after' => $userBalance->total_balance,
-                        'reference' => $batchId,
-                    ]);
-                } else {
-                    $withdraw->update([
-                        'status' => WithdrawalStatus::ACCEPTED,
-                    ]);
-
-                    $user->coinTransactions()->create([
-                        'type' => TransactionType::WITHDRAW,
-                        'amount' => $withdraw->coin_amount,
-                        'balance_after' => $userBalance->total_balance,
-                        'reference' => $withdraw->withdraw_no,
-                    ]);
-                }
-
-                $userBalance->increment('total_withdraw', $withdraw->coin_amount);
+                return $withdraw;
             });
+
+            $user = $withdraw->user;
+
+            if ($withdraw->payment_method === 'stripe') {
+                $this->acceptStripeWithdrawal($withdraw, $user);
+            } elseif ($withdraw->payment_method === 'paypal') {
+                $this->acceptPaypalWithdrawal($withdraw, $user);
+            } else {
+                DB::transaction(function () use ($withdraw, $user) {
+                    $lockedWithdraw = Withdrawal::query()
+                        ->lockForUpdate()
+                        ->findOrFail($withdraw->id);
+
+                    if ($lockedWithdraw->status !== WithdrawalStatus::PENDING->value) {
+                        throw new \Exception('Already processed.');
+                    }
+
+                    $userBalance = $user->userBalance()
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $lockedWithdraw->update([
+                        'status' => WithdrawalStatus::ACCEPTED,
+                    ]);
+
+                    $user->coinTransactions()->create([
+                        'type' => TransactionType::WITHDRAW,
+                        'amount' => $lockedWithdraw->coin_amount,
+                        'balance_after' => $userBalance->total_balance,
+                        'reference' => $lockedWithdraw->withdraw_no,
+                    ]);
+
+                    $userBalance->increment('total_withdraw', $lockedWithdraw->coin_amount);
+                });
+            }
 
             return $this->sendResponse([], 'Withdrawal accepted successfully.');
         } catch (\Exception $e) {
@@ -125,9 +88,7 @@ class WithdrawController extends Controller
     public function declined($id)
     {
         try {
-
             DB::transaction(function () use ($id) {
-
                 $withdraw = Withdrawal::lockForUpdate()
                     ->findOrFail($id);
 
@@ -153,8 +114,100 @@ class WithdrawController extends Controller
 
             return $this->sendResponse([], 'Withdrawal declined and refunded.');
         } catch (\Exception $e) {
-
             return $this->sendError($e->getMessage(), [], 400);
         }
+    }
+
+    private function acceptStripeWithdrawal(Withdrawal $withdraw, $user): void
+    {
+        Stripe::setApiKey(config('cashier.secret'));
+
+        if (! $user->stripe_account_id) {
+            throw new \Exception('User Stripe not connected.');
+        }
+
+        $account = Account::retrieve($user->stripe_account_id);
+
+        if (! $account->payouts_enabled) {
+            throw new \Exception('Stripe account not ready.');
+        }
+
+        $transfer = Transfer::create([
+            'amount' => (int) round($withdraw->usd_amount * 100),
+            'currency' => 'usd',
+            'destination' => $user->stripe_account_id,
+            'description' => 'Withdrawal '.$withdraw->withdraw_no,
+        ], [
+            'idempotency_key' => 'withdraw-'.$withdraw->withdraw_no,
+        ]);
+
+        DB::transaction(function () use ($withdraw, $transfer, $user) {
+            $lockedWithdraw = Withdrawal::query()
+                ->lockForUpdate()
+                ->findOrFail($withdraw->id);
+
+            if ($lockedWithdraw->status !== WithdrawalStatus::PENDING->value) {
+                throw new \Exception('Already processed.');
+            }
+
+            $userBalance = $user->userBalance()
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $lockedWithdraw->update([
+                'status' => WithdrawalStatus::ACCEPTED,
+                'stripe_transfer_id' => $transfer->id,
+            ]);
+
+            $user->coinTransactions()->create([
+                'type' => TransactionType::WITHDRAW,
+                'amount' => $lockedWithdraw->coin_amount,
+                'balance_after' => $userBalance->total_balance,
+                'reference' => $transfer->id,
+            ]);
+
+            $userBalance->increment('total_withdraw', $lockedWithdraw->coin_amount);
+        });
+    }
+
+    private function acceptPaypalWithdrawal(Withdrawal $withdraw, $user): void
+    {
+        if (! $user->paypal_email) {
+            throw new \Exception('User PayPal not connected.');
+        }
+
+        $batchId = app(PaypalService::class)->sendPayout(
+            $user->paypal_email,
+            (float) $withdraw->usd_amount,
+            $withdraw->withdraw_no,
+        );
+
+        DB::transaction(function () use ($withdraw, $batchId, $user) {
+            $lockedWithdraw = Withdrawal::query()
+                ->lockForUpdate()
+                ->findOrFail($withdraw->id);
+
+            if ($lockedWithdraw->status !== WithdrawalStatus::PENDING->value) {
+                throw new \Exception('Already processed.');
+            }
+
+            $userBalance = $user->userBalance()
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $lockedWithdraw->update([
+                'status' => WithdrawalStatus::ACCEPTED,
+                'paypal_payout_id' => $batchId,
+            ]);
+
+            $user->coinTransactions()->create([
+                'type' => TransactionType::WITHDRAW,
+                'amount' => $lockedWithdraw->coin_amount,
+                'balance_after' => $userBalance->total_balance,
+                'reference' => $batchId,
+            ]);
+
+            $userBalance->increment('total_withdraw', $lockedWithdraw->coin_amount);
+        });
     }
 }

@@ -9,16 +9,29 @@ use App\Models\StripePayment;
 use App\Models\User;
 use App\Models\Withdrawal;
 use App\Notifications\UserWithdrawalCompletedNotification;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierController;
 use Stripe\StripeClient;
+use Symfony\Component\HttpFoundation\Response;
 
 class WebhookController extends CashierController
 {
     public function __construct(private readonly CreditPointPurchase $creditPointPurchase)
     {
         parent::__construct();
+    }
+
+    public function handleWebhook(Request $request): Response
+    {
+        if (! filled(config('cashier.webhook.secret'))) {
+            Log::critical('Stripe webhook rejected because webhook secret is not configured.');
+
+            return response('Webhook secret not configured', 500);
+        }
+
+        return parent::handleWebhook($request);
     }
 
     public function handleCheckoutSessionCompleted($payload)
@@ -153,7 +166,10 @@ class WebhookController extends CashierController
 
             $balance = $withdraw->user->userBalance()->lockForUpdate()->first();
 
-            $balance->increment('total_balance', $withdraw->coin_amount);
+            if ($balance) {
+                $balance->increment('total_balance', $withdraw->coin_amount);
+                $balance->decrement('total_withdraw', min($withdraw->coin_amount, $balance->total_withdraw));
+            }
 
             $withdraw->update([
                 'status' => WithdrawalStatus::DECLINED,

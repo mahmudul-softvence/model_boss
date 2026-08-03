@@ -51,7 +51,19 @@ class BitpayService
 
     public function isPaymentCompleted(array $invoice): bool
     {
-        return in_array($invoice['status'] ?? '', ['confirmed', 'complete', 'paid'], true);
+        // Require confirmed/complete — "paid" is zero-confirmation and unsafe to credit.
+        return in_array($invoice['status'] ?? '', ['confirmed', 'complete'], true);
+    }
+
+    public function invoiceAmountMatches(array $invoice, float $expectedAmount): bool
+    {
+        $price = $invoice['price'] ?? null;
+
+        if (! is_numeric($price)) {
+            return false;
+        }
+
+        return abs((float) $price - round($expectedAmount, 2)) < 0.001;
     }
 
     public function isPaymentFailed(array $invoice): bool

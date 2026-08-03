@@ -11,11 +11,11 @@ class CredentialSettings
     {
         return [
             'mail' => [
-                'host' => 'mail.host',
-                'port' => 'mail.port',
-                'encryption' => 'mail.encryption',
-                'username' => 'mail.username',
-                'password' => 'mail.password',
+                'host' => 'mail.mailers.smtp.host',
+                'port' => 'mail.mailers.smtp.port',
+                'encryption' => 'mail.mailers.smtp.scheme',
+                'username' => 'mail.mailers.smtp.username',
+                'password' => 'mail.mailers.smtp.password',
                 'from_address' => 'mail.from.address',
                 'from_name' => 'mail.from.name',
             ],
@@ -31,6 +31,7 @@ class CredentialSettings
             ],
             'moncash' => [
                 'base_url' => 'services.moncash.base_url',
+                'gateway_base' => 'services.moncash.gateway_base',
                 'client_id' => 'services.moncash.client_id',
                 'client_secret' => 'services.moncash.client_secret',
                 'api_key' => 'services.moncash.api_key',

@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Support\CredentialSettings;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Apple\Provider as AppleProvider;
 use SocialiteProviders\Manager\SocialiteWasCalled;
@@ -27,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('viewApiDocs', fn ($user = null): bool => true);
 
         $this->bootCredentialsFromDatabase();
+        $this->syncStripeSecrets();
+        $this->assertProductionPaymentConfig();
     }
 
     private function bootCredentialsFromDatabase(): void
@@ -43,6 +46,28 @@ class AppServiceProvider extends ServiceProvider
                 });
         } catch (\Throwable) {
             // DB may not be available during migrations or testing setup
+        }
+    }
+
+    private function syncStripeSecrets(): void
+    {
+        $secret = config('cashier.secret');
+
+        if (is_string($secret) && trim($secret) !== '') {
+            config(['services.stripe.secret' => $secret]);
+        }
+    }
+
+    private function assertProductionPaymentConfig(): void
+    {
+        if (! $this->app->environment('production')) {
+            return;
+        }
+
+        $webhookSecret = config('cashier.webhook.secret');
+
+        if (! is_string($webhookSecret) || trim($webhookSecret) === '') {
+            Log::critical('Stripe webhook secret is not configured. Webhooks will be rejected until it is set.');
         }
     }
 }

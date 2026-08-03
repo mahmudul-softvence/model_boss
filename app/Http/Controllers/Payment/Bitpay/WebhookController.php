@@ -49,32 +49,56 @@ class WebhookController extends Controller
 
     protected function processPayment(array $invoice, string $invoiceId): Response
     {
-        $payment = BitpayPayment::where('bitpay_invoice_id', $invoiceId)->first();
+        return DB::transaction(function () use ($invoice, $invoiceId) {
+            $payment = BitpayPayment::where('bitpay_invoice_id', $invoiceId)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $payment) {
-            Log::warning('BitPay payment not found', ['invoiceId' => $invoiceId]);
+            if (! $payment) {
+                Log::warning('BitPay payment not found', ['invoiceId' => $invoiceId]);
 
-            return response('', 404);
-        }
+                return response('', 404);
+            }
 
-        if ($payment->status === PaymentStatus::COMPLETED->value) {
-            return response('', 200);
-        }
+            if ($payment->status === PaymentStatus::COMPLETED->value) {
+                return response('', 200);
+            }
 
-        $isCompleted = $this->bitpayService->isPaymentCompleted($invoice);
-        $isFailed = $this->bitpayService->isPaymentFailed($invoice);
+            $invoiceOrderId = trim((string) ($invoice['orderId'] ?? ''));
 
-        if ($isFailed) {
-            $payment->update(['status' => PaymentStatus::FAILED->value]);
+            if ($invoiceOrderId !== '' && $invoiceOrderId !== $payment->order_id) {
+                Log::warning('BitPay order ID mismatch', [
+                    'invoiceId' => $invoiceId,
+                    'expected' => $payment->order_id,
+                    'actual' => $invoiceOrderId,
+                ]);
 
-            return response('', 200);
-        }
+                return response('', 400);
+            }
 
-        if (! $isCompleted) {
-            return response('', 200);
-        }
+            $isCompleted = $this->bitpayService->isPaymentCompleted($invoice);
+            $isFailed = $this->bitpayService->isPaymentFailed($invoice);
 
-        DB::transaction(function () use ($payment, $invoice) {
+            if ($isFailed) {
+                $payment->update(['status' => PaymentStatus::FAILED->value]);
+
+                return response('', 200);
+            }
+
+            if (! $isCompleted) {
+                return response('', 200);
+            }
+
+            if (! $this->bitpayService->invoiceAmountMatches($invoice, (float) $payment->amount)) {
+                Log::warning('BitPay amount mismatch', [
+                    'invoiceId' => $invoiceId,
+                    'expected' => $payment->amount,
+                    'actual' => $invoice['price'] ?? null,
+                ]);
+
+                return response('', 400);
+            }
+
             $payment->update([
                 'status' => PaymentStatus::COMPLETED->value,
                 'payer' => $invoice['buyer']['email'] ?? null,
@@ -87,8 +111,8 @@ class WebhookController extends Controller
                 (float) $payment->coin_amount,
                 $payment->bitpay_invoice_id,
             );
-        });
 
-        return response('', 200);
+            return response('', 200);
+        });
     }
 }

@@ -42,7 +42,8 @@ class PaypalService
 
     public function sendPayout(string $receiverEmail, float $amount, string $reference): string
     {
-        $response = $this->apiRequest()
+        // No HTTP retries on payouts — retries can amplify ambiguous provider failures.
+        $response = $this->apiRequestWithoutRetry()
             ->post($this->apiUrl('/v1/payments/payouts'), [
                 'sender_batch_header' => [
                     'sender_batch_id' => $reference,
@@ -90,6 +91,15 @@ class PaypalService
             ->connectTimeout(10)
             ->timeout(20)
             ->retry(2, 200)
+            ->withToken($this->accessToken());
+    }
+
+    protected function apiRequestWithoutRetry(): PendingRequest
+    {
+        return Http::acceptJson()
+            ->contentType('application/json')
+            ->connectTimeout(10)
+            ->timeout(20)
             ->withToken($this->accessToken());
     }
 

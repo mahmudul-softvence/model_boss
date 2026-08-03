@@ -38,7 +38,7 @@ class CredentialSettingTest extends TestCase
                     'mail' => ['host', 'port', 'encryption', 'username', 'password', 'from_address', 'from_name'],
                     'stripe' => ['key', 'secret', 'webhook_secret'],
                     'paypal' => ['base_url', 'client_id', 'client_secret'],
-                    'moncash' => ['base_url', 'client_id', 'client_secret', 'api_key'],
+                    'moncash' => ['base_url', 'gateway_base', 'client_id', 'client_secret', 'api_key'],
                     'bitpay' => ['base_url', 'token'],
                     'twitch' => ['client_id', 'client_secret', 'webhook_secret'],
                     'facebook' => ['client_id', 'client_secret', 'redirect'],
@@ -68,8 +68,8 @@ class CredentialSettingTest extends TestCase
 
         $this->assertDatabaseHas('settings', ['key' => 'credential.mail.host', 'value' => 'smtp.example.com']);
         $this->assertDatabaseHas('settings', ['key' => 'credential.mail.port', 'value' => '587']);
-        $this->assertSame('smtp.example.com', config('mail.host'));
-        $this->assertSame('587', config('mail.port'));
+        $this->assertSame('smtp.example.com', config('mail.mailers.smtp.host'));
+        $this->assertSame('587', config('mail.mailers.smtp.port'));
     }
 
     public function test_admin_can_update_stripe_credentials(): void

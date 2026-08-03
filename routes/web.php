@@ -4,17 +4,10 @@ use App\Http\Controllers\Payment\Bitpay\WebhookController as BitpayWebhookContro
 use App\Http\Controllers\Payment\Moncash\CallbackController as MoncashCallbackController;
 use App\Http\Controllers\Payment\Paypal\CallbackController as PaypalCallbackController;
 use App\Http\Controllers\Payment\Stripe\WebhookController as StripeWebhookController;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('index');
-});
-
-Route::get('clear', function () {
-    Artisan::call('optimize:clear');
-
-    return 'Cache is cleared';
 });
 
 Route::match(['GET', 'POST'], 'moncash/callback', [MoncashCallbackController::class, 'handle'])

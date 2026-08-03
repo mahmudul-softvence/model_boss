@@ -13,6 +13,7 @@ use App\Services\PaypalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 class PaypalWithdrawController extends Controller
 {
@@ -35,9 +36,9 @@ class PaypalWithdrawController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($request, $user, &$withdraw) {
-                $setting = Setting::where('key', 'auto_accept_withdrawals')->first();
+            $autoAccept = Setting::where('key', 'auto_accept_withdrawals')->value('value') === 'true';
 
+            $withdraw = DB::transaction(function () use ($request, $user) {
                 $balance = $user->userBalance()
                     ->lockForUpdate()
                     ->first();
@@ -48,45 +49,102 @@ class PaypalWithdrawController extends Controller
 
                 $balance->decrement('total_balance', $request->coin_amount);
 
-                $withdraw = Withdrawal::create([
+                return Withdrawal::create([
                     'user_id' => $user->id,
                     'payment_method' => 'paypal',
                     'payout_account' => $user->paypal_email,
-                    'withdraw_no' => 'WD'.now()->timestamp.rand(100, 999),
+                    'withdraw_no' => 'WD'.Str::ulid(),
                     'coin_amount' => $request->coin_amount,
                     'usd_amount' => $request->coin_amount,
                     'status' => WithdrawalStatus::PENDING,
                 ]);
-
-                if ($setting?->value === 'true') {
-                    $batchId = $this->paypal->sendPayout(
-                        $user->paypal_email,
-                        (float) $withdraw->usd_amount,
-                        $withdraw->withdraw_no,
-                    );
-
-                    $withdraw->update([
-                        'status' => WithdrawalStatus::ACCEPTED,
-                        'paypal_payout_id' => $batchId,
-                    ]);
-
-                    $balance->increment('total_withdraw', $withdraw->coin_amount);
-
-                    $user->coinTransactions()->create([
-                        'type' => TransactionType::WITHDRAW,
-                        'amount' => $withdraw->coin_amount,
-                        'balance_after' => $balance->total_balance,
-                        'reference' => $batchId,
-                    ]);
-                }
-
-                $super_admin = User::role('super_admin')->first();
-                Notification::send($super_admin, new AdminWithdrawalNotification($withdraw, $user));
             });
 
-            return $this->sendResponse($withdraw);
+            if ($autoAccept) {
+                $this->processPaypalPayout($withdraw, $user);
+            } else {
+                $superAdmin = User::role('super_admin')->first();
+                if ($superAdmin) {
+                    Notification::send($superAdmin, new AdminWithdrawalNotification($withdraw, $user));
+                }
+            }
+
+            return $this->sendResponse($withdraw->fresh());
         } catch (\Exception $e) {
             return $this->sendError($e->getMessage(), [], 400);
         }
+    }
+
+    private function processPaypalPayout(Withdrawal $withdraw, User $user): void
+    {
+        try {
+            $batchId = $this->paypal->sendPayout(
+                $user->paypal_email,
+                (float) $withdraw->usd_amount,
+                $withdraw->withdraw_no,
+            );
+
+            DB::transaction(function () use ($withdraw, $batchId, $user) {
+                $lockedWithdraw = Withdrawal::query()
+                    ->lockForUpdate()
+                    ->findOrFail($withdraw->id);
+
+                if ($lockedWithdraw->status !== WithdrawalStatus::PENDING->value) {
+                    return;
+                }
+
+                $balance = $user->userBalance()
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $lockedWithdraw->update([
+                    'status' => WithdrawalStatus::ACCEPTED,
+                    'paypal_payout_id' => $batchId,
+                ]);
+
+                $balance->increment('total_withdraw', $lockedWithdraw->coin_amount);
+
+                $user->coinTransactions()->create([
+                    'type' => TransactionType::WITHDRAW,
+                    'amount' => $lockedWithdraw->coin_amount,
+                    'balance_after' => $balance->total_balance,
+                    'reference' => $batchId,
+                ]);
+
+                $superAdmin = User::role('super_admin')->first();
+                if ($superAdmin) {
+                    Notification::send($superAdmin, new AdminWithdrawalNotification($lockedWithdraw, $user));
+                }
+            });
+        } catch (\Throwable $e) {
+            $this->refundHeldWithdrawal($withdraw, $user);
+
+            throw $e instanceof \Exception ? $e : new \Exception($e->getMessage(), 0, $e);
+        }
+    }
+
+    private function refundHeldWithdrawal(Withdrawal $withdraw, User $user): void
+    {
+        DB::transaction(function () use ($withdraw, $user) {
+            $lockedWithdraw = Withdrawal::query()
+                ->lockForUpdate()
+                ->find($withdraw->id);
+
+            if (! $lockedWithdraw || $lockedWithdraw->status !== WithdrawalStatus::PENDING->value) {
+                return;
+            }
+
+            $balance = $user->userBalance()
+                ->lockForUpdate()
+                ->first();
+
+            if ($balance) {
+                $balance->increment('total_balance', $lockedWithdraw->coin_amount);
+            }
+
+            $lockedWithdraw->update([
+                'status' => WithdrawalStatus::DECLINED,
+            ]);
+        });
     }
 }

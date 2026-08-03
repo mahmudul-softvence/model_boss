@@ -1,36 +1,190 @@
+:root {
+    --ink: #14201c;
+    --ink-soft: #2a3a33;
+    --fog: #eef3ef;
+    --mist: #d7e3db;
+    --accent: #c45c26;
+    --accent-soft: rgba(196, 92, 38, 0.16);
+    --line: rgba(20, 32, 28, 0.08);
+    --font-display: "Instrument Serif", Georgia, serif;
+    --font-body: "Manrope", "Segoe UI", sans-serif;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+html,
 body {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100%;
+}
+
+body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--fog);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+.stage {
+    position: relative;
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    background: #0f172a;
-    color: #e2e8f0;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    background:
+        radial-gradient(1200px 600px at 10% -10%, #f7faf7 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e4eee8 0%, transparent 50%),
+        linear-gradient(165deg, #f4f7f4 0%, #e7efe9 45%, #dfe9e3 100%);
+}
+
+.glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+    opacity: 0.55;
+    animation: drift 12s ease-in-out infinite alternate;
+}
+
+.glow-a {
+    width: min(42vw, 420px);
+    height: min(42vw, 420px);
+    top: 8%;
+    left: -6%;
+    background: rgba(196, 92, 38, 0.18);
+}
+
+.glow-b {
+    width: min(48vw, 480px);
+    height: min(48vw, 480px);
+    right: -8%;
+    bottom: 4%;
+    background: rgba(54, 99, 78, 0.16);
+    animation-delay: -4s;
+}
+
+.grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(circle at center, black 20%, transparent 75%);
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.content {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 40rem);
     text-align: center;
+    animation: rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.card {
-    max-width: 480px;
-}
-
-.badge {
-    font-size: 4rem;
-    margin-bottom: 1rem;
+.brand {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.25rem;
+    animation: rise 900ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
 }
 
 h1 {
-    font-size: 2rem;
-    margin-bottom: 0.75rem;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2.6rem, 7vw, 4.4rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 1.1rem;
+    animation: rise 900ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both;
 }
 
-p {
-    color: #94a3b8;
-    line-height: 1.6;
+.lede {
+    font-size: clamp(1rem, 2.2vw, 1.15rem);
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    max-width: 32rem;
+    margin: 0 auto 2rem;
+    animation: rise 900ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
+}
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 0.7rem 1rem;
+    border: 1px solid rgba(20, 32, 28, 0.12);
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(8px);
+    animation: rise 900ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both;
+}
+
+.pulse {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 var(--accent-soft);
+    animation: pulse 1.8s ease-out infinite;
+}
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 var(--accent-soft);
+    }
+    70% {
+        box-shadow: 0 0 0 12px transparent;
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+@keyframes drift {
+    from {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+        transform: translate3d(18px, -14px, 0) scale(1.06);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .content,
+    .brand,
+    h1,
+    .lede,
+    .status,
+    .glow,
+    .pulse {
+        animation: none !important;
+    }
 }

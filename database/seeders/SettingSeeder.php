@@ -12,9 +12,25 @@ class SettingSeeder extends Seeder
      */
     public function run(): void
     {
-        Setting::create([
-            'key' => 'auto_accept_withdrawals',
-            'value' => 'true',
-        ]);
+        Setting::updateOrCreate(
+            ['key' => 'auto_accept_withdrawals'],
+            ['value' => 'false'],
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'auto_offer_challenges'],
+            ['value' => 'false'],
+        );
+
+        if (Setting::getChallengeRules() === []) {
+            Setting::setChallengeRules([
+                'Both players must be ready before the match can start.',
+                'Use only the selected game and agreed match settings.',
+                'No cheating, boosting, account sharing, or match fixing.',
+                'Submit results honestly. Disputes may be reviewed by admins.',
+                'Toxic behavior, harassment, or abuse may result in suspension.',
+                'Withdrawal and payout rules still apply to challenge winnings.',
+            ]);
+        }
     }
 }
