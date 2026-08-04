@@ -57,7 +57,8 @@ Route::middleware(['auth:api', 'role:super_admin'])
 
         // Admin Profile Change
 
-        Route::put('settings', [AdminSettingController::class, 'update']);
+        // POST is required for multipart/form-data (image upload); PUT still works for JSON.
+        Route::match(['put', 'post'], 'settings', [AdminSettingController::class, 'update']);
         Route::put('settings/change_password', [AdminSettingController::class, 'change_password']);
         Route::get('settings/auto_accept_withdraw', [AdminSettingController::class, 'get_auto_accept_withdraw']);
         Route::put('settings/auto_accept_withdraw', [AdminSettingController::class, 'auto_accept_withdraw']);
