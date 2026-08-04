@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             SocialLinkSeeder::class,
             CredentialSettingSeeder::class,
             PromotionalTermSeeder::class,
+            PrivacyPolicySeeder::class,
+            TermsAndConditionSeeder::class,
             CategoryGameSeeder::class,
             NewsSeeder::class,
             GallerySeeder::class,

@@ -6,15 +6,19 @@ use App\Models\Category;
 use App\Models\Gallery;
 use App\Models\Game;
 use App\Models\News;
+use App\Models\PrivacyPolicy;
 use App\Models\PromotionalTerm;
 use App\Models\Setting;
+use App\Models\TermsAndCondition;
 use App\Support\SocialLinks;
 use Database\Seeders\CategoryGameSeeder;
 use Database\Seeders\GallerySeeder;
 use Database\Seeders\NewsSeeder;
+use Database\Seeders\PrivacyPolicySeeder;
 use Database\Seeders\PromotionalTermSeeder;
 use Database\Seeders\SettingSeeder;
 use Database\Seeders\SocialLinkSeeder;
+use Database\Seeders\TermsAndConditionSeeder;
 use Tests\TestCase;
 
 class ContentSeederTest extends TestCase
@@ -25,6 +29,8 @@ class ContentSeederTest extends TestCase
             SettingSeeder::class,
             SocialLinkSeeder::class,
             PromotionalTermSeeder::class,
+            PrivacyPolicySeeder::class,
+            TermsAndConditionSeeder::class,
             CategoryGameSeeder::class,
             NewsSeeder::class,
             GallerySeeder::class,
@@ -45,6 +51,14 @@ class ContentSeederTest extends TestCase
         $this->assertSame(1000, $promo['prize']);
         $this->assertNotEmpty($promo['list']);
 
+        $privacy = PrivacyPolicy::currentContent();
+        $this->assertSame('Privacy Policy', $privacy['title']);
+        $this->assertNotEmpty($privacy['content']);
+
+        $terms = TermsAndCondition::currentContent();
+        $this->assertSame('Terms and Conditions', $terms['title']);
+        $this->assertNotEmpty($terms['content']);
+
         $this->assertGreaterThanOrEqual(5, Category::count());
         $this->assertGreaterThanOrEqual(10, Game::count());
         $this->assertDatabaseHas('categories', ['name' => 'FPS']);
@@ -61,6 +75,8 @@ class ContentSeederTest extends TestCase
     {
         $this->seed([
             PromotionalTermSeeder::class,
+            PrivacyPolicySeeder::class,
+            TermsAndConditionSeeder::class,
             CategoryGameSeeder::class,
             NewsSeeder::class,
             GallerySeeder::class,
@@ -70,9 +86,13 @@ class ContentSeederTest extends TestCase
         $gameCount = Game::count();
         $newsCount = News::count();
         $galleryCount = Gallery::count();
+        $privacy = PrivacyPolicy::currentContent();
+        $terms = TermsAndCondition::currentContent();
 
         $this->seed([
             PromotionalTermSeeder::class,
+            PrivacyPolicySeeder::class,
+            TermsAndConditionSeeder::class,
             CategoryGameSeeder::class,
             NewsSeeder::class,
             GallerySeeder::class,
@@ -83,5 +103,9 @@ class ContentSeederTest extends TestCase
         $this->assertSame($newsCount, News::count());
         $this->assertSame($galleryCount, Gallery::count());
         $this->assertDatabaseCount('promotional_terms', 1);
+        $this->assertDatabaseCount('privacy_policies', 1);
+        $this->assertDatabaseCount('terms_and_conditions', 1);
+        $this->assertSame($privacy, PrivacyPolicy::currentContent());
+        $this->assertSame($terms, TermsAndCondition::currentContent());
     }
 }

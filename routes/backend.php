@@ -10,8 +10,10 @@ use App\Http\Controllers\Backend\GameController;
 use App\Http\Controllers\Backend\MatchController;
 use App\Http\Controllers\Backend\MatchForVotingController;
 use App\Http\Controllers\Backend\NewsController;
+use App\Http\Controllers\Backend\PrivacyPolicyController;
 use App\Http\Controllers\Backend\PromotionalTermController;
 use App\Http\Controllers\Backend\SupportController;
+use App\Http\Controllers\Backend\TermsAndConditionController;
 use App\Http\Controllers\Backend\UserController;
 use App\Http\Controllers\Backend\WinnerController;
 use App\Http\Controllers\Backend\WithdrawController;
@@ -72,6 +74,12 @@ Route::middleware(['auth:api', 'role:super_admin'])
         // Promotional Terms Content
         Route::get('promotional-terms', [PromotionalTermController::class, 'show']);
         Route::put('promotional-terms', [PromotionalTermController::class, 'update']);
+
+        // Privacy Policy & Terms
+        Route::get('privacy-policy', [PrivacyPolicyController::class, 'show']);
+        Route::put('privacy-policy', [PrivacyPolicyController::class, 'update']);
+        Route::get('terms-and-conditions', [TermsAndConditionController::class, 'show']);
+        Route::put('terms-and-conditions', [TermsAndConditionController::class, 'update']);
 
         // Credential Settings
         Route::get('credentials', [CredentialSettingController::class, 'index']);
