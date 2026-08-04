@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\SuspendUserRequest;
@@ -27,7 +28,9 @@ class UserController extends Controller
         $limit = $request->query('limit', 10);
         $search = $request->query('search');
 
-        $users = User::with(['roles', 'game'])
+        $users = User::query()
+            ->withoutSuperAdmin()
+            ->with(['roles', 'game'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('name', 'like', "%{$search}%")
@@ -221,7 +224,7 @@ class UserController extends Controller
         $keyword = request('keyword');
         $role = request('role', 'all');
 
-        $usersQuery = User::query();
+        $usersQuery = User::query()->withoutSuperAdmin();
 
         if ($keyword) {
             $usersQuery->where(function ($q) use ($keyword) {
@@ -232,11 +235,10 @@ class UserController extends Controller
                     ->orWhere('email', 'like', "%{$keyword}%");
             });
         } else {
-
             $usersQuery->limit(4);
         }
 
-        if ($role !== 'all') {
+        if ($role !== 'all' && $role !== UserRole::SUPER_ADMIN->value) {
             $usersQuery->role($role);
         }
 
@@ -271,7 +273,7 @@ class UserController extends Controller
 
     public function total_users()
     {
-        $totalUsers = User::count();
+        $totalUsers = User::query()->withoutSuperAdmin()->count();
 
         return $this->sendResponse(['total_users' => $totalUsers], 'Total users retrieved successfully.');
     }

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Enums\ChallengeStatus;
+use App\Enums\UserRole;
 use App\Notifications\VerifyEmailQueued;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
@@ -157,6 +158,16 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'challengeLossesAsChallenger',
             'challengeLossesAsAcceptor',
         ]);
+    }
+
+    /**
+     * Exclude super admins from admin user management listings.
+     */
+    public function scopeWithoutSuperAdmin(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('roles', function (Builder $roleQuery): void {
+            $roleQuery->where('name', UserRole::SUPER_ADMIN->value);
+        });
     }
 
     public function loadChallengeRecordCounts(): static
