@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateChallengeRuleRequest;
+use App\Http\Requests\UpdateSocialLinkRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
@@ -129,6 +130,21 @@ class AdminSettingController extends Controller
         return $this->sendResponse(
             ['rules' => Setting::getChallengeRules()],
             'Challenge rules updated successfully',
+        );
+    }
+
+    public function get_social_links(): JsonResponse
+    {
+        return $this->sendResponse(['links' => Setting::getSocialLinks()]);
+    }
+
+    public function update_social_links(UpdateSocialLinkRequest $request): JsonResponse
+    {
+        $links = Setting::setSocialLinks($request->validated());
+
+        return $this->sendResponse(
+            ['links' => $links],
+            'Social links updated successfully',
         );
     }
 }

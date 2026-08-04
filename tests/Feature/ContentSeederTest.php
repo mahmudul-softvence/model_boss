@@ -8,11 +8,13 @@ use App\Models\Game;
 use App\Models\News;
 use App\Models\PromotionalTerm;
 use App\Models\Setting;
+use App\Support\SocialLinks;
 use Database\Seeders\CategoryGameSeeder;
 use Database\Seeders\GallerySeeder;
 use Database\Seeders\NewsSeeder;
 use Database\Seeders\PromotionalTermSeeder;
 use Database\Seeders\SettingSeeder;
+use Database\Seeders\SocialLinkSeeder;
 use Tests\TestCase;
 
 class ContentSeederTest extends TestCase
@@ -21,6 +23,7 @@ class ContentSeederTest extends TestCase
     {
         $this->seed([
             SettingSeeder::class,
+            SocialLinkSeeder::class,
             PromotionalTermSeeder::class,
             CategoryGameSeeder::class,
             NewsSeeder::class,
@@ -36,6 +39,7 @@ class ContentSeederTest extends TestCase
             'value' => 'false',
         ]);
         $this->assertNotEmpty(Setting::getChallengeRules());
+        $this->assertSame(SocialLinks::defaults(), Setting::getSocialLinks());
 
         $promo = PromotionalTerm::currentContent();
         $this->assertSame(1000, $promo['prize']);

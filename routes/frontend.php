@@ -17,6 +17,7 @@ use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\PostController;
 use App\Http\Controllers\Frontend\ProfileController;
 use App\Http\Controllers\Frontend\PromotionalTermController;
+use App\Http\Controllers\Frontend\SocialLinkController;
 use App\Http\Controllers\Frontend\TwitchController;
 use App\Http\Controllers\Payment\Stripe\CheckoutController;
 use App\Http\Controllers\Withdraw\Bitpay\BitpayConnectController;
@@ -164,5 +165,6 @@ Route::middleware(['api'])->group(function () {
     Route::get('search_artist', [HomeController::class, 'search_artist']);
     Route::get('get_all_games', [HomeController::class, 'get_all_games']);
     Route::get('promotional-terms', [PromotionalTermController::class, 'index']);
+    Route::get('social-links', [SocialLinkController::class, 'index']);
     Route::get('get_users_for_select', [HomeController::class, 'get_users_for_select']);
 });

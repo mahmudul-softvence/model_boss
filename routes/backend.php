@@ -65,6 +65,8 @@ Route::middleware(['auth:api', 'role:super_admin'])
         Route::put('settings/auto_offer_challenges', [AdminSettingController::class, 'auto_offer_challenges']);
         Route::get('settings/challenge_rules', [AdminSettingController::class, 'get_challenge_rules']);
         Route::put('settings/challenge_rules', [AdminSettingController::class, 'update_challenge_rules']);
+        Route::get('settings/social_links', [AdminSettingController::class, 'get_social_links']);
+        Route::put('settings/social_links', [AdminSettingController::class, 'update_social_links']);
 
         // Promotional Terms Content
         Route::get('promotional-terms', [PromotionalTermController::class, 'show']);

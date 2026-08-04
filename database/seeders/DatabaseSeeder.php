@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             LiveStatusChange::class,
             SettingSeeder::class,
+            SocialLinkSeeder::class,
             CredentialSettingSeeder::class,
             PromotionalTermSeeder::class,
             CategoryGameSeeder::class,
